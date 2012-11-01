@@ -1,4 +1,4 @@
-var Validator = require("validator");
+var Validator = require("./validator");
 
 describe("a", function () {
     it("b", function () {
