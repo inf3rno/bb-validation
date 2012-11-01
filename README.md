@@ -1,3 +1,5 @@
+**warning: not a working application yet, it's in development stage!**
+
 configure model and view:
 
     var model = new Backbone.Model({
