@@ -5,9 +5,9 @@ var _ = require("underscore"),
 describe("Suite", function () {
 
     describe("required", function () {
-        it("should pass if not required and not given", function () {
+        it("should skip if not required and not given", function () {
             valueNotRequired();
-            expectPass();
+            expectSkip();
         });
         it("should pass if not required but given", function () {
             valueExists();
@@ -239,7 +239,7 @@ describe("Suite", function () {
 
     beforeEach(function () {
         suite = new Validator.Suite();
-        validator = jasmine.createSpyObj("validator", ["pass", "fail", "failAll"]);
+        validator = jasmine.createSpyObj("validator", ["pass", "fail", "passAll", "failAll"]);
 
     });
 
@@ -280,16 +280,25 @@ describe("Suite", function () {
     }
     var expectFail = function () {
         expect(validator.pass).not.toHaveBeenCalled();
+        expect(validator.passAll).not.toHaveBeenCalled();
         expect(validator.fail).toHaveBeenCalled();
         expect(validator.failAll).not.toHaveBeenCalled();
     };
     var expectFatal = function () {
         expect(validator.pass).not.toHaveBeenCalled();
+        expect(validator.passAll).not.toHaveBeenCalled();
         expect(validator.fail).not.toHaveBeenCalled();
         expect(validator.failAll).toHaveBeenCalled();
     };
     var expectPass = function () {
         expect(validator.pass).toHaveBeenCalled();
+        expect(validator.passAll).not.toHaveBeenCalled();
+        expect(validator.fail).not.toHaveBeenCalled();
+        expect(validator.failAll).not.toHaveBeenCalled();
+    };
+    var expectSkip = function () {
+        expect(validator.pass).not.toHaveBeenCalled();
+        expect(validator.passAll).toHaveBeenCalled();
         expect(validator.fail).not.toHaveBeenCalled();
         expect(validator.failAll).not.toHaveBeenCalled();
     };

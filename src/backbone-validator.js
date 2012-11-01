@@ -11,7 +11,9 @@ define(function (require, exports, module) {
         /** @param Validator validator*/
         required:function (validator, required) {
             var existence = (validator.value !== undefined);
-            if (existence || !required)
+            if (!existence && !required)
+                validator.passAll();
+            else if (existence || !required)
                 validator.pass();
             else
                 validator.failAll();
@@ -116,6 +118,8 @@ define(function (require, exports, module) {
 
         },
         fail:function () {
+        },
+        passAll:function () {
         },
         failAll:function () {
         }
