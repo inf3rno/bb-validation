@@ -222,15 +222,59 @@ describe("Suite", function () {
     });
 
     describe("match", function () {
-        it("should pass if the pattern matches the value", function () {
+        it("should pass if the expression matches the value", function () {
             valueExists("123");
             valueMatch(/^\d+$/g);
+            valueMatch([/^\d+$/g, /^\w+$/g]);
+            valueExists("a@b.com");
+            valueMatch("email");
+            valueMatch({
+                all:[/^\S+$/g, /^.*$/g],
+                any:["email", "url"]
+            })
             expectPass();
         });
-        it("should fail if the pattern does not match the value", function () {
+        it("should fail if the expression does not match the value", function () {
             valueExists("abc");
             valueMatch(/^\d+$/g);
+            valueMatch("email");
+            valueMatch([/\w+/g, /\d+/g]);
+            valueMatch({
+                all:["email", "url"],
+                any:/\w+/g
+            });
+            valueMatch({
+                any:["email", "url"]
+            });
             expectFail();
+        });
+    });
+
+    describe("constructor", function () {
+        var defaultSuite = new Validator.Suite();
+        it("should pass if it's called from custom test", function () {
+            suite = new Validator.Suite(customTest);
+            suite.custom(validator, true);
+            expectPass();
+        });
+        it("should fail if it's called from custom test", function () {
+            suite = new Validator.Suite(customTest);
+            suite.custom(validator, false);
+            expectFail();
+        });
+        it("should override default tests", function () {
+            expect(suite.range).toEqual(defaultSuite.range);
+            suite = new Validator.Suite(overrideRange);
+            expect(suite.min).toEqual(defaultSuite.min);
+            expect(suite.range).not.toEqual(defaultSuite.range);
+        });
+        it("should extend and override patterns", function () {
+            expect(suite.patterns).toEqual(defaultSuite.patterns);
+            suite = new Validator.Suite(customPatterns);
+            expect(suite.patterns).not.toEqual(defaultSuite.patterns);
+            expect(suite.patterns.custom).toEqual(customPatterns.patterns.custom);
+            expect(suite.patterns.email).toEqual(customPatterns.patterns.email);
+            expect(suite.patterns.url).toEqual(defaultSuite.patterns.url);
         });
     });
 
@@ -240,7 +284,6 @@ describe("Suite", function () {
     beforeEach(function () {
         suite = new Validator.Suite();
         validator = jasmine.createSpyObj("validator", ["pass", "fail", "passAll", "failAll"]);
-
     });
 
     var valueExists = function (value) {
@@ -277,7 +320,8 @@ describe("Suite", function () {
     };
     var valueMatch = function (pattern) {
         suite.match(validator, pattern);
-    }
+    };
+
     var expectFail = function () {
         expect(validator.pass).not.toHaveBeenCalled();
         expect(validator.passAll).not.toHaveBeenCalled();
@@ -301,5 +345,30 @@ describe("Suite", function () {
         expect(validator.passAll).toHaveBeenCalled();
         expect(validator.fail).not.toHaveBeenCalled();
         expect(validator.failAll).not.toHaveBeenCalled();
+    };
+
+    var customTest = {
+        custom:function (validator, attr) {
+            if (attr)
+                validator.pass();
+            else
+                validator.fail();
+        }
+    };
+
+    var overrideRange = {
+        range:function (validator, attr) {
+            if (attr)
+                validator.pass();
+            else
+                validator.fail();
+        }
+    };
+
+    var customPatterns = {
+        patterns:{
+            custom:/\w+/,
+            email:/\w+/
+        }
     };
 });

@@ -1,8 +1,20 @@
 var model = new Backbone.Model({
     validator:new Backbone.Validator({
+        suite:{
+            patterns:{
+                custom:/06\d+/g
+            },
+            custom:function (validator, attr) {
+                if (attr)
+                    validator.pass();
+                else
+                    validator.fail();
+            }
+        },
         email:{
             required:true,
-            pattern:"email"
+            match:"email",
+            custom:true
         },
         password:{
             range:{
@@ -19,7 +31,7 @@ var view = new Backbone.View({
         email:{
             as:"email cím",
             require:"Az {0}et közelező megadni.",
-            pattern:"Helytelen {0} formátum."
+            match:"Helytelen {0} formátum."
         },
         password:{
             as:"jelszó",
