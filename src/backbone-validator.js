@@ -188,9 +188,13 @@ define(function (require, exports, module) {
                     if (!(check instanceof Function))
                         throw new SyntaxError("Invalid validator config: test " + test + " not exist.");
                     check.call(this.suite, this, params);
+                    if (typeof (this.stack[test]) != "boolean")
+                        this.isPending = true;
                     return !this.isDone;
                 }, this);
-                this.trigger(this.valid ? "pass" : "fail", this.attribute, this.stack);
+                var event = this.isPending ? "pending" : (this.isValid ? "pass" : "fail");
+                this.trigger(event, this.attribute, this.stack);
+                this.trigger(event + ":" + this.attribute, this.stack);
             }, this);
         },
         pass:function () {
@@ -198,17 +202,16 @@ define(function (require, exports, module) {
         },
         fail:function () {
             this.stack[this.test] = false;
-            this.valid = false;
+            this.isValid = false;
         },
         done:function () {
+            this.isPending = false;
             this.isDone = true;
         },
         clear:function () {
-            this.valid = true;
+            this.isPending = false;
+            this.isValid = true;
             this.stack = {};
-        },
-        pending:function () {
-
         }
     });
 

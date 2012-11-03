@@ -89,11 +89,34 @@ describe("Validator", function () {
                 }
             });
         });
+        it("should pending by async validators", function () {
+            schemaSet({
+                suite:{
+                    async:function (validator, param) {
+
+                    }
+                },
+                remote:{
+                    async:null
+                }
+            });
+            valueSet({
+                remote:123
+            });
+            expectResult({});
+            expectPendings({
+                remote:[
+                    {}
+                ]
+            })
+        });
     });
 
     var validator;
     var model;
     var results;
+    var pendings;
+    var validated;
     var requireFail = {
         required:false
     };
@@ -102,21 +125,37 @@ describe("Validator", function () {
     };
     beforeEach(function () {
         model = new Backbone.Model();
+        results = {};
+        pendings = {};
+        validated = false;
     });
 
     var schemaSet = function (schema) {
-        results = {};
         validator = new Validator.Validator(schema);
         validator.on("pass fail", function (attribute, stack) {
             results[attribute] = stack;
+        });
+        validator.on("pending", function (attribute, stack) {
+            if (!pendings[attribute])
+                pendings[attribute] = [];
+            pendings[attribute].push(stack);
         });
     };
     var valueSet = function (values) {
         model.set(values);
     };
+    var validateIfNecessary = function () {
+        if (!validated)
+            validator.validate(model);
+        validated = true;
+    };
     var expectResult = function (expected) {
-        validator.validate(model);
+        validateIfNecessary();
         expect(results).toEqual(expected);
     };
+    var expectPendings = function (expected) {
+        validateIfNecessary();
+        expect(pendings).toEqual(expected);
+    }
 })
 ;
