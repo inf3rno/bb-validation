@@ -93,6 +93,7 @@ describe("Validator", function () {
 
     var validator;
     var model;
+    var results;
     var requireFail = {
         required:false
     };
@@ -104,13 +105,18 @@ describe("Validator", function () {
     });
 
     var schemaSet = function (schema) {
+        results = {};
         validator = new Validator.Validator(schema);
+        validator.on("pass fail", function (attribute, stack) {
+            results[attribute] = stack;
+        });
     };
     var valueSet = function (values) {
         model.set(values);
     };
     var expectResult = function (expected) {
-        expect(validator.validate(model)).toEqual(expected);
+        validator.validate(model);
+        expect(results).toEqual(expected);
     };
 })
 ;

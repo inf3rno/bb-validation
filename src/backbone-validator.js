@@ -177,12 +177,11 @@ define(function (require, exports, module) {
     _.extend(Validator.prototype, Backbone.Events, /** @lends Validator#*/{
         suite:new Suite(),
         validate:function (model) {
-            this.results = {};
             _.each(this.rules, function (rule, attribute) {
-                this.stack = {};
                 this.attribute = attribute;
                 this.value = model.get(attribute);
                 this.isDone = false;
+                this.clear();
                 _.all(rule, function (params, test) {
                     this.test = test;
                     var check = this.suite[test];
@@ -191,20 +190,21 @@ define(function (require, exports, module) {
                     check.call(this.suite, this, params);
                     return !this.isDone;
                 }, this);
-                this.results[this.attribute] = this.stack;
+                this.trigger(this.valid ? "pass" : "fail", this.attribute, this.stack);
             }, this);
-            return this.results;
         },
         pass:function () {
             this.stack[this.test] = true;
         },
         fail:function () {
             this.stack[this.test] = false;
+            this.valid = false;
         },
         done:function () {
             this.isDone = true;
         },
         clear:function () {
+            this.valid = true;
             this.stack = {};
         },
         pending:function () {
