@@ -36,12 +36,16 @@ define(function (require, exports, module) {
         /** @param Validator validator*/
         required:function (validator, required) {
             var existence = (validator.value !== undefined);
-            if (!existence && !required)
-                validator.passAll();
-            else if (existence || !required)
+            if (existence)
                 validator.pass();
-            else
-                validator.failAll();
+            else {
+                validator.clear();
+                if (required)
+                    validator.fail();
+                else
+                    validator.pass();
+                validator.done();
+            }
         },
         /** @param Validator validator*/
         type:function (validator, type) {
@@ -70,8 +74,11 @@ define(function (require, exports, module) {
                 throw new SyntaxError("Invalid type param.");
             if (typeMatch)
                 validator.pass();
-            else
-                validator.failAll();
+            else {
+                validator.clear();
+                validator.fail();
+                validator.done();
+            }
         },
         /** @param Validator validator*/
         min:function (validator, min) {
@@ -175,17 +182,16 @@ define(function (require, exports, module) {
                 this.stack = {};
                 this.attribute = attribute;
                 this.value = model.get(attribute);
-                this.next = false;
+                this.isDone = false;
                 _.all(rule, function (params, test) {
                     this.test = test;
                     var check = this.suite[test];
                     if (!(check instanceof Function))
                         throw new SyntaxError("Invalid validator config: test " + test + " not exist.");
                     check.call(this.suite, this, params);
-                    return !this.next;
+                    return !this.isDone;
                 }, this);
                 this.results[this.attribute] = this.stack;
-                this.trigger
             }, this);
             return this.results;
         },
@@ -195,15 +201,14 @@ define(function (require, exports, module) {
         fail:function () {
             this.stack[this.test] = false;
         },
-        passAll:function () {
-            this.stack = {};
-            this.pass();
-            this.next = true;
+        done:function () {
+            this.isDone = true;
         },
-        failAll:function () {
+        clear:function () {
             this.stack = {};
-            this.fail();
-            this.next = true;
+        },
+        pending:function () {
+
         }
     });
 

@@ -283,7 +283,7 @@ describe("Suite", function () {
 
     beforeEach(function () {
         suite = new Validator.Suite();
-        validator = jasmine.createSpyObj("validator", ["pass", "fail", "passAll", "failAll"]);
+        validator = jasmine.createSpyObj("validator", ["pass", "fail", "clear", "done"]);
     });
 
     var valueExists = function (value) {
@@ -324,27 +324,27 @@ describe("Suite", function () {
 
     var expectFail = function () {
         expect(validator.pass).not.toHaveBeenCalled();
-        expect(validator.passAll).not.toHaveBeenCalled();
+        expect(validator.clear).not.toHaveBeenCalled();
         expect(validator.fail).toHaveBeenCalled();
-        expect(validator.failAll).not.toHaveBeenCalled();
+        expect(validator.done).not.toHaveBeenCalled();
     };
     var expectFatal = function () {
         expect(validator.pass).not.toHaveBeenCalled();
-        expect(validator.passAll).not.toHaveBeenCalled();
-        expect(validator.fail).not.toHaveBeenCalled();
-        expect(validator.failAll).toHaveBeenCalled();
+        expect(validator.clear).toHaveBeenCalled();
+        expect(validator.fail).toHaveBeenCalled();
+        expect(validator.done).toHaveBeenCalled();
     };
     var expectPass = function () {
         expect(validator.pass).toHaveBeenCalled();
-        expect(validator.passAll).not.toHaveBeenCalled();
+        expect(validator.clear).not.toHaveBeenCalled();
         expect(validator.fail).not.toHaveBeenCalled();
-        expect(validator.failAll).not.toHaveBeenCalled();
+        expect(validator.done).not.toHaveBeenCalled();
     };
     var expectSkip = function () {
-        expect(validator.pass).not.toHaveBeenCalled();
-        expect(validator.passAll).toHaveBeenCalled();
+        expect(validator.pass).toHaveBeenCalled();
+        expect(validator.clear).toHaveBeenCalled();
         expect(validator.fail).not.toHaveBeenCalled();
-        expect(validator.failAll).not.toHaveBeenCalled();
+        expect(validator.done).toHaveBeenCalled();
     };
 
     var customTest = {
