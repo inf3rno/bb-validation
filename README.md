@@ -1,4 +1,4 @@
-**warning: not a working application yet, it's in development stage!**
+**warning: not a working plugin yet, it's in development stage!**
 
 configure model and view:
 
@@ -58,28 +58,23 @@ classes
 
     Validator
        schema
-           attribute -> tests
+           suite: custom-tests
+           attribute: test-config
        events
-           start
-           end
-           success
-           end:success
-           fail
-           fail:attribute
-           fail:attribute type
-           fail type
-           end:fail
+           pass -> attribute, stack
+           pass:attribute -> stack
+           fail -> attribute, stack
+           fail:attribute -> stack
+           pending -> attribute, stack
+           pending:attribute -> stack
     
     Messager
        rules
-           attribute -> templates
+           attribute: templates
        events
-           start
-           end
-           success
-           end:success
-           fail
-           fail:attribute
-           fail:attribute type
-           fail type
-           end:fail
+           pass -> attribute, stack
+           pass:attribute -> stack
+           fail -> attribute, stack
+           fail:attribute -> stack
+           pending -> attribute, stack
+           pending:attribute -> stack
