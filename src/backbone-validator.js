@@ -165,10 +165,16 @@ define(function (require, exports, module) {
     var Validator = function (schema, suite) {
         this.schema = schema;
         if (suite)
-            this.suite = new Suite(suite);
+            this.suite = function () {
+                return new Suite(suite);
+            };
+        this.suites = {};
+        _.each(this.schema, function (rules, attribute) {
+            this.suites[attribute] = new this.suite();
+        }, this);
     };
     _.extend(Validator.prototype, Backbone.Events, /** @lends Validator#*/{
-        suite:new Suite(),
+        suite:Suite,
         validate:function (model) {
             _.each(this.schema, function (rules, attribute) {
                 this.attribute = attribute;
@@ -176,10 +182,10 @@ define(function (require, exports, module) {
                 this.isDone = false;
                 this.clear();
                 _.all(rules, function (params, test) {
-                    var check = this.suite[test];
+                    var check = this.suites[attribute][test];
                     if (!(check instanceof Function))
                         throw new SyntaxError("Invalid validator config: test " + test + " not exist.");
-                    check.call(this.suite, this, params);
+                    check.call(this.suites[attribute], this, params);
                     if (typeof (this.stack[test]) != "boolean")
                         this.pendings.push(test);
                     return !this.isDone;
