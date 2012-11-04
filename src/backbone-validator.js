@@ -22,13 +22,11 @@ define(function (require, exports, module) {
     /** @class
      * @constructor
      */
-    var Suite = function (suite) {
-        if (suite) {
-            var patterns = this.patterns;
+    var Suite = function (suite, patterns) {
+        if (suite)
             _.extend(this, suite);
-            if (suite.patterns)
-                this.patterns = new Patterns(_.extend({}, patterns, suite.patterns));
-        }
+        if (patterns)
+            this.patterns = new Patterns(patterns);
     };
     _.extend(Suite.prototype, /** @lends Suite#*/{
         /** @type Patterns patterns*/
@@ -37,13 +35,13 @@ define(function (require, exports, module) {
         required:function (validator, required) {
             var existence = (validator.value !== undefined);
             if (existence)
-                validator.pass();
+                validator.pass("required");
             else {
                 validator.clear();
                 if (required)
-                    validator.fail();
+                    validator.fail("required");
                 else
-                    validator.pass();
+                    validator.pass("required");
                 validator.done();
             }
         },
@@ -73,10 +71,10 @@ define(function (require, exports, module) {
             else
                 throw new SyntaxError("Invalid type param.");
             if (typeMatch)
-                validator.pass();
+                validator.pass("type");
             else {
                 validator.clear();
-                validator.fail();
+                validator.fail("type");
                 validator.done();
             }
         },
@@ -86,9 +84,9 @@ define(function (require, exports, module) {
                 throw new SyntaxError("Invalid min param.");
             var number = typeof (validator.value) == "string" ? validator.value.length : validator.value;
             if (number < min)
-                validator.fail();
+                validator.fail("min");
             else
-                validator.pass();
+                validator.pass("min");
         },
         /** @param Validator validator*/
         max:function (validator, max) {
@@ -96,9 +94,9 @@ define(function (require, exports, module) {
                 throw new SyntaxError("Invalid max param.");
             var number = typeof (validator.value) == "string" ? validator.value.length : validator.value;
             if (number > max)
-                validator.fail();
+                validator.fail("max");
             else
-                validator.pass();
+                validator.pass("max");
         },
         /** @param Validator validator*/
         range:function (validator, range) {
@@ -106,30 +104,30 @@ define(function (require, exports, module) {
                 throw new SyntaxError("Invalid range param.");
             var number = typeof (validator.value) == "string" ? validator.value.length : validator.value;
             if (number > range.max || number < range.min)
-                validator.fail();
+                validator.fail("range");
             else
-                validator.pass();
+                validator.pass("range");
         },
         /** @param Validator validator*/
         equal:function (validator, expected) {
             if (typeof(expected) == "object" ? _.isEqual(validator.value, expected) : validator.value === expected)
-                validator.pass();
+                validator.pass("equal");
             else
-                validator.fail();
+                validator.fail("equal");
         },
         /** @param Validator validator*/
         same:function (validator, expected) {
             if (validator.value === expected)
-                validator.pass();
+                validator.pass("same");
             else
-                validator.fail();
+                validator.fail("same");
         },
         /** @param Validator validator*/
         contained:function (validator, list) {
             if (list.indexOf(validator.value) != -1)
-                validator.pass();
+                validator.pass("contained");
             else
-                validator.fail();
+                validator.fail("contained");
         },
         /** @param Validator validator
          * @param RegExp expression
@@ -154,9 +152,9 @@ define(function (require, exports, module) {
             if (expressions.any)
                 valid = valid && _.any(expressions.any, tester, this);
             if (valid)
-                validator.pass();
+                validator.pass("match");
             else
-                validator.fail();
+                validator.fail("match");
         }
     });
 
@@ -164,52 +162,46 @@ define(function (require, exports, module) {
      * @extends Backbone.Events
      * @constructor
      */
-    var Validator = function (schema) {
-        this.rules = {};
-        if (schema) {
-            _.extend(this.rules, schema);
-            if (schema.suite) {
-                this.suite = new Suite(_.extend({}, this.suite, schema.suite));
-                delete(this.rules.suite);
-            }
-        }
+    var Validator = function (schema, suite) {
+        this.schema = schema;
+        if (suite)
+            this.suite = new Suite(suite);
     };
     _.extend(Validator.prototype, Backbone.Events, /** @lends Validator#*/{
         suite:new Suite(),
         validate:function (model) {
-            _.each(this.rules, function (rule, attribute) {
+            _.each(this.schema, function (rules, attribute) {
                 this.attribute = attribute;
                 this.value = model.get(attribute);
                 this.isDone = false;
                 this.clear();
-                _.all(rule, function (params, test) {
-                    this.test = test;
+                _.all(rules, function (params, test) {
                     var check = this.suite[test];
                     if (!(check instanceof Function))
                         throw new SyntaxError("Invalid validator config: test " + test + " not exist.");
                     check.call(this.suite, this, params);
                     if (typeof (this.stack[test]) != "boolean")
-                        this.isPending = true;
+                        this.pendings.push(test);
                     return !this.isDone;
                 }, this);
-                var event = this.isPending ? "pending" : (this.isValid ? "pass" : "fail");
+                var event = this.pendings.length ? "pending" : (this.isValid ? "pass" : "fail");
                 this.trigger(event, this.attribute, this.stack);
                 this.trigger(event + ":" + this.attribute, this.stack);
             }, this);
         },
-        pass:function () {
-            this.stack[this.test] = true;
+        pass:function (test) {
+            this.stack[test] = true;
         },
-        fail:function () {
-            this.stack[this.test] = false;
+        fail:function (test) {
+            this.stack[test] = false;
             this.isValid = false;
         },
         done:function () {
-            this.isPending = false;
+            this.pendings = [];
             this.isDone = true;
         },
         clear:function () {
-            this.isPending = false;
+            this.pendings = [];
             this.isValid = true;
             this.stack = {};
         }

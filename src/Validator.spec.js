@@ -91,13 +91,12 @@ describe("Validator", function () {
         });
         it("should pending by async validators", function () {
             schemaSet({
-                suite:{
-                    async:function (validator, param) {
-
-                    }
-                },
                 remote:{
                     async:null
+                }
+            }, {
+                async:function (validator, param) {
+
                 }
             });
             valueSet({
@@ -130,8 +129,8 @@ describe("Validator", function () {
         validated = false;
     });
 
-    var schemaSet = function (schema) {
-        validator = new Validator.Validator(schema);
+    var schemaSet = function (schema, suite) {
+        validator = new Validator.Validator(schema, suite);
         validator.on("pass fail", function (attribute, stack) {
             results[attribute] = stack;
         });
@@ -157,5 +156,4 @@ describe("Validator", function () {
         validateIfNecessary();
         expect(pendings).toEqual(expected);
     }
-})
-;
+});

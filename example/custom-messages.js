@@ -1,28 +1,27 @@
 var model = new Backbone.Model({
     validator:new Backbone.Validator({
-        suite:{
-            patterns:{
-                custom:/06\d+/g
+            email:{
+                required:true,
+                match:"email",
+                custom:true
             },
-            custom:function (validator, attr) {
-                if (attr)
-                    validator.pass();
-                else
-                    validator.fail();
+            password:{
+                range:{
+                    min:3,
+                    max:14
+                }
             }
-        },
-        email:{
-            required:true,
-            match:"email",
-            custom:true
-        },
-        password:{
-            range:{
-                min:3,
-                max:14
-            }
+        }, new Backbone.Suite({
+        custom:function (validator, attr) {
+            if (attr)
+                validator.pass("custom");
+            else
+                validator.fail("custom");
         }
+    }, {
+        custom:/06\d+/g
     })
+    )
 });
 
 var view = new Backbone.View({

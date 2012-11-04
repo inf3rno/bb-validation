@@ -270,10 +270,10 @@ describe("Suite", function () {
         });
         it("should extend and override patterns", function () {
             expect(suite.patterns).toEqual(defaultSuite.patterns);
-            suite = new Validator.Suite(customPatterns);
+            suite = new Validator.Suite(null, customPatterns);
             expect(suite.patterns).not.toEqual(defaultSuite.patterns);
-            expect(suite.patterns.custom).toEqual(customPatterns.patterns.custom);
-            expect(suite.patterns.email).toEqual(customPatterns.patterns.email);
+            expect(suite.patterns.custom).toEqual(customPatterns.custom);
+            expect(suite.patterns.email).toEqual(customPatterns.email);
             expect(suite.patterns.url).toEqual(defaultSuite.patterns.url);
         });
     });
@@ -350,25 +350,23 @@ describe("Suite", function () {
     var customTest = {
         custom:function (validator, attr) {
             if (attr)
-                validator.pass();
+                validator.pass("custom");
             else
-                validator.fail();
+                validator.fail("custom");
         }
     };
 
     var overrideRange = {
         range:function (validator, attr) {
             if (attr)
-                validator.pass();
+                validator.pass("range");
             else
-                validator.fail();
+                validator.fail("range");
         }
     };
 
     var customPatterns = {
-        patterns:{
-            custom:/\w+/,
-            email:/\w+/
-        }
+        custom:/\w+/,
+        email:/\w+/
     };
 });
