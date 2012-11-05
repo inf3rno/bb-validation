@@ -254,7 +254,6 @@ describe("Suite", function () {
     var validator;
 
     beforeEach(function () {
-        suite = new Validator.Suite();
         validator = jasmine.createSpyObj("validator", ["pass", "fail", "clear", "done"]);
     });
 
@@ -266,61 +265,61 @@ describe("Suite", function () {
     var valueRequired = function () {
         suite = new Validator.Suite({
             required:true
-        });
+        }, validator);
         suite.required(validator);
     };
     var valueNotRequired = function () {
         suite = new Validator.Suite({
             required:false
-        });
+        }, validator);
         suite.required(validator);
     };
     var valueTypeOf = function (type) {
         suite = new Validator.Suite({
             type:type
-        });
+        }, validator);
         suite.type(validator);
     };
     var valueMin = function (min) {
         suite = new Validator.Suite({
             min:min
-        });
+        }, validator);
         suite.min(validator);
     };
     var valueMax = function (max) {
         suite = new Validator.Suite({
             max:max
-        });
+        }, validator);
         suite.max(validator);
     };
     var valueIn = function (min, max) {
         suite = new Validator.Suite({
             range:{min:min, max:max}
-        });
+        }, validator);
         suite.range(validator);
     };
     var valueEqual = function (expected) {
         suite = new Validator.Suite({
             equal:expected
-        });
+        }, validator);
         suite.equal(validator);
     };
     var valueSame = function (expected) {
         suite = new Validator.Suite({
             same:expected
-        });
+        }, validator);
         suite.same(validator);
     };
     var valueContained = function (list) {
         suite = new Validator.Suite({
             contained:list
-        });
+        }, validator);
         suite.contained(validator);
     };
     var valueMatch = function (pattern) {
         suite = new Validator.Suite({
             match:pattern
-        });
+        }, validator);
         suite.match(validator);
     };
 

@@ -248,7 +248,8 @@ define(function (require, exports, module) {
     /** @class
      * @constructor
      */
-    var Suite = function (rules) {
+    var Suite = function (rules, validator) {
+        this.validator = validator;
         this.tests = {};
         _.each(rules, function (rule, test) {
             var testClass = this.testMap[test];
@@ -271,66 +272,79 @@ define(function (require, exports, module) {
         required:function (validator) {
             var name = "required";
             var test = this.tests[name];
+            var value = validator.value;
             test.on("done", function (passed) {
-                var existence = (validator.value !== undefined);
+                var existence = (value !== undefined);
                 if (existence)
-                    validator.pass(name);
-                else {
-                    validator.clear();
-                    if (this.required)
-                        validator.fail(name);
-                    else
-                        validator.pass(name);
-                    validator.done();
-                }
-            });
-            test.check(validator.value);
+                    this.pass(name);
+                else if (test.required)
+                    this.clearAndFail(name);
+                else
+                    this.clearAndPass(name);
+
+            }, this);
+            test.check(value);
         },
         /** @param Validator validator*/
         type:function (validator) {
             var name = "type";
             var test = this.tests[name];
+            var value = validator.value;
             test.on("done", function (passed) {
                 if (passed)
-                    validator.pass(name);
-                else {
-                    validator.clear();
-                    validator.fail(name);
-                    validator.done();
-                }
+                    this.pass(name);
+                else
+                    this.clearAndFail(name);
             }, this);
-            test.check(validator.value);
+            test.check(value);
         },
         min:function (validator) {
-            this.check(validator, "min");
+            this.check("min");
         },
         max:function (validator) {
-            this.check(validator, "max");
+            this.check("max");
         },
         range:function (validator) {
-            this.check(validator, "range");
+            this.check("range");
         },
         equal:function (validator) {
-            this.check(validator, "equal");
+            this.check("equal");
         },
         same:function (validator) {
-            this.check(validator, "same");
+            this.check("same");
         },
         contained:function (validator) {
-            this.check(validator, "contained");
+            this.check("contained");
         },
         match:function (validator) {
-            this.check(validator, "match");
+            this.check("match");
         },
-        check:function (validator, name) {
+        check:function (name) {
             var test = this.tests[name];
+            var value = this.validator.value;
             test.on("done", function (passed) {
                 if (passed)
-                    validator.pass(name);
+                    this.pass(name);
                 else
-                    validator.fail(name);
+                    this.fail(name);
             }, this);
-            test.check(validator.value);
+            test.check(value);
+        },
+        pass:function (name) {
+            this.validator.pass(name);
+        },
+        fail:function (name) {
+            this.validator.fail(name);
+        },
+        clearAndPass:function (name) {
+            this.validator.clear();
+            this.validator.pass(name);
+            this.validator.done();
+        },
+        clearAndFail:function (name) {
+            this.validator.clear();
+            this.validator.fail(name);
+            this.validator.done();
         }
     });
 
