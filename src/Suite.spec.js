@@ -268,14 +268,6 @@ describe("Suite", function () {
             expect(suite.min).toEqual(defaultSuite.min);
             expect(suite.range).not.toEqual(defaultSuite.range);
         });
-        it("should extend and override patterns", function () {
-            expect(suite.patterns).toEqual(defaultSuite.patterns);
-            suite = new Validator.Suite(null, customPatterns);
-            expect(suite.patterns).not.toEqual(defaultSuite.patterns);
-            expect(suite.patterns.custom).toEqual(customPatterns.custom);
-            expect(suite.patterns.email).toEqual(customPatterns.email);
-            expect(suite.patterns.url).toEqual(defaultSuite.patterns.url);
-        });
     });
 
     var suite;
@@ -363,10 +355,5 @@ describe("Suite", function () {
             else
                 validator.fail("range");
         }
-    };
-
-    var customPatterns = {
-        custom:/\w+/,
-        email:/\w+/
     };
 });

@@ -18,8 +18,6 @@ var model = new Backbone.Model({
             else
                 validator.fail("custom");
         }
-    }, {
-        custom:/06\d+/g
     })
     )
 });
