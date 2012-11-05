@@ -268,15 +268,15 @@ define(function (require, exports, module) {
             match:MatchTest
         },
         /** @param Validator validator*/
-        required:function (validator, required) {
-            var test = new RequiredTest(required);
+        required:function (validator) {
+            var test = this.tests.required;
             test.on("done", function (passed) {
                 var existence = (validator.value !== undefined);
                 if (existence)
                     validator.pass("required");
                 else {
                     validator.clear();
-                    if (required)
+                    if (this.required)
                         validator.fail("required");
                     else
                         validator.pass("required");
@@ -286,8 +286,8 @@ define(function (require, exports, module) {
             test.check(validator.value);
         },
         /** @param Validator validator*/
-        type:function (validator, type) {
-            var test = new TypeTest(type);
+        type:function (validator) {
+            var test = this.tests.type;
             test.on("done", function (passed) {
                 if (passed)
                     validator.pass("type");
@@ -300,8 +300,8 @@ define(function (require, exports, module) {
             test.check(validator.value);
         },
         /** @param Validator validator*/
-        min:function (validator, min) {
-            var test = new MinTest(min);
+        min:function (validator) {
+            var test = this.tests.min;
             test.on("done", function (passed) {
                 if (passed)
                     validator.pass("min");
@@ -311,8 +311,8 @@ define(function (require, exports, module) {
             test.check(validator.value);
         },
         /** @param Validator validator*/
-        max:function (validator, max) {
-            var test = new MaxTest(max);
+        max:function (validator) {
+            var test = this.tests.max;
             test.on("done", function (passed) {
                 if (passed)
                     validator.pass("max");
@@ -322,8 +322,8 @@ define(function (require, exports, module) {
             test.check(validator.value);
         },
         /** @param Validator validator*/
-        range:function (validator, range) {
-            var test = new RangeTest(range);
+        range:function (validator) {
+            var test = this.tests.range;
             test.on("done", function (passed) {
                 if (passed)
                     validator.pass("range");
@@ -333,8 +333,8 @@ define(function (require, exports, module) {
             test.check(validator.value);
         },
         /** @param Validator validator*/
-        equal:function (validator, expected) {
-            var test = new EqualTest(expected);
+        equal:function (validator) {
+            var test = this.tests.equal;
             test.on("done", function (passed) {
                 if (passed)
                     validator.pass("equal");
@@ -344,8 +344,8 @@ define(function (require, exports, module) {
             test.check(validator.value);
         },
         /** @param Validator validator*/
-        same:function (validator, expected) {
-            var test = new SameTest(expected);
+        same:function (validator) {
+            var test = this.tests.same;
             test.on("done", function (passed) {
                 if (passed)
                     validator.pass("same");
@@ -355,8 +355,8 @@ define(function (require, exports, module) {
             test.check(validator.value);
         },
         /** @param Validator validator*/
-        contained:function (validator, list) {
-            var test = new ContainedTest(list);
+        contained:function (validator) {
+            var test = this.tests.contained;
             test.on("done", function (passed) {
                 if (passed)
                     validator.pass("contained");
@@ -368,8 +368,8 @@ define(function (require, exports, module) {
         /** @param Validator validator
          * @param RegExp expression
          * */
-        match:function (validator, expressions) {
-            var test = new MatchTest(expressions);
+        match:function (validator) {
+            var test = this.tests.match;
             test.on("done", function (passed) {
                 if (passed)
                     validator.pass("match");
@@ -403,7 +403,7 @@ define(function (require, exports, module) {
                     var check = this.suites[attribute][test];
                     if (!(check instanceof Function))
                         throw new SyntaxError("Invalid validator config: test " + test + " not exist.");
-                    check.call(this.suites[attribute], this, params);
+                    check.call(this.suites[attribute], this);
                     if (typeof (this.stack[test]) != "boolean")
                         this.pendings.push(test);
                     return !this.isDone;

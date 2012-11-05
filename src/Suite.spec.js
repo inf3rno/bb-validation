@@ -264,34 +264,64 @@ describe("Suite", function () {
         validator.value = value;
     };
     var valueRequired = function () {
-        suite.required(validator, true);
+        suite = new Validator.Suite({
+            required:true
+        });
+        suite.required(validator);
     };
     var valueNotRequired = function () {
-        suite.required(validator, false);
+        suite = new Validator.Suite({
+            required:false
+        });
+        suite.required(validator);
     };
     var valueTypeOf = function (type) {
-        suite.type(validator, type);
+        suite = new Validator.Suite({
+            type:type
+        });
+        suite.type(validator);
     };
     var valueMin = function (min) {
-        suite.min(validator, min);
+        suite = new Validator.Suite({
+            min:min
+        });
+        suite.min(validator);
     };
     var valueMax = function (max) {
-        suite.max(validator, max);
+        suite = new Validator.Suite({
+            max:max
+        });
+        suite.max(validator);
     };
     var valueIn = function (min, max) {
-        suite.range(validator, {min:min, max:max});
+        suite = new Validator.Suite({
+            range:{min:min, max:max}
+        });
+        suite.range(validator);
     };
     var valueEqual = function (expected) {
-        suite.equal(validator, expected);
+        suite = new Validator.Suite({
+            equal:expected
+        });
+        suite.equal(validator);
     };
     var valueSame = function (expected) {
-        suite.same(validator, expected);
+        suite = new Validator.Suite({
+            same:expected
+        });
+        suite.same(validator);
     };
     var valueContained = function (list) {
-        suite.contained(validator, list);
+        suite = new Validator.Suite({
+            contained:list
+        });
+        suite.contained(validator);
     };
     var valueMatch = function (pattern) {
-        suite.match(validator, pattern);
+        suite = new Validator.Suite({
+            match:pattern
+        });
+        suite.match(validator);
     };
 
     var expectFail = function () {
