@@ -28,22 +28,22 @@ define(function (require, exports, module) {
     _.extend(AbstractTest.prototype, Backbone.Events, /** @lends AbstractTest#*/{
         enabled:true,
         pass:function () {
-            this.trigger("pass");
+            this.trigger("done", true);
         },
         fail:function () {
-            this.trigger("fail");
+            this.trigger("done", false);
         },
         disable:function () {
             if (!this.enabled)
                 throw new SyntaxError("Test is already disabled.");
             this.enabled = false;
-            this.trigger("disabled");
+            this.trigger("toggle", this.enabled);
         },
         enable:function () {
             if (this.enabled)
                 throw new SyntaxError("Test is already enabled.");
             this.enabled = true;
-            this.trigger("enabled");
+            this.trigger("toggle", this.enabled);
         },
         check:function (value) {
             if (!this.enabled)
@@ -103,6 +103,7 @@ define(function (require, exports, module) {
                 this.fail();
         }
     });
+
 
     /** @class
      * @constructor
@@ -203,11 +204,11 @@ define(function (require, exports, module) {
         /** @param Validator validator*/
         same:function (validator, expected) {
             var test = new SameTest(expected);
-            test.on("pass", function () {
-                validator.pass("same");
-            });
-            test.on("fail", function () {
-                validator.fail("same");
+            test.on("done", function (passed) {
+                if (passed)
+                    validator.pass("same");
+                else
+                    validator.fail("same");
             });
             test.check(validator.value);
         },
