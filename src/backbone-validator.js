@@ -255,7 +255,7 @@ define(function (require, exports, module) {
             this.tests[test] = new testClass(rule);
         }, this);
     };
-    _.extend(Suite.prototype, /** @lends Suite#*/{
+    _.extend(Suite.prototype, Backbone.Events, /** @lends Suite#*/{
         testMap:{
             required:RequiredTest,
             type:TypeTest,
@@ -269,17 +269,18 @@ define(function (require, exports, module) {
         },
         /** @param Validator validator*/
         required:function (validator) {
-            var test = this.tests.required;
+            var name = "required";
+            var test = this.tests[name];
             test.on("done", function (passed) {
                 var existence = (validator.value !== undefined);
                 if (existence)
-                    validator.pass("required");
+                    validator.pass(name);
                 else {
                     validator.clear();
                     if (this.required)
-                        validator.fail("required");
+                        validator.fail(name);
                     else
-                        validator.pass("required");
+                        validator.pass(name);
                     validator.done();
                 }
             });
@@ -287,81 +288,88 @@ define(function (require, exports, module) {
         },
         /** @param Validator validator*/
         type:function (validator) {
-            var test = this.tests.type;
+            var name = "type";
+            var test = this.tests[name];
             test.on("done", function (passed) {
                 if (passed)
-                    validator.pass("type");
+                    validator.pass(name);
                 else {
                     validator.clear();
-                    validator.fail("type");
+                    validator.fail(name);
                     validator.done();
                 }
-            });
+            }, this);
             test.check(validator.value);
         },
         /** @param Validator validator*/
         min:function (validator) {
-            var test = this.tests.min;
+            var name = "min";
+            var test = this.tests[name];
             test.on("done", function (passed) {
                 if (passed)
-                    validator.pass("min");
+                    validator.pass(name);
                 else
-                    validator.fail("min");
+                    validator.fail(name);
             });
             test.check(validator.value);
         },
         /** @param Validator validator*/
         max:function (validator) {
-            var test = this.tests.max;
+            var name = "max";
+            var test = this.tests[name];
             test.on("done", function (passed) {
                 if (passed)
-                    validator.pass("max");
+                    validator.pass(name);
                 else
-                    validator.fail("max");
+                    validator.fail(name);
             });
             test.check(validator.value);
         },
         /** @param Validator validator*/
         range:function (validator) {
-            var test = this.tests.range;
+            var name = "range";
+            var test = this.tests[name];
             test.on("done", function (passed) {
                 if (passed)
-                    validator.pass("range");
+                    validator.pass(name);
                 else
-                    validator.fail("range");
+                    validator.fail(name);
             });
             test.check(validator.value);
         },
         /** @param Validator validator*/
         equal:function (validator) {
-            var test = this.tests.equal;
+            var name = "equal";
+            var test = this.tests[name];
             test.on("done", function (passed) {
                 if (passed)
-                    validator.pass("equal");
+                    validator.pass(name);
                 else
-                    validator.fail("equal");
+                    validator.fail(name);
             });
             test.check(validator.value);
         },
         /** @param Validator validator*/
         same:function (validator) {
-            var test = this.tests.same;
+            var name = "same";
+            var test = this.tests[name];
             test.on("done", function (passed) {
                 if (passed)
-                    validator.pass("same");
+                    validator.pass(name);
                 else
-                    validator.fail("same");
+                    validator.fail(name);
             });
             test.check(validator.value);
         },
         /** @param Validator validator*/
         contained:function (validator) {
-            var test = this.tests.contained;
+            var name = "contained";
+            var test = this.tests[name];
             test.on("done", function (passed) {
                 if (passed)
-                    validator.pass("contained");
+                    validator.pass(name);
                 else
-                    validator.fail("contained");
+                    validator.fail(name);
             });
             test.check(validator.value);
         },
@@ -369,13 +377,14 @@ define(function (require, exports, module) {
          * @param RegExp expression
          * */
         match:function (validator) {
-            var test = this.tests.match;
+            var name = "match";
+            var test = this.tests[name];
             test.on("done", function (passed) {
                 if (passed)
-                    validator.pass("match");
+                    validator.pass(name);
                 else
-                    validator.fail("match");
-            });
+                    validator.fail(name);
+            }, this);
             test.check(validator.value);
         }
     });
@@ -388,7 +397,7 @@ define(function (require, exports, module) {
         this.schema = schema;
         this.suites = {};
         _.each(this.schema, function (rules, attribute) {
-            this.suites[attribute] = new this.suite(rules);
+            this.suites[attribute] = new this.suite(rules, this);
         }, this);
     };
     _.extend(Validator.prototype, Backbone.Events, /** @lends Validator#*/{
