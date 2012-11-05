@@ -301,83 +301,28 @@ define(function (require, exports, module) {
             }, this);
             test.check(validator.value);
         },
-        /** @param Validator validator*/
         min:function (validator) {
-            var name = "min";
-            var test = this.tests[name];
-            test.on("done", function (passed) {
-                if (passed)
-                    validator.pass(name);
-                else
-                    validator.fail(name);
-            });
-            test.check(validator.value);
+            this.check(validator, "min");
         },
-        /** @param Validator validator*/
         max:function (validator) {
-            var name = "max";
-            var test = this.tests[name];
-            test.on("done", function (passed) {
-                if (passed)
-                    validator.pass(name);
-                else
-                    validator.fail(name);
-            });
-            test.check(validator.value);
+            this.check(validator, "max");
         },
-        /** @param Validator validator*/
         range:function (validator) {
-            var name = "range";
-            var test = this.tests[name];
-            test.on("done", function (passed) {
-                if (passed)
-                    validator.pass(name);
-                else
-                    validator.fail(name);
-            });
-            test.check(validator.value);
+            this.check(validator, "range");
         },
-        /** @param Validator validator*/
         equal:function (validator) {
-            var name = "equal";
-            var test = this.tests[name];
-            test.on("done", function (passed) {
-                if (passed)
-                    validator.pass(name);
-                else
-                    validator.fail(name);
-            });
-            test.check(validator.value);
+            this.check(validator, "equal");
         },
-        /** @param Validator validator*/
         same:function (validator) {
-            var name = "same";
-            var test = this.tests[name];
-            test.on("done", function (passed) {
-                if (passed)
-                    validator.pass(name);
-                else
-                    validator.fail(name);
-            });
-            test.check(validator.value);
+            this.check(validator, "same");
         },
-        /** @param Validator validator*/
         contained:function (validator) {
-            var name = "contained";
-            var test = this.tests[name];
-            test.on("done", function (passed) {
-                if (passed)
-                    validator.pass(name);
-                else
-                    validator.fail(name);
-            });
-            test.check(validator.value);
+            this.check(validator, "contained");
         },
-        /** @param Validator validator
-         * @param RegExp expression
-         * */
         match:function (validator) {
-            var name = "match";
+            this.check(validator, "match");
+        },
+        check:function (validator, name) {
             var test = this.tests[name];
             test.on("done", function (passed) {
                 if (passed)
