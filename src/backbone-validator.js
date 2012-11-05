@@ -175,6 +175,37 @@ define(function (require, exports, module) {
         }
     });
 
+    var MatchTest = function (expressions, patterns) {
+        if (typeof(expressions) == "string" || (expressions instanceof RegExp) || (expressions instanceof Array))
+            expressions = {all:expressions};
+        if (expressions.all && !(expressions.all instanceof Array))
+            expressions.all = [expressions.all];
+        if (expressions.any && !(expressions.any instanceof Array))
+            expressions.any = [expressions.any];
+        this.expressions = expressions;
+        this.patterns = patterns;
+    };
+    _.extend(MatchTest.prototype, AbstractTest.prototype, {
+        evaluate:function (value) {
+            var tester = function (expression) {
+                if (typeof(expression) == "string")
+                    expression = this.patterns[expression];
+                if (!(expression instanceof RegExp))
+                    throw new SyntaxError("Invalid expression given.");
+                return expression.test(value);
+            };
+            var valid = true;
+            if (this.expressions.all)
+                valid = valid && _.all(this.expressions.all, tester, this);
+            if (this.expressions.any)
+                valid = valid && _.any(this.expressions.any, tester, this);
+            if (valid)
+                this.pass();
+            else
+                this.fail();
+        }
+    });
+
 
     /** @class
      * @constructor
@@ -305,28 +336,14 @@ define(function (require, exports, module) {
          * @param RegExp expression
          * */
         match:function (validator, expressions) {
-            if (typeof(expressions) == "string" || (expressions instanceof RegExp) || (expressions instanceof Array))
-                expressions = {all:expressions};
-            if (expressions.all && !(expressions.all instanceof Array))
-                expressions.all = [expressions.all];
-            if (expressions.any && !(expressions.any instanceof Array))
-                expressions.any = [expressions.any];
-            var tester = function (expression) {
-                if (typeof(expression) == "string")
-                    expression = this.patterns[expression];
-                if (!(expression instanceof RegExp))
-                    throw new SyntaxError("Invalid expression given.");
-                return expression.test(validator.value);
-            };
-            var valid = true;
-            if (expressions.all)
-                valid = valid && _.all(expressions.all, tester, this);
-            if (expressions.any)
-                valid = valid && _.any(expressions.any, tester, this);
-            if (valid)
-                validator.pass("match");
-            else
-                validator.fail("match");
+            var test = new MatchTest(expressions, this.patterns);
+            test.on("done", function (passed) {
+                if (passed)
+                    validator.pass("match");
+                else
+                    validator.fail("match");
+            });
+            test.check(validator.value);
         }
     });
 
