@@ -92,12 +92,83 @@ define(function (require, exports, module) {
         }
     });
 
+    var MinTest = function (min) {
+        if (isNaN(min))
+            throw new SyntaxError("Invalid min param.");
+        this.min = min;
+    };
+    _.extend(MinTest.prototype, AbstractTest.prototype, {
+        evaluate:function (num) {
+            if (typeof (num) == "string")
+                num = num.length;
+            if (num < this.min)
+                this.fail();
+            else
+                this.pass();
+        }
+    });
+
+    var MaxTest = function (max) {
+        if (isNaN(max))
+            throw new SyntaxError("Invalid max param.");
+        this.max = max;
+    };
+    _.extend(MaxTest.prototype, AbstractTest.prototype, {
+        evaluate:function (num) {
+            if (typeof (num) == "string")
+                num = num.length;
+            if (num > this.max)
+                this.fail();
+            else
+                this.pass();
+        }
+    });
+
+    var RangeTest = function (range) {
+        if (typeof(range) != "object" || isNaN(range.min) || isNaN(range.max))
+            throw new SyntaxError("Invalid range param.");
+        _.extend(this, range);
+    };
+    _.extend(RangeTest.prototype, AbstractTest.prototype, {
+        evaluate:function (num) {
+            if (typeof (num) == "string")
+                num = num.length;
+            if (num > this.max || num < this.min)
+                this.fail();
+            else
+                this.pass();
+        }
+    });
+
     var SameTest = function (expected) {
         this.expected = expected;
     };
     _.extend(SameTest.prototype, AbstractTest.prototype, {
         evaluate:function (actual) {
             if (actual === this.expected)
+                this.pass();
+            else
+                this.fail();
+        }
+    });
+    var EqualTest = function (expected) {
+        this.expected = expected;
+    };
+    _.extend(EqualTest.prototype, AbstractTest.prototype, {
+        evaluate:function (actual) {
+            var passed = typeof(this.expected) == "object" ? _.isEqual(actual, this.expected) : actual === this.expected;
+            if (passed)
+                this.pass();
+            else
+                this.fail();
+        }
+    });
+    var ContainedTest = function (list) {
+        this.list = list;
+    };
+    _.extend(ContainedTest.prototype, AbstractTest.prototype, {
+        evaluate:function (item) {
+            if (this.list.indexOf(item) != -1)
                 this.pass();
             else
                 this.fail();
@@ -166,40 +237,47 @@ define(function (require, exports, module) {
         },
         /** @param Validator validator*/
         min:function (validator, min) {
-            if (isNaN(min))
-                throw new SyntaxError("Invalid min param.");
-            var number = typeof (validator.value) == "string" ? validator.value.length : validator.value;
-            if (number < min)
-                validator.fail("min");
-            else
-                validator.pass("min");
+            var test = new MinTest(min);
+            test.on("done", function (passed) {
+                if (passed)
+                    validator.pass("min");
+                else
+                    validator.fail("min");
+            });
+            test.check(validator.value);
         },
         /** @param Validator validator*/
         max:function (validator, max) {
-            if (isNaN(max))
-                throw new SyntaxError("Invalid max param.");
-            var number = typeof (validator.value) == "string" ? validator.value.length : validator.value;
-            if (number > max)
-                validator.fail("max");
-            else
-                validator.pass("max");
+            var test = new MaxTest(max);
+            test.on("done", function (passed) {
+                if (passed)
+                    validator.pass("max");
+                else
+                    validator.fail("max");
+            });
+            test.check(validator.value);
         },
         /** @param Validator validator*/
         range:function (validator, range) {
-            if (typeof(range) != "object" || isNaN(range.min) || isNaN(range.max))
-                throw new SyntaxError("Invalid range param.");
-            var number = typeof (validator.value) == "string" ? validator.value.length : validator.value;
-            if (number > range.max || number < range.min)
-                validator.fail("range");
-            else
-                validator.pass("range");
+            var test = new RangeTest(range);
+            test.on("done", function (passed) {
+                if (passed)
+                    validator.pass("range");
+                else
+                    validator.fail("range");
+            });
+            test.check(validator.value);
         },
         /** @param Validator validator*/
         equal:function (validator, expected) {
-            if (typeof(expected) == "object" ? _.isEqual(validator.value, expected) : validator.value === expected)
-                validator.pass("equal");
-            else
-                validator.fail("equal");
+            var test = new EqualTest(expected);
+            test.on("done", function (passed) {
+                if (passed)
+                    validator.pass("equal");
+                else
+                    validator.fail("equal");
+            });
+            test.check(validator.value);
         },
         /** @param Validator validator*/
         same:function (validator, expected) {
@@ -214,10 +292,14 @@ define(function (require, exports, module) {
         },
         /** @param Validator validator*/
         contained:function (validator, list) {
-            if (list.indexOf(validator.value) != -1)
-                validator.pass("contained");
-            else
-                validator.fail("contained");
+            var test = new ContainedTest(list);
+            test.on("done", function (passed) {
+                if (passed)
+                    validator.pass("contained");
+                else
+                    validator.fail("contained");
+            });
+            test.check(validator.value);
         },
         /** @param Validator validator
          * @param RegExp expression
