@@ -78,6 +78,18 @@ define(function (require, exports, module) {
         }
     });
 
+    var RequiredTest = function (required) {
+        this.required = required;
+    };
+    _.extend(RequiredTest.prototype, AbstractTest.prototype, {
+        evaluate:function (value) {
+            if (value !== undefined || !this.required)
+                this.pass();
+            else
+                this.fail();
+        }
+    });
+
     var TypeTest = function (type) {
         if (type == "null")
             type = null;
@@ -243,17 +255,21 @@ define(function (require, exports, module) {
     _.extend(Suite.prototype, /** @lends Suite#*/{
         /** @param Validator validator*/
         required:function (validator, required) {
-            var existence = (validator.value !== undefined);
-            if (existence)
-                validator.pass("required");
-            else {
-                validator.clear();
-                if (required)
-                    validator.fail("required");
-                else
+            var test = new RequiredTest(required);
+            test.on("done", function (passed) {
+                var existence = (validator.value !== undefined);
+                if (existence)
                     validator.pass("required");
-                validator.done();
-            }
+                else {
+                    validator.clear();
+                    if (required)
+                        validator.fail("required");
+                    else
+                        validator.pass("required");
+                    validator.done();
+                }
+            });
+            test.check(validator.value);
         },
         /** @param Validator validator*/
         type:function (validator, type) {
