@@ -78,6 +78,41 @@ define(function (require, exports, module) {
         }
     });
 
+    var TypeTest = function (type) {
+        if (type == "null")
+            type = null;
+        else if (type === undefined)
+            type = "undefined";
+        else if (typeof(type) == "function") {
+            if (type == String)
+                type = "string";
+            else if (type == Number)
+                type = "number";
+            else if (type == Boolean)
+                type = "boolean";
+            else if (type == Object)
+                type = "object";
+        }
+        this.type = type;
+    };
+    _.extend(TypeTest.prototype, AbstractTest.prototype, {
+        evaluate:function (value) {
+            var passed;
+            if (typeof(this.type) == "string")
+                passed = (typeof(value) == this.type);
+            else if (typeof(this.type) == "function")
+                passed = (value instanceof this.type);
+            else if (this.type === null)
+                passed = (value === this.type);
+            else
+                throw new SyntaxError("Invalid type param.");
+            if (passed)
+                this.pass();
+            else
+                this.fail();
+        }
+    });
+
     var MinTest = function (min) {
         if (isNaN(min))
             throw new SyntaxError("Invalid min param.");
@@ -222,36 +257,17 @@ define(function (require, exports, module) {
         },
         /** @param Validator validator*/
         type:function (validator, type) {
-            if (type == "null")
-                type = null;
-            else if (type === undefined)
-                type = "undefined";
-            else if (typeof(type) == "function" && typeof (validator.value) != "object" && typeof (validator.value) != "function") {
-                if (type == String)
-                    type = "string";
-                else if (type == Number)
-                    type = "number";
-                else if (type == Boolean)
-                    type = "boolean";
-            }
-            else if (type == Object)
-                type = "object";
-            var typeMatch;
-            if (typeof(type) == "string")
-                typeMatch = (typeof(validator.value) == type);
-            else if (typeof(type) == "function")
-                typeMatch = (validator.value instanceof type);
-            else if (type === null)
-                typeMatch = (validator.value === type);
-            else
-                throw new SyntaxError("Invalid type param.");
-            if (typeMatch)
-                validator.pass("type");
-            else {
-                validator.clear();
-                validator.fail("type");
-                validator.done();
-            }
+            var test = new TypeTest(type);
+            test.on("done", function (passed) {
+                if (passed)
+                    validator.pass("type");
+                else {
+                    validator.clear();
+                    validator.fail("type");
+                    validator.done();
+                }
+            });
+            test.check(validator.value);
         },
         /** @param Validator validator*/
         min:function (validator, min) {
