@@ -20,6 +20,91 @@ define(function (require, exports, module) {
     });
 
     /** @class
+     * @extends Backbone.Events
+     * @constructor
+     */
+    var AbstractTest = function () {
+    };
+    _.extend(AbstractTest.prototype, Backbone.Events, /** @lends AbstractTest#*/{
+        enabled:true,
+        pass:function () {
+            this.trigger("pass");
+        },
+        fail:function () {
+            this.trigger("fail");
+        },
+        disable:function () {
+            if (!this.enabled)
+                throw new SyntaxError("Test is already disabled.");
+            this.enabled = false;
+            this.trigger("disabled");
+        },
+        enable:function () {
+            if (this.enabled)
+                throw new SyntaxError("Test is already enabled.");
+            this.enabled = true;
+            this.trigger("enabled");
+        },
+        check:function (value) {
+            if (!this.enabled)
+                throw new SyntaxError("Cannot run disabled test.");
+            this.evaluate(value);
+        }
+    });
+
+    /** @class
+     * @extends AbstractTest
+     * @constructor
+     */
+    var AbstractAsyncTest = function () {
+    };
+    _.extend(AbstractAsyncTest.prototype, AbstractTest.prototype, /** @lends AbstractAsyncTest#*/ {
+        id:0,
+        tick:function () {
+            ++this.id;
+        },
+        concurrency:function (id) {
+            return id != this.id;
+        },
+        pass:function (id) {
+            if (this.concurrency(id))
+                return;
+            this.tick();
+            AbstractTest.prototype.pass.call(this);
+        },
+        fail:function (id) {
+            if (this.concurrency(id))
+                return;
+            this.tick();
+            AbstractTest.prototype.fail.call(this);
+        },
+        disable:function () {
+            this.tick();
+            AbstractTest.prototype.disable.call(this);
+        },
+        enable:function () {
+            this.tick();
+            AbstractTest.prototype.enable.call(this);
+        },
+        check:function (value) {
+            this.tick();
+            AbstractTest.prototype.check.apply(this, arguments);
+        }
+    });
+
+    var SameTest = function (expected) {
+        this.expected = expected;
+    };
+    _.extend(SameTest.prototype, AbstractTest.prototype, {
+        evaluate:function (actual) {
+            if (actual === this.expected)
+                this.pass();
+            else
+                this.fail();
+        }
+    });
+
+    /** @class
      * @constructor
      */
     var Suite = function (suite, patterns) {
@@ -117,10 +202,14 @@ define(function (require, exports, module) {
         },
         /** @param Validator validator*/
         same:function (validator, expected) {
-            if (validator.value === expected)
+            var test = new SameTest(expected);
+            test.on("pass", function () {
                 validator.pass("same");
-            else
+            });
+            test.on("fail", function () {
                 validator.fail("same");
+            });
+            test.check(validator.value);
         },
         /** @param Validator validator*/
         contained:function (validator, list) {
