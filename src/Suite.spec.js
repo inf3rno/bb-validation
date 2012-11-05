@@ -250,26 +250,6 @@ describe("Suite", function () {
         });
     });
 
-    describe("constructor", function () {
-        var defaultSuite = new Validator.Suite();
-        it("should pass if it's called from custom test", function () {
-            suite = new Validator.Suite(customTest);
-            suite.custom(validator, true);
-            expectPass();
-        });
-        it("should fail if it's called from custom test", function () {
-            suite = new Validator.Suite(customTest);
-            suite.custom(validator, false);
-            expectFail();
-        });
-        it("should override default tests", function () {
-            expect(suite.range).toEqual(defaultSuite.range);
-            suite = new Validator.Suite(overrideRange);
-            expect(suite.min).toEqual(defaultSuite.min);
-            expect(suite.range).not.toEqual(defaultSuite.range);
-        });
-    });
-
     var suite;
     var validator;
 

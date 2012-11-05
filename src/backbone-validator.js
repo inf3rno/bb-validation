@@ -248,11 +248,25 @@ define(function (require, exports, module) {
     /** @class
      * @constructor
      */
-    var Suite = function (suite, patterns) {
-        if (suite)
-            _.extend(this, suite);
+    var Suite = function (rules) {
+        this.tests = {};
+        _.each(rules, function (rule, test) {
+            var testClass = this.testMap[test];
+            this.tests[test] = new testClass(rule);
+        }, this);
     };
     _.extend(Suite.prototype, /** @lends Suite#*/{
+        testMap:{
+            required:RequiredTest,
+            type:TypeTest,
+            min:MinTest,
+            max:MaxTest,
+            range:RangeTest,
+            equal:EqualTest,
+            same:SameTest,
+            contained:ContainedTest,
+            match:MatchTest
+        },
         /** @param Validator validator*/
         required:function (validator, required) {
             var test = new RequiredTest(required);
@@ -370,15 +384,11 @@ define(function (require, exports, module) {
      * @extends Backbone.Events
      * @constructor
      */
-    var Validator = function (schema, suite) {
+    var Validator = function (schema) {
         this.schema = schema;
-        if (suite)
-            this.suite = function () {
-                return new Suite(suite);
-            };
         this.suites = {};
         _.each(this.schema, function (rules, attribute) {
-            this.suites[attribute] = new this.suite();
+            this.suites[attribute] = new this.suite(rules);
         }, this);
     };
     _.extend(Validator.prototype, Backbone.Events, /** @lends Validator#*/{

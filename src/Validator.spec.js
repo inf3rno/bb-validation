@@ -89,26 +89,6 @@ describe("Validator", function () {
                 }
             });
         });
-        it("should pending by async validators", function () {
-            schemaSet({
-                remote:{
-                    async:null
-                }
-            }, {
-                async:function (validator, param) {
-
-                }
-            });
-            valueSet({
-                remote:123
-            });
-            expectResult({});
-            expectPendings({
-                remote:[
-                    {}
-                ]
-            })
-        });
     });
 
     var validator;
