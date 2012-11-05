@@ -268,11 +268,10 @@ define(function (require, exports, module) {
             contained:ContainedTest,
             match:MatchTest
         },
-        /** @param Validator validator*/
-        required:function (validator) {
+        required:function () {
             var name = "required";
             var test = this.tests[name];
-            var value = validator.value;
+            var value = this.validator.value;
             test.on("done", function (passed) {
                 var existence = (value !== undefined);
                 if (existence)
@@ -285,11 +284,10 @@ define(function (require, exports, module) {
             }, this);
             test.check(value);
         },
-        /** @param Validator validator*/
-        type:function (validator) {
+        type:function () {
             var name = "type";
             var test = this.tests[name];
-            var value = validator.value;
+            var value = this.validator.value;
             test.on("done", function (passed) {
                 if (passed)
                     this.pass(name);
@@ -298,25 +296,25 @@ define(function (require, exports, module) {
             }, this);
             test.check(value);
         },
-        min:function (validator) {
+        min:function () {
             this.check("min");
         },
-        max:function (validator) {
+        max:function () {
             this.check("max");
         },
-        range:function (validator) {
+        range:function () {
             this.check("range");
         },
-        equal:function (validator) {
+        equal:function () {
             this.check("equal");
         },
-        same:function (validator) {
+        same:function () {
             this.check("same");
         },
-        contained:function (validator) {
+        contained:function () {
             this.check("contained");
         },
-        match:function (validator) {
+        match:function () {
             this.check("match");
         },
         check:function (name) {
@@ -371,7 +369,7 @@ define(function (require, exports, module) {
                     var check = this.suites[attribute][test];
                     if (!(check instanceof Function))
                         throw new SyntaxError("Invalid validator config: test " + test + " not exist.");
-                    check.call(this.suites[attribute], this);
+                    check.call(this.suites[attribute]);
                     if (typeof (this.stack[test]) != "boolean")
                         this.pendings.push(test);
                     return !this.isDone;
