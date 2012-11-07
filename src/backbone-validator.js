@@ -244,22 +244,37 @@ define(function (require, exports, module) {
         }
     });
 
+    var tests = {
+        required:RequiredTest,
+        type:TypeTest,
+        min:MinTest,
+        max:MaxTest,
+        range:RangeTest,
+        equal:EqualTest,
+        same:SameTest,
+        contained:ContainedTest,
+        match:MatchTest
+    };
 
     /** @class
      * @constructor
      */
     var Suite = function (rules, validator) {
         this.validator = validator;
-        this.tests = {};
-        _.each(rules, function (rule, test) {
-            var testClass = testMap[test];
-            this.tests[test] = new testClass(rule);
-        }, this);
+        this.rules = {};
         this.stack = {};
+        this.configure(rules);
     };
     _.extend(Suite.prototype, Backbone.Events, /** @lends Suite#*/{
+        tests:tests,
+        configure:function (rules) {
+            _.each(rules, function (rule, name) {
+                var Test = this.tests[name];
+                this.rules[name] = new Test(rule);
+            }, this);
+        },
         check:function (name) {
-            var test = this.tests[name];
+            var test = this.rules[name];
             var value = this.validator.value;
             test.on("done", function (passed) {
                 if (name == "required") {
@@ -372,24 +387,12 @@ define(function (require, exports, module) {
         }
     });
 
-    var testMap = {
-        required:RequiredTest,
-        type:TypeTest,
-        min:MinTest,
-        max:MaxTest,
-        range:RangeTest,
-        equal:EqualTest,
-        same:SameTest,
-        contained:ContainedTest,
-        match:MatchTest
-    };
-
     module.exports = {
         Suite:Suite,
         Validator:Validator,
         AbstractTest:AbstractTest,
         AbsratctAsyncTest:AbstractAsyncTest,
-        tests:testMap
+        tests:tests
     };
 
     _.extend(Backbone, module.exports);
