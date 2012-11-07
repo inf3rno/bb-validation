@@ -269,63 +269,31 @@ define(function (require, exports, module) {
             contained:ContainedTest,
             match:MatchTest
         },
-        required:function () {
-            var name = "required";
-            var test = this.tests[name];
-            var value = this.validator.value;
-            test.on("done", function (passed) {
-                var existence = (value !== undefined);
-                if (existence)
-                    this.pass(name);
-                else if (test.required)
-                    this.clearAndFail(name);
-                else
-                    this.clearAndPass(name);
-
-            }, this);
-            test.check(value);
-        },
-        type:function () {
-            var name = "type";
-            var test = this.tests[name];
-            var value = this.validator.value;
-            test.on("done", function (passed) {
-                if (passed)
-                    this.pass(name);
-                else
-                    this.clearAndFail(name);
-            }, this);
-            test.check(value);
-        },
-        min:function () {
-            this.check("min");
-        },
-        max:function () {
-            this.check("max");
-        },
-        range:function () {
-            this.check("range");
-        },
-        equal:function () {
-            this.check("equal");
-        },
-        same:function () {
-            this.check("same");
-        },
-        contained:function () {
-            this.check("contained");
-        },
-        match:function () {
-            this.check("match");
-        },
         check:function (name) {
             var test = this.tests[name];
             var value = this.validator.value;
             test.on("done", function (passed) {
-                if (passed)
-                    this.pass(name);
-                else
-                    this.fail(name);
+                if (name == "required") {
+                    var existence = (value !== undefined);
+                    if (existence)
+                        this.pass(name);
+                    else if (test.required)
+                        this.clearAndFail(name);
+                    else
+                        this.clearAndPass(name);
+                }
+                else if (name == "type") {
+                    if (passed)
+                        this.pass(name);
+                    else
+                        this.clearAndFail(name);
+                }
+                else {
+                    if (passed)
+                        this.pass(name);
+                    else
+                        this.fail(name);
+                }
             }, this);
             test.check(value);
         },
@@ -366,10 +334,10 @@ define(function (require, exports, module) {
             this.validator.isDone = false;
             this.clear();
             _.all(rules, function (params, test) {
-                var check = this[test];
-                if (!(check instanceof Function))
-                    throw new SyntaxError("Invalid validator config: test " + test + " not exist.");
-                check.call(this);
+                if (this[test])
+                    this[test].call(this);
+                else
+                    this.check(test);
                 if (typeof (this.stack[test]) != "boolean")
                     this.pendings.push(test);
                 return !this.validator.isDone;

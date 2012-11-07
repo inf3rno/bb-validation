@@ -266,61 +266,61 @@ describe("Suite", function () {
         suite = new Validator.Suite({
             required:true
         }, validator);
-        suite.required(validator);
+        suite.check("required");
     };
     var valueNotRequired = function () {
         suite = new Validator.Suite({
             required:false
         }, validator);
-        suite.required(validator);
+        suite.check("required");
     };
     var valueTypeOf = function (type) {
         suite = new Validator.Suite({
             type:type
         }, validator);
-        suite.type(validator);
+        suite.check("type");
     };
     var valueMin = function (min) {
         suite = new Validator.Suite({
             min:min
         }, validator);
-        suite.min(validator);
+        suite.check("min");
     };
     var valueMax = function (max) {
         suite = new Validator.Suite({
             max:max
         }, validator);
-        suite.max(validator);
+        suite.check("max");
     };
     var valueIn = function (min, max) {
         suite = new Validator.Suite({
             range:{min:min, max:max}
         }, validator);
-        suite.range(validator);
+        suite.check("range");
     };
     var valueEqual = function (expected) {
         suite = new Validator.Suite({
             equal:expected
         }, validator);
-        suite.equal(validator);
+        suite.check("equal");
     };
     var valueSame = function (expected) {
         suite = new Validator.Suite({
             same:expected
         }, validator);
-        suite.same(validator);
+        suite.check("same");
     };
     var valueContained = function (list) {
         suite = new Validator.Suite({
             contained:list
         }, validator);
-        suite.contained(validator);
+        suite.check("contained");
     };
     var valueMatch = function (pattern) {
         suite = new Validator.Suite({
             match:pattern
         }, validator);
-        suite.match(validator);
+        suite.check("match");
     };
 
     var expectFail = function () {
