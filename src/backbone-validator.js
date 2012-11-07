@@ -371,17 +371,6 @@ define(function (require, exports, module) {
                 this.value = model.get(attribute);
                 suite.validate(this.value);
             }, this);
-        },
-        pass:function (test) {
-        },
-        fail:function (test) {
-
-        },
-        done:function () {
-
-        },
-        clear:function () {
-
         }
     });
 

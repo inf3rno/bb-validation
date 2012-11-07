@@ -251,16 +251,23 @@ describe("Suite", function () {
     });
 
     var suite;
-    var validator;
+    var results;
+    var value;
 
     beforeEach(function () {
-        validator = jasmine.createSpyObj("validator", ["pass", "fail", "clear", "done"]);
+        results = {
+            pass:false,
+            fail:false,
+            clear:false,
+            done:false
+        };
+        value = undefined;
     });
 
-    var valueExists = function (value) {
-        if (value === undefined)
-            value = null;
-        validator.value = value;
+    var valueExists = function (actual) {
+        if (actual === undefined)
+            actual = null;
+        value = actual;
     };
     var valueRequired = function () {
         test("required", true);
@@ -295,42 +302,42 @@ describe("Suite", function () {
     var test = function (name, params) {
         var rules = {};
         rules[name] = params;
-        suite = new Validator.Suite(rules, validator);
+        suite = new Validator.Suite(rules);
         suite.on("all", function (event, name) {
             if (event == "testPass")
-                validator.pass(name)
+                results.pass = true;
             else if (event == "testFail")
-                validator.fail(name);
+                results.fail = true
             else if (event == "stackClear")
-                validator.clear();
+                results.clear = true
             else if (event == "suiteDone")
-                validator.done();
+                results.done = true;
         });
-        suite.check(name, validator.value);
+        suite.check(name, value);
     };
 
     var expectFail = function () {
-        expect(validator.pass).not.toHaveBeenCalled();
-        expect(validator.clear).not.toHaveBeenCalled();
-        expect(validator.fail).toHaveBeenCalled();
-        expect(validator.done).not.toHaveBeenCalled();
+        expect(results.pass).toEqual(false);
+        expect(results.clear).toEqual(false);
+        expect(results.fail).toEqual(true);
+        expect(results.done).toEqual(false);
     };
     var expectFatal = function () {
-        expect(validator.pass).not.toHaveBeenCalled();
-        expect(validator.clear).toHaveBeenCalled();
-        expect(validator.fail).toHaveBeenCalled();
-        expect(validator.done).toHaveBeenCalled();
+        expect(results.pass).toEqual(false);
+        expect(results.clear).toEqual(true);
+        expect(results.fail).toEqual(true);
+        expect(results.done).toEqual(true);
     };
     var expectPass = function () {
-        expect(validator.pass).toHaveBeenCalled();
-        expect(validator.clear).not.toHaveBeenCalled();
-        expect(validator.fail).not.toHaveBeenCalled();
-        expect(validator.done).not.toHaveBeenCalled();
+        expect(results.pass).toEqual(true);
+        expect(results.clear).toEqual(false);
+        expect(results.fail).toEqual(false);
+        expect(results.done).toEqual(false);
     };
     var expectSkip = function () {
-        expect(validator.pass).toHaveBeenCalled();
-        expect(validator.clear).toHaveBeenCalled();
-        expect(validator.fail).not.toHaveBeenCalled();
-        expect(validator.done).toHaveBeenCalled();
+        expect(results.pass).toEqual(true);
+        expect(results.clear).toEqual(true);
+        expect(results.fail).toEqual(false);
+        expect(results.done).toEqual(true);
     };
 });
