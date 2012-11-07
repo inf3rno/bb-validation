@@ -296,6 +296,16 @@ describe("Suite", function () {
         var rules = {};
         rules[name] = params;
         suite = new Validator.Suite(rules, validator);
+        suite.on("all", function (event, name) {
+            if (event == "testPass")
+                validator.pass(name)
+            else if (event == "testFail")
+                validator.fail(name);
+            else if (event == "stackClear")
+                validator.clear();
+            else if (event == "suiteDone")
+                validator.done();
+        });
         suite.check(name, validator.value);
     };
 

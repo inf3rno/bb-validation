@@ -259,20 +259,10 @@ define(function (require, exports, module) {
     /** @class
      * @constructor
      */
-    var Suite = function (rules, validator) {
+    var Suite = function (rules) {
         this.rules = {};
         this.stack = {};
         this.configure(rules);
-        this.on("all", function (event, name) {
-            if (event == "testPass")
-                validator.pass(name)
-            else if (event == "testFail")
-                validator.fail(name);
-            else if (event == "stackClear")
-                validator.clear();
-            else if (event == "suiteDone")
-                validator.done();
-        });
     };
     _.extend(Suite.prototype, Backbone.Events, /** @lends Suite#*/{
         tests:tests,
