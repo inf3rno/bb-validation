@@ -347,22 +347,4 @@ describe("Suite", function () {
         expect(validator.fail).not.toHaveBeenCalled();
         expect(validator.done).toHaveBeenCalled();
     };
-
-    var customTest = {
-        custom:function (validator, attr) {
-            if (attr)
-                validator.pass("custom");
-            else
-                validator.fail("custom");
-        }
-    };
-
-    var overrideRange = {
-        range:function (validator, attr) {
-            if (attr)
-                validator.pass("range");
-            else
-                validator.fail("range");
-        }
-    };
 });

@@ -255,6 +255,7 @@ define(function (require, exports, module) {
             var testClass = this.testMap[test];
             this.tests[test] = new testClass(rule);
         }, this);
+        this.stack = {};
     };
     _.extend(Suite.prototype, Backbone.Events, /** @lends Suite#*/{
         testMap:{
@@ -329,20 +330,53 @@ define(function (require, exports, module) {
             test.check(value);
         },
         pass:function (name) {
+            this.stack[name] = true;
             this.validator.pass(name);
         },
         fail:function (name) {
+            this.validator.isValid = false;
+            this.stack[name] = false;
             this.validator.fail(name);
         },
         clearAndPass:function (name) {
-            this.validator.clear();
-            this.validator.pass(name);
-            this.validator.done();
+            this.clear();
+            this.pass(name);
+            this.done();
         },
         clearAndFail:function (name) {
+            this.clear();
+            this.fail(name);
+            this.done();
+        },
+        clear:function () {
+            this.pendings = [];
+            this.stack = {};
+            this.validator.isValid = true;
             this.validator.clear();
-            this.validator.fail(name);
+            this.validator.pendings = this.pendings;
+            this.validator.stack = this.stack;
+        },
+        done:function () {
+            this.pendings = [];
+            this.validator.pendings = this.pendings;
+            this.validator.isDone = true;
             this.validator.done();
+        },
+        validate:function (rules, attribute) {
+            this.validator.isDone = false;
+            this.clear();
+            _.all(rules, function (params, test) {
+                var check = this[test];
+                if (!(check instanceof Function))
+                    throw new SyntaxError("Invalid validator config: test " + test + " not exist.");
+                check.call(this);
+                if (typeof (this.stack[test]) != "boolean")
+                    this.pendings.push(test);
+                return !this.validator.isDone;
+            }, this);
+            var event = this.pendings.length ? "pending" : (this.validator.isValid ? "pass" : "fail");
+            this.validator.trigger(event, attribute, this.stack);
+            this.validator.trigger(event + ":" + attribute, this.stack);
         }
     });
 
@@ -354,46 +388,30 @@ define(function (require, exports, module) {
         this.schema = schema;
         this.suites = {};
         _.each(this.schema, function (rules, attribute) {
-            this.suites[attribute] = new this.suite(rules, this);
+            var suite = new this.suite(rules, this);
+            this.suites[attribute] = suite;
         }, this);
     };
     _.extend(Validator.prototype, Backbone.Events, /** @lends Validator#*/{
         suite:Suite,
         validate:function (model) {
             _.each(this.schema, function (rules, attribute) {
+                var suite = this.suites[attribute];
                 this.attribute = attribute;
                 this.value = model.get(attribute);
-                this.isDone = false;
-                this.clear();
-                _.all(rules, function (params, test) {
-                    var check = this.suites[attribute][test];
-                    if (!(check instanceof Function))
-                        throw new SyntaxError("Invalid validator config: test " + test + " not exist.");
-                    check.call(this.suites[attribute]);
-                    if (typeof (this.stack[test]) != "boolean")
-                        this.pendings.push(test);
-                    return !this.isDone;
-                }, this);
-                var event = this.pendings.length ? "pending" : (this.isValid ? "pass" : "fail");
-                this.trigger(event, this.attribute, this.stack);
-                this.trigger(event + ":" + this.attribute, this.stack);
+                suite.validate(rules, this.attribute);
             }, this);
         },
         pass:function (test) {
-            this.stack[test] = true;
         },
         fail:function (test) {
-            this.stack[test] = false;
-            this.isValid = false;
+
         },
         done:function () {
-            this.pendings = [];
-            this.isDone = true;
+
         },
         clear:function () {
-            this.pendings = [];
-            this.isValid = true;
-            this.stack = {};
+
         }
     });
 
@@ -403,5 +421,4 @@ define(function (require, exports, module) {
     };
 
     _.extend(Backbone, module.exports);
-})
-;
+});
