@@ -260,10 +260,19 @@ define(function (require, exports, module) {
      * @constructor
      */
     var Suite = function (rules, validator) {
-        this.validator = validator;
         this.rules = {};
         this.stack = {};
         this.configure(rules);
+        this.on("all", function (event, name) {
+            if (event == "testPass")
+                validator.pass(name)
+            else if (event == "testFail")
+                validator.fail(name);
+            else if (event == "stackClear")
+                validator.clear();
+            else if (event == "suiteDone")
+                validator.done();
+        });
     };
     _.extend(Suite.prototype, Backbone.Events, /** @lends Suite#*/{
         tests:tests,
@@ -273,9 +282,8 @@ define(function (require, exports, module) {
                 this.rules[name] = new Test(rule);
             }, this);
         },
-        check:function (name) {
+        check:function (name, value) {
             var test = this.rules[name];
-            var value = this.validator.value;
             test.on("done", function (passed) {
                 if (name == "required") {
                     var existence = (value !== undefined);
@@ -303,12 +311,12 @@ define(function (require, exports, module) {
         },
         pass:function (name) {
             this.stack[name] = true;
-            this.validator.pass(name);
+            this.trigger("testPass", name);
         },
         fail:function (name) {
-            this.validator.isValid = false;
+            this.isValid = false;
             this.stack[name] = false;
-            this.validator.fail(name);
+            this.trigger("testFail", name);
         },
         clearAndPass:function (name) {
             this.clear();
@@ -323,32 +331,25 @@ define(function (require, exports, module) {
         clear:function () {
             this.pendings = [];
             this.stack = {};
-            this.validator.isValid = true;
-            this.validator.clear();
-            this.validator.pendings = this.pendings;
-            this.validator.stack = this.stack;
+            this.isValid = true;
+            this.trigger("stackClear");
         },
         done:function () {
             this.pendings = [];
-            this.validator.pendings = this.pendings;
-            this.validator.isDone = true;
-            this.validator.done();
+            this.isDone = true;
+            this.trigger("suiteDone");
         },
-        validate:function (attribute) {
-            this.validator.isDone = false;
+        validate:function (value) {
+            this.isDone = false;
             this.clear();
             _.all(this.rules, function (rule, name) {
-                if (this[name])
-                    this[name].call(this);
-                else
-                    this.check(name);
+                this.check(name, value);
                 if (typeof (this.stack[name]) != "boolean")
                     this.pendings.push(name);
-                return !this.validator.isDone;
+                return !this.isDone;
             }, this);
-            var event = this.pendings.length ? "pending" : (this.validator.isValid ? "pass" : "fail");
-            this.validator.trigger(event, attribute, this.stack);
-            this.validator.trigger(event + ":" + attribute, this.stack);
+            var event = this.pendings.length ? "pending" : (this.isValid ? "pass" : "fail");
+            this.trigger(event, this.stack);
         }
     });
 
@@ -365,6 +366,12 @@ define(function (require, exports, module) {
         configure:function (schema) {
             _.each(schema, function (rules, attribute) {
                 var suite = new this.suite(rules, this);
+                suite.on("all", function (event, stack) {
+                    if (event == "pass" || event == "fail" || event == "pending") {
+                        this.trigger(event, attribute, stack);
+                        this.trigger(event + ":" + attribute, stack);
+                    }
+                }, this);
                 this.suites[attribute] = suite;
             }, this);
         },
@@ -372,7 +379,7 @@ define(function (require, exports, module) {
             _.each(this.suites, function (suite, attribute) {
                 this.attribute = attribute;
                 this.value = model.get(attribute);
-                suite.validate(this.attribute);
+                suite.validate(this.value);
             }, this);
         },
         pass:function (test) {

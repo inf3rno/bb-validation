@@ -263,64 +263,40 @@ describe("Suite", function () {
         validator.value = value;
     };
     var valueRequired = function () {
-        suite = new Validator.Suite({
-            required:true
-        }, validator);
-        suite.check("required");
+        test("required", true);
     };
     var valueNotRequired = function () {
-        suite = new Validator.Suite({
-            required:false
-        }, validator);
-        suite.check("required");
+        test("required", false);
     };
     var valueTypeOf = function (type) {
-        suite = new Validator.Suite({
-            type:type
-        }, validator);
-        suite.check("type");
+        test("type", type);
     };
     var valueMin = function (min) {
-        suite = new Validator.Suite({
-            min:min
-        }, validator);
-        suite.check("min");
+        test("min", min);
     };
     var valueMax = function (max) {
-        suite = new Validator.Suite({
-            max:max
-        }, validator);
-        suite.check("max");
+        test("max", max);
     };
     var valueIn = function (min, max) {
-        suite = new Validator.Suite({
-            range:{min:min, max:max}
-        }, validator);
-        suite.check("range");
+        test("range", {min:min, max:max});
     };
     var valueEqual = function (expected) {
-        suite = new Validator.Suite({
-            equal:expected
-        }, validator);
-        suite.check("equal");
+        test("equal", expected);
     };
     var valueSame = function (expected) {
-        suite = new Validator.Suite({
-            same:expected
-        }, validator);
-        suite.check("same");
+        test("same", expected);
     };
     var valueContained = function (list) {
-        suite = new Validator.Suite({
-            contained:list
-        }, validator);
-        suite.check("contained");
+        test("contained", list);
     };
     var valueMatch = function (pattern) {
-        suite = new Validator.Suite({
-            match:pattern
-        }, validator);
-        suite.check("match");
+        test("match", pattern);
+    };
+    var test = function (name, params) {
+        var rules = {};
+        rules[name] = params;
+        suite = new Validator.Suite(rules, validator);
+        suite.check(name, validator.value);
     };
 
     var expectFail = function () {
