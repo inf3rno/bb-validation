@@ -252,23 +252,12 @@ define(function (require, exports, module) {
         this.validator = validator;
         this.tests = {};
         _.each(rules, function (rule, test) {
-            var testClass = this.testMap[test];
+            var testClass = testMap[test];
             this.tests[test] = new testClass(rule);
         }, this);
         this.stack = {};
     };
     _.extend(Suite.prototype, Backbone.Events, /** @lends Suite#*/{
-        testMap:{
-            required:RequiredTest,
-            type:TypeTest,
-            min:MinTest,
-            max:MaxTest,
-            range:RangeTest,
-            equal:EqualTest,
-            same:SameTest,
-            contained:ContainedTest,
-            match:MatchTest
-        },
         check:function (name) {
             var test = this.tests[name];
             var value = this.validator.value;
@@ -383,9 +372,24 @@ define(function (require, exports, module) {
         }
     });
 
+    var testMap = {
+        required:RequiredTest,
+        type:TypeTest,
+        min:MinTest,
+        max:MaxTest,
+        range:RangeTest,
+        equal:EqualTest,
+        same:SameTest,
+        contained:ContainedTest,
+        match:MatchTest
+    };
+
     module.exports = {
         Suite:Suite,
-        Validator:Validator
+        Validator:Validator,
+        AbstractTest:AbstractTest,
+        AbsratctAsyncTest:AbstractAsyncTest,
+        tests:testMap
     };
 
     _.extend(Backbone, module.exports);
