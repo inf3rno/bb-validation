@@ -334,16 +334,16 @@ define(function (require, exports, module) {
             this.validator.isDone = true;
             this.validator.done();
         },
-        validate:function (rules, attribute) {
+        validate:function (attribute) {
             this.validator.isDone = false;
             this.clear();
-            _.all(rules, function (params, test) {
-                if (this[test])
-                    this[test].call(this);
+            _.all(this.rules, function (rule, name) {
+                if (this[name])
+                    this[name].call(this);
                 else
-                    this.check(test);
-                if (typeof (this.stack[test]) != "boolean")
-                    this.pendings.push(test);
+                    this.check(name);
+                if (typeof (this.stack[name]) != "boolean")
+                    this.pendings.push(name);
                 return !this.validator.isDone;
             }, this);
             var event = this.pendings.length ? "pending" : (this.validator.isValid ? "pass" : "fail");
@@ -357,21 +357,22 @@ define(function (require, exports, module) {
      * @constructor
      */
     var Validator = function (schema) {
-        this.schema = schema;
         this.suites = {};
-        _.each(this.schema, function (rules, attribute) {
-            var suite = new this.suite(rules, this);
-            this.suites[attribute] = suite;
-        }, this);
+        this.configure(schema);
     };
     _.extend(Validator.prototype, Backbone.Events, /** @lends Validator#*/{
         suite:Suite,
+        configure:function (schema) {
+            _.each(schema, function (rules, attribute) {
+                var suite = new this.suite(rules, this);
+                this.suites[attribute] = suite;
+            }, this);
+        },
         validate:function (model) {
-            _.each(this.schema, function (rules, attribute) {
-                var suite = this.suites[attribute];
+            _.each(this.suites, function (suite, attribute) {
                 this.attribute = attribute;
                 this.value = model.get(attribute);
-                suite.validate(rules, this.attribute);
+                suite.validate(this.attribute);
             }, this);
         },
         pass:function (test) {
