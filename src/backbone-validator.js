@@ -74,6 +74,7 @@ define(function (require, exports, module) {
         },
         check:function (value) {
             this.tick();
+            this.trigger("pending");
             AbstractTest.prototype.check.apply(this, arguments);
         }
     });
@@ -244,6 +245,24 @@ define(function (require, exports, module) {
         }
     });
 
+    var CallbackTest = function (callback) {
+        this.callback = callback;
+    };
+    _.extend(CallbackTest.prototype, AbstractAsyncTest.prototype, {
+        evaluate:function (value) {
+            var id = this.id;
+            this.callback(value, function (passed) {
+                this.done(id, passed);
+            }.bind(this));
+        },
+        done:function (id, passed) {
+            if (passed)
+                this.pass(id);
+            else
+                this.fail(id);
+        }
+    });
+
     var tests = {
         required:RequiredTest,
         type:TypeTest,
@@ -253,7 +272,8 @@ define(function (require, exports, module) {
         equal:EqualTest,
         same:SameTest,
         contained:ContainedTest,
-        match:MatchTest
+        match:MatchTest,
+        callback:CallbackTest
     };
 
     /** @class
@@ -274,6 +294,9 @@ define(function (require, exports, module) {
         },
         check:function (name, value) {
             var test = this.rules[name];
+            test.on("pending", function () {
+
+            }, this);
             test.on("done", function (passed) {
                 if (name == "required") {
                     var existence = (value !== undefined);
@@ -378,7 +401,7 @@ define(function (require, exports, module) {
         Suite:Suite,
         Validator:Validator,
         AbstractTest:AbstractTest,
-        AbsratctAsyncTest:AbstractAsyncTest,
+        AbstractAsyncTest:AbstractAsyncTest,
         tests:tests
     };
 

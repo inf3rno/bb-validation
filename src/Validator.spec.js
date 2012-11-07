@@ -123,11 +123,6 @@ describe("Validator", function () {
     var valueSet = function (values) {
         model.set(values);
     };
-    var validateIfNecessary = function () {
-        if (!validated)
-            validator.validate(model);
-        validated = true;
-    };
     var expectResult = function (expected) {
         validateIfNecessary();
         expect(results).toEqual(expected);
@@ -135,5 +130,10 @@ describe("Validator", function () {
     var expectPendings = function (expected) {
         validateIfNecessary();
         expect(pendings).toEqual(expected);
-    }
+    };
+    var validateIfNecessary = function () {
+        if (!validated)
+            validator.validate(model);
+        validated = true;
+    };
 });
