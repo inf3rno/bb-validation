@@ -89,11 +89,11 @@ define(function (require, exports, module) {
         },
         evaluate:function (value) {
             if (value !== undefined) {
-                this.trigger("enableAll");
+                this.trigger("toggleAll", true);
                 this.pass();
             }
             else {
-                this.trigger("disableAll");
+                this.trigger("toggleAll", false);
                 if (this.required)
                     this.fail();
                 else
@@ -131,10 +131,12 @@ define(function (require, exports, module) {
             else
                 throw new SyntaxError("Invalid type param.");
 
-            if (passed)
+            if (passed) {
+                this.trigger("toggleAll", true);
                 this.pass();
+            }
             else {
-                this.trigger("disableAll");
+                this.trigger("toggleAll", false);
                 this.enable();
                 this.fail();
             }
@@ -312,19 +314,20 @@ define(function (require, exports, module) {
             test.on("pending", function () {
 
             }, this);
-            test.on("enableAll", function () {
-                _.each(this.rules, function (rule) {
-                    if (!rule.enabled)
-                        rule.enable();
-                });
-            }, this);
-            test.on("disableAll", function () {
-                _.each(this.rules, function (rule) {
-                    if (rule.enabled)
-                        rule.disable();
-                });
-                this.clear();
-                this.done();
+            test.on("toggleAll", function (enabled) {
+                if (enabled)
+                    _.each(this.rules, function (rule) {
+                        if (!rule.enabled)
+                            rule.enable();
+                    });
+                else {
+                    _.each(this.rules, function (rule) {
+                        if (rule.enabled)
+                            rule.disable();
+                    });
+                    this.clear();
+                    this.done();
+                }
             }, this);
             test.on("done", function (passed) {
                 if (passed)
