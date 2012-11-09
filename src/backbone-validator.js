@@ -83,11 +83,22 @@ define(function (require, exports, module) {
         this.required = required;
     };
     _.extend(RequiredTest.prototype, AbstractTest.prototype, {
+        disable:function () {
+        },
+        enable:function () {
+        },
         evaluate:function (value) {
-            if (value !== undefined || !this.required)
+            if (value !== undefined) {
+                this.trigger("enableAll");
                 this.pass();
-            else
-                this.fail();
+            }
+            else {
+                this.trigger("disableAll");
+                if (this.required)
+                    this.fail();
+                else
+                    this.pass();
+            }
         }
     });
 
@@ -119,10 +130,14 @@ define(function (require, exports, module) {
                 passed = (value === this.type);
             else
                 throw new SyntaxError("Invalid type param.");
+
             if (passed)
                 this.pass();
-            else
+            else {
+                this.trigger("disableAll");
+                this.enable();
                 this.fail();
+            }
         }
     });
 
@@ -297,28 +312,25 @@ define(function (require, exports, module) {
             test.on("pending", function () {
 
             }, this);
+            test.on("enableAll", function () {
+                _.each(this.rules, function (rule) {
+                    if (!rule.enabled)
+                        rule.enable();
+                });
+            }, this);
+            test.on("disableAll", function () {
+                _.each(this.rules, function (rule) {
+                    if (rule.enabled)
+                        rule.disable();
+                });
+                this.clear();
+                this.done();
+            }, this);
             test.on("done", function (passed) {
-                if (name == "required") {
-                    var existence = (value !== undefined);
-                    if (existence)
-                        this.pass(name);
-                    else if (test.required)
-                        this.clearAndFail(name);
-                    else
-                        this.clearAndPass(name);
-                }
-                else if (name == "type") {
-                    if (passed)
-                        this.pass(name);
-                    else
-                        this.clearAndFail(name);
-                }
-                else {
-                    if (passed)
-                        this.pass(name);
-                    else
-                        this.fail(name);
-                }
+                if (passed)
+                    this.pass(name);
+                else
+                    this.fail(name);
             }, this);
             test.check(value);
         },
