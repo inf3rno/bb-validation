@@ -304,38 +304,39 @@ define(function (require, exports, module) {
     _.extend(Suite.prototype, Backbone.Events, /** @lends Suite#*/{
         tests:tests,
         configure:function (rules) {
-            _.each(rules, function (rule, name) {
+            _.each(rules, function (settings, name) {
                 var Test = this.tests[name];
-                this.rules[name] = new Test(rule);
+                var rule = new Test(settings);
+                rule.on("pending", function () {
+
+                }, this);
+                rule.on("toggleAll", function (enabled) {
+                    if (enabled)
+                        _.each(this.rules, function (rule) {
+                            if (!rule.enabled)
+                                rule.enable();
+                        });
+                    else {
+                        _.each(this.rules, function (rule) {
+                            if (rule.enabled)
+                                rule.disable();
+                        });
+                        this.clear();
+                        this.done();
+                    }
+                }, this);
+                rule.on("done", function (passed) {
+                    if (passed)
+                        this.pass(name);
+                    else
+                        this.fail(name);
+                }, this);
+                this.rules[name] = rule;
             }, this);
         },
         check:function (name, value) {
-            var test = this.rules[name];
-            test.on("pending", function () {
-
-            }, this);
-            test.on("toggleAll", function (enabled) {
-                if (enabled)
-                    _.each(this.rules, function (rule) {
-                        if (!rule.enabled)
-                            rule.enable();
-                    });
-                else {
-                    _.each(this.rules, function (rule) {
-                        if (rule.enabled)
-                            rule.disable();
-                    });
-                    this.clear();
-                    this.done();
-                }
-            }, this);
-            test.on("done", function (passed) {
-                if (passed)
-                    this.pass(name);
-                else
-                    this.fail(name);
-            }, this);
-            test.check(value);
+            var rule = this.rules[name];
+            rule.check(value);
         },
         pass:function (name) {
             this.stack[name] = true;
@@ -345,16 +346,6 @@ define(function (require, exports, module) {
             this.isValid = false;
             this.stack[name] = false;
             this.trigger("testFail", name);
-        },
-        clearAndPass:function (name) {
-            this.clear();
-            this.pass(name);
-            this.done();
-        },
-        clearAndFail:function (name) {
-            this.clear();
-            this.fail(name);
-            this.done();
         },
         clear:function () {
             this.pendings = [];
@@ -372,6 +363,7 @@ define(function (require, exports, module) {
             this.clear();
             _.all(this.rules, function (rule, name) {
                 this.check(name, value);
+
                 if (typeof (this.stack[name]) != "boolean")
                     this.pendings.push(name);
                 return !this.isDone;
