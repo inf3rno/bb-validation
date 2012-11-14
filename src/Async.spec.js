@@ -2,7 +2,6 @@ var _ = require("underscore"),
     Backbone = require("backbone"),
     async = require("async");
 
-
 describe("async", function () {
     describe("auto - only with sync tests, I suppose it works by async tests too", function () {
         it("should call dependencies before callback", function () {
@@ -81,11 +80,60 @@ describe("async", function () {
                     callback(existence ? null : end);
                 }
             });
-            expect(order).toEqual(["existence", "string", "min"]);
+            expect(order).toEqual(["existence", "string", "min" ]);
             expect(results).toEqual({string:true, min:true});
         });
 
+        it("should call dependencies just once", function () {
+            var depCall = 0;
+            async.auto({
+                c:["a", function (callback) {
+                    ++depCall;
+                    callback();
+                }],
+                b:["a", function (callback) {
+                    callback();
+                }],
+                a:function (callback) {
+                    callback();
+                }
+            });
+            expect(depCall).toEqual(1);
+        });
+
+        it("should call tasks semi-independent of the order of the property list (so we cannot count on this feature)", function () {
+            var order = [];
+            var f = {
+                a:function (callback) {
+                    order.push("a");
+                    callback();
+                },
+                b:["a", function (callback) {
+                    order.push("b");
+                    callback();
+                }],
+                c:["a", function (callback) {
+                    order.push("c");
+                    callback();
+                }]
+            };
+            async.auto({
+                b:f.b,
+                c:f.c,
+                a:f.a
+            });
+            expect(order).not.toEqual(["a", "b", "c"]);
+
+            order = [];
+            async.auto({
+                a:f.a,
+                b:f.b,
+                c:f.c
+            });
+            expect(order).toEqual(["a", "b", "c"]);
+        });
+
+
     });
-})
-;
+});
 
