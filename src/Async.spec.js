@@ -133,6 +133,18 @@ describe("async", function () {
             expect(order).toEqual(["a", "b", "c"]);
         });
 
+        it("should pass object pointers to results", function () {
+            var o = {};
+            async.auto({
+                env:function (callback, env) {
+                    env.o = o;
+                    callback();
+                },
+                test:["env", function (callback, env) {
+                    expect(env.o).toBe(o);
+                }]
+            });
+        });
 
     });
 });
