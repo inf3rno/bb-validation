@@ -6,48 +6,73 @@ var _ = require("underscore"),
 var ValidatorProvider = function () {
 };
 _.extend(ValidatorProvider.prototype, /** @lends ValidatorProvider#*/ {
-    createValidator:function (config) {
-        var provider = this;
+    validator:function (config) {
+        var tests = this.selector(config);
         var validator = function (value) {
             var results = {};
-            var tests = {
-                environment:function (callback, env) {
-                    env.config = config;
-                    env.value = value;
-                    env.results = results;
-                    callback();
-                }
-            };
-            _.each(provider.templates, function (template, name) {
-                if (config.hasOwnProperty(name))
-                    tests[name] = template;
+            _.all(tests, function (test, key) {
+                return test.call(results, value, config[key], key) !== false;
             });
-            async.auto(tests);
             return results;
         };
         return validator;
     },
     templates:{
-        required:["environment", function (callback, env) {
-            var existence = (env.value !== undefined);
-            var passed = (!env.config.required || existence);
-            env.results.required = passed;
-            callback(existence ? null : true);
+        required:function (value, required, key) {
+            var existence = (value !== undefined);
+            var passed = (!required || existence);
+            this[key] = passed;
+            return existence;
+        },
+        type:["required", function (value, type, key) {
+            var passed = (typeof(value) == type);
+            this[key] = passed;
+            return passed;
         }],
-        type:["required", function (callback, env) {
-            var passed = (typeof(env.value) == env.config.type);
-            env.results.type = passed;
-            callback(passed ? null : true);
+        min:["type", function (value, min, key) {
+            this[key] = (value.length >= min);
         }],
-        min:["type", function (callback, env) {
-            env.results.min = (env.value.length >= env.config.min);
-            callback();
-        }],
-        max:["type", function (callback, env) {
-            env.results.max = (env.value.length < env.config.max);
-            callback();
+        max:["type", function (value, max, key) {
+            this[key] = (value.length < max);
         }]
-    }
+    },
+    selector:(function () {
+        var need = function (key) {
+            if (!(key in this.templates))
+                throw new SyntaxError("The " + key + " is not a registered test template.");
+        };
+        var dependencies = function (key) {
+            var template = this.templates[key];
+            if (template instanceof Array)
+                return template.slice(0, -1);
+            else
+                return [];
+        };
+        var template = function (key) {
+            var template = this.templates[key];
+            if (template instanceof Array)
+                return template[template.length - 1];
+            else
+                return template;
+        };
+        var unfold = function (key, tests) {
+            need.call(this, key);
+            _.each(dependencies.call(this, key), function (key) {
+                if (!(key in tests))
+                    unfold.call(this, key, tests);
+            }, this);
+            tests[key] = template.call(this, key);
+        };
+        return function (config) {
+            var tests = {};
+            _.each(config, function (params, key) {
+                unfold.call(this, key, tests);
+            }, this);
+            return tests;
+        };
+    })()
+
+
 });
 
 describe("validator", function () {
@@ -56,7 +81,7 @@ describe("validator", function () {
     describe("call", function () {
 
         it("returns results", function () {
-            var validate = provider.createValidator({
+            var validate = provider.validator({
                 required:true,
                 type:"string",
                 min:3,
