@@ -1,6 +1,6 @@
 var _ = require("underscore"),
     Backbone = require("backbone"),
-    TaskRunner = require("./AsyncTaskRunner.js");
+    TaskRunner = require("./backbone-validator.js").TaskRunner;
 
 describe("basic async with underscore", function () {
     describe("sync series", function () {

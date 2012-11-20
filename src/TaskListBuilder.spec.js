@@ -1,5 +1,5 @@
 var _ = require("underscore"),
-    TaskListBuilder = require("./TaskListBuilder");
+    TaskListBuilder = require("./backbone-validator.js").TaskListBuilder;
 
 describe("TaskListBuilder", function () {
 
