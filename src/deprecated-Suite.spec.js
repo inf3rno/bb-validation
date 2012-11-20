@@ -1,6 +1,6 @@
 var _ = require("underscore"),
     Backbone = require("backbone"),
-    Validator = require("./backbone-validator");
+    Validator = require("./deprecated-backbone-validator");
 
 describe("Suite", function () {
 
