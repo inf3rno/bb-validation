@@ -1,9 +1,9 @@
 var _ = require("underscore"),
-    TaskListBuilder = require("./backbone-validator.js").TaskListBuilder;
+    InterdependentTaskSeriesBuilder = require("./backbone-validator.js").InterdependentTaskSeriesBuilder;
 
-describe("TaskListBuilder", function () {
+describe("InterdependentTaskSeriesBuilder", function () {
 
-    describe("createTaskList", function () {
+    describe("createTasks", function () {
         it("returns empty tasks by empty config", function () {
             expectTaskOrder(
                 [],
@@ -107,7 +107,7 @@ describe("TaskListBuilder", function () {
         _.each(params, function (key) {
             config[key] = null;
         });
-        var actual = builder.createTaskList(config);
+        var actual = builder.createTasks(config);
         var actualKeys = [];
         var actualValues = [];
         _.each(actual, function (task, storeKey) {
@@ -150,5 +150,5 @@ describe("TaskListBuilder", function () {
         c_a:["a", tasks.c],
         c_a_b:["a", "b", tasks.c]
     };
-    var builder = new TaskListBuilder(taskStore);
+    var builder = new InterdependentTaskSeriesBuilder(taskStore);
 });

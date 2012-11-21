@@ -1,6 +1,6 @@
 var _ = require("underscore"),
     Backbone = require("backbone"),
-    TaskRunner = require("./backbone-validator.js").TaskRunner;
+    AsyncSeriesTaskRunner = require("./backbone-validator.js").AsyncSeriesTaskRunner;
 
 describe("basic async with underscore", function () {
     describe("sync series", function () {
@@ -142,7 +142,7 @@ describe("basic async with underscore", function () {
     };
 
     var expectAsync = function (expected, params) {
-        var taskRunner = new TaskRunner(params.tasks, params.config);
+        var taskRunner = new AsyncSeriesTaskRunner(params.tasks, params.config);
         var buffer = log(taskRunner);
         runs(function () {
             taskRunner.run(params.value);
@@ -153,7 +153,7 @@ describe("basic async with underscore", function () {
         });
     };
     var expectConcurrent = function (expected, params) {
-        var taskRunner = new TaskRunner(params.tasks, params.config);
+        var taskRunner = new AsyncSeriesTaskRunner(params.tasks, params.config);
         var buffer = log(taskRunner);
         runs(function () {
             _.each(params.values, function (value) {
@@ -168,7 +168,7 @@ describe("basic async with underscore", function () {
         });
     };
     var expectSync = function (expected, params) {
-        var taskRunner = new TaskRunner(params.tasks, params.config);
+        var taskRunner = new AsyncSeriesTaskRunner(params.tasks, params.config);
         var buffer = log(taskRunner);
         taskRunner.run(params.value);
         expect(buffer).toEqual(expected);
