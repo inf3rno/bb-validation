@@ -33,8 +33,8 @@ var toRegExp = function (value) {
 
 var tests = {
     required:function (value, required, done) {
-        var existence = value === undefined;
-        done(!existence, existence || !required);
+        var existence = value !== undefined;
+        done(!existence ? 1 : 0, existence || !required);
     },
     type:["required", function (value, type, done) {
         var passed;
@@ -44,31 +44,52 @@ var tests = {
             passed = (value instanceof type);
         else
             passed = (value === type);
-        done(!passed, passed);
+        done(!passed ? 1 : 0, passed);
     }],
     min:["type", function (value, min, done) {
         var num = toNumber(value);
-        done(null, num >= min);
+        var err;
+        if (num < min)
+            err = 1;
+        else
+            err = 0;
+        done(err, !err);
     }],
     max:["type", function (value, max, done) {
         var num = toNumber(value);
-        done(null, num <= max);
+        var err;
+        if (num > max)
+            err = 1;
+        else
+            err = 0;
+        done(err, !err);
     }],
     range:["type", function (value, range, done) {
         var num = toNumber(value);
-        done(null, num >= range.min && num <= range.max);
+        var err;
+        if (num < range.min)
+            err = 1;
+        else if (num > range.max)
+            err = 2;
+        else
+            err = 0;
+        done(err, !err);
     }],
     same:["required", function (actual, expected, done) {
-        done(null, actual === expected);
+        var valid = actual === expected;
+        done(valid ? 0 : 1, valid);
     }],
     equal:["required", function (actual, expected, done) {
+        var valid;
         if (typeof(expected) == "object")
-            done(null, _.isEqual(actual, expected));
+            valid = _.isEqual(actual, expected);
         else
-            done(null, actual === expected);
+            valid = actual === expected;
+        done(valid ? 0 : 1, valid);
     }],
     contained:["required", function (item, list, done) {
-        done(null, list.indexOf(item) != -1);
+        var valid = list.indexOf(item) != -1;
+        done(valid ? 0 : 1, valid);
     }],
     match:["type", function (value, expressions, done) {
         var match = function (expression) {
@@ -79,7 +100,7 @@ var tests = {
             valid = false;
         if (expressions.any && !_.any(expressions.any, match))
             valid = false;
-        done(null, valid);
+        done(valid ? 0 : 1, valid);
     }]
 };
 
@@ -102,25 +123,25 @@ var checks = {
             else if (type == Object)
                 type = "object";
         }
-        if (type !== null && typeof(type) != "string" && !(type instanceof Function))
+        if (type !== null && (typeof(type) != "string" || ["undefined", "boolean", "number", "string", "object", "function"].indexOf(type) == -1) && !(type instanceof Function))
             throw new Error("Invalid config." + key + ": must be Function or type or null.");
         this[key] = type;
     },
     min:function (min, key) {
-        if (isNaN(min))
+        if (typeof(min) != "number" || isNaN(min))
             throw new Error("Invalid config." + key + ": must be number.");
     },
     max:function (max, key) {
-        if (isNaN(max))
+        if (typeof(max) != "number" || isNaN(max))
             throw new Error("Invalid config." + key + ": must be number.");
     },
     range:function (range, key) {
-        if (range instanceof Array)
+        if ((range instanceof Array) && range.length == 2 && typeof(range[0]) == "number" && !isNaN(range[0]) && typeof(range[1]) == "number" && !isNaN(range[1]))
             this[key] = range = {
                 min:Math.min(range[0], range[1]),
                 max:Math.max(range[0], range[1])
             };
-        if (typeof(range) != "object" || isNaN(range.min) || isNaN(range.max))
+        if (typeof(range) != "object" || typeof(range.min) != "number" || isNaN(range.min) || typeof(range.max) != "number" || isNaN(range.max) || range.max < range.min)
             throw new Error("Invalid config." + key + ": must be range.");
     },
     contained:function (list, key) {
@@ -133,14 +154,14 @@ var checks = {
         if (!_.size(expressions))
             throw new Error("Invalid config." + key + ": empty config given.");
         _.each(expressions, function (patterns, operator) {
-            if (operator != "any" || operator != "all")
+            if (operator != "any" && operator != "all")
                 throw new Error("Invalid config." + key + ": invalid operator[" + operator + "] given.");
             if (!(patterns instanceof Array))
-                this[operator] = patterns = [patterns];
+                expressions[operator] = patterns = [patterns];
             if (!_.size(patterns))
                 throw new Error("Invalid config." + key + ": empty operator." + operator + " given.");
             _.each(patterns, function (pattern, index) {
-                this[index] = toRegExp(pattern);
+                patterns[index] = toRegExp(pattern);
             });
         });
         this[key] = expressions;
