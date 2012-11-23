@@ -32,11 +32,11 @@ var toRegExp = function (value) {
 };
 
 var tests = {
-    required:function (value, required, done) {
+    required:function (done, value, required) {
         var existence = value !== undefined;
         done(!existence ? 1 : 0, existence || !required);
     },
-    type:["required", function (value, type, done) {
+    type:["required", function (done, value, type) {
         var passed;
         if (typeof(type) == "string")
             passed = (typeof(value) == type);
@@ -46,7 +46,7 @@ var tests = {
             passed = (value === type);
         done(!passed ? 1 : 0, passed);
     }],
-    min:["type", function (value, min, done) {
+    min:["type", function (done, value, min) {
         var num = toNumber(value);
         var err;
         if (num < min)
@@ -55,7 +55,7 @@ var tests = {
             err = 0;
         done(err, !err);
     }],
-    max:["type", function (value, max, done) {
+    max:["type", function (done, value, max) {
         var num = toNumber(value);
         var err;
         if (num > max)
@@ -64,7 +64,7 @@ var tests = {
             err = 0;
         done(err, !err);
     }],
-    range:["type", function (value, range, done) {
+    range:["type", function (done, value, range) {
         var num = toNumber(value);
         var err;
         if (num < range.min)
@@ -75,11 +75,11 @@ var tests = {
             err = 0;
         done(err, !err);
     }],
-    same:["required", function (actual, expected, done) {
+    same:["required", function (done, actual, expected) {
         var valid = actual === expected;
         done(valid ? 0 : 1, valid);
     }],
-    equal:["required", function (actual, expected, done) {
+    equal:["required", function (done, actual, expected) {
         var valid;
         if (typeof(expected) == "object")
             valid = _.isEqual(actual, expected);
@@ -87,11 +87,11 @@ var tests = {
             valid = actual === expected;
         done(valid ? 0 : 1, valid);
     }],
-    contained:["required", function (item, list, done) {
+    contained:["required", function (done, item, list) {
         var valid = list.indexOf(item) != -1;
         done(valid ? 0 : 1, valid);
     }],
-    match:["type", function (value, expressions, done) {
+    match:["type", function (done, value, expressions) {
         var match = function (expression) {
             return expression.test(value);
         };

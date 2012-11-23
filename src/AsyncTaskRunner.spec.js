@@ -114,28 +114,28 @@ describe("basic async with underscore", function () {
 
     });
 
-    var callNext = function (value, config, done) {
+    var callNext = function (done, value, config) {
         var err = null;
         var result = null;
         done(err, result);
     };
-    var delayNext = function (value, config, done) {
+    var delayNext = function (done, value, config) {
         var err = null;
         var result = null;
         setTimeout(function () {
             done(err, result);
         }, 1);
     };
-    var raiseError = function (value, config, done) {
+    var raiseError = function (done, value, config) {
         done(true, null);
     };
-    var raiseErrorIfValueEqualsConfig = function (value, config, done) {
+    var raiseErrorIfValueEqualsConfig = function (done, value, config) {
         done(value == config, null);
     };
     var emptyTask = function () {
 
     };
-    var abortIfValueEqualsConfig = function (value, config, done) {
+    var abortIfValueEqualsConfig = function (done, value, config) {
         if (value == config)
             this.abort();
         done(null, null);

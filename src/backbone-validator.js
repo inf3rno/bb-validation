@@ -70,7 +70,7 @@ AsyncSeriesTaskRunner.prototype = {
                 else
                     wrappedTasks.call(this, value, id);
             }.bind(this);
-            task.call(this.context, value, this.config[key], done);
+            task.call(this.context, done, value, this.config[key]);
         }.bind(this);
     },
     end:function (value, id) {
