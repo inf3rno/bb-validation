@@ -51,36 +51,41 @@ AsyncSeriesTaskRunner.prototype = {
         if (!context)
             context = this;
         ++this.id;
+        this.running[this.id] = context;
         this.start(value, this.id, context);
     },
-    start:function (value, id, context) {
-        this.running[id] = true;
-        this.trigger("start", context);
-        this.taskRunner(value, id, context);
+    start:function (value, id) {
+        this.trigger("start", this.running[id]);
+        this.taskRunner(value, id);
     },
     wrapTaskSeries:function (wrappedTasks, task, key) {
-        return function (value, id, context) {
+        return function (value, id) {
             if (!(id in this.running))
                 return;
             var done = function (error, result) {
-                this.trigger("done", key, result, context);
+                this.trigger("done", key, result, this.running[id]);
                 if (error) {
-                    this.running[id] = false;
+                    var context = this.running[id];
+                    delete(this.running[id]);
                     this.trigger("error", key, error, context);
                 }
                 else
-                    wrappedTasks.call(this, value, id, context);
+                    wrappedTasks.call(this, value, id);
             }.bind(this);
-            task.call(context, done, value, this.config[key]);
+            task.call(this.running[id], done, value, this.config[key]);
         }.bind(this);
     },
-    end:function (value, id, context) {
-        this.running[id] = false;
+    end:function (value, id) {
+        var context = this.running[id];
+        delete(this.running[id]);
         this.trigger("end", context);
     },
     abort:function () {
+        var aborted = this.running;
         this.running = {};
-        this.trigger("abort");
+        _.each(aborted, function (context, id) {
+            this.trigger("abort", context);
+        }, this);
     }
 };
 _.extend(AsyncSeriesTaskRunner.prototype, Backbone.Events);
