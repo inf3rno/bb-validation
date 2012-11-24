@@ -40,42 +40,43 @@ InterdependentTaskSeriesBuilder.prototype = {
 };
 
 /** @class*/
-var AsyncSeriesTaskRunner = function (tasks, config, context) {
+var AsyncSeriesTaskRunner = function (tasks, config) {
     this.config = config || {};
-    this.context = context || this;
     this.id = 0;
     this.running = {};
     this.taskRunner = _.reduceRight(tasks, this.wrapTaskSeries, this.end, this);
 };
 AsyncSeriesTaskRunner.prototype = {
-    run:function (value) {
+    run:function (value, context) {
+        if (!context)
+            context = this;
         ++this.id;
-        this.start(value, this.id);
+        this.start(value, this.id, context);
     },
-    start:function (value, id) {
+    start:function (value, id, context) {
         this.running[this.id] = true;
-        this.trigger("start");
-        this.taskRunner(value, id);
+        this.trigger("start", context);
+        this.taskRunner(value, id, context);
     },
     wrapTaskSeries:function (wrappedTasks, task, key) {
-        return function (value, id) {
+        return function (value, id, context) {
             if (!(id in this.running))
                 return;
             var done = function (error, result) {
-                this.trigger("done", key, result);
+                this.trigger("done", key, result, context);
                 if (error) {
                     this.running[id] = false;
-                    this.trigger("error", key, error);
+                    this.trigger("error", key, error, context);
                 }
                 else
-                    wrappedTasks.call(this, value, id);
+                    wrappedTasks.call(this, value, id, context);
             }.bind(this);
-            task.call(this.context, done, value, this.config[key]);
+            task.call(context, done, value, this.config[key]);
         }.bind(this);
     },
-    end:function (value, id) {
+    end:function (value, id, context) {
         this.running[id] = false;
-        this.trigger("end");
+        this.trigger("end", context);
     },
     abort:function () {
         this.running = {};
@@ -92,9 +93,7 @@ var AttributeValidatorProvider = function (tests, checks) {
 AttributeValidatorProvider.prototype = {
     createValidator:function (config) {
         this.checkConfig(config);
-        var validator = new AttributeValidator();
-        validator.configure(this.createRunner(config, validator));
-        return validator;
+        return new AttributeValidator(this.createRunner(config));
     },
     checkConfig:function (config) {
         if (this.checks)
@@ -103,11 +102,10 @@ AttributeValidatorProvider.prototype = {
                     this.checks[key].call(config, param, key);
             });
     },
-    createRunner:function (config, validator) {
+    createRunner:function (config) {
         return new AsyncSeriesTaskRunner(
             this.createTasks(config),
-            config,
-            validator
+            config
         );
     },
     createTasks:function (config) {
@@ -120,7 +118,7 @@ AttributeValidatorProvider.prototype = {
 
 /** @class*/
 var AttributeValidator = Backbone.Model.extend({
-    configure:function (taskRunner) {
+    constructor:function (taskRunner) {
         if (this.taskRunner)
             throw new Error("Already configured.");
         this.taskRunner = taskRunner;
@@ -144,11 +142,12 @@ var AttributeValidator = Backbone.Model.extend({
                     })
                 );
         }, this);
+        Backbone.Model.call(this);
     },
     check:function (value, callback) {
         this.taskRunner.abort();
         this.callback = callback;
-        this.taskRunner.run(value);
+        this.taskRunner.run(value, this);
     }
 });
 
