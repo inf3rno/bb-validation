@@ -54,7 +54,7 @@ AsyncSeriesTaskRunner.prototype = {
         this.start(value, this.id, context);
     },
     start:function (value, id, context) {
-        this.running[this.id] = true;
+        this.running[id] = true;
         this.trigger("start", context);
         this.taskRunner(value, id, context);
     },
