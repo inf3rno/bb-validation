@@ -227,34 +227,34 @@ describe("basic async with underscore", function () {
 
     });
 
-    var callNext = function (done, value, config) {
+    var callNext = function () {
         var err = null;
         var result = null;
-        done(err, result);
+        this.done(err, result);
     };
-    var delayNext = function (done, value, config) {
+    var delayNext = function () {
         var err = null;
         var result = null;
         setTimeout(function () {
-            done(err, result);
-        }, 1);
+            this.done(err, result);
+        }.bind(this), 1);
     };
-    var raiseError = function (done, value, config) {
-        done(true, null);
+    var raiseError = function () {
+        this.done(true, null);
     };
-    var raiseErrorIfValueEqualsConfig = function (done, value, config) {
-        done(value == config, null);
+    var raiseErrorIfValueEqualsConfig = function () {
+        this.done(this.value == this.config, null);
     };
     var emptyTask = function () {
 
     };
-    var abortIfValueEqualsConfig = function (done, value, config) {
-        if (value == config)
-            this.abort();
-        done(null, null);
+    var abortIfValueEqualsConfig = function () {
+        if (this.value == this.config)
+            this.stopAll();
+        this.done(null, null);
     };
-    var resultsContext = function (done, value, config) {
-        done(null, this);
+    var resultsContext = function () {
+        this.done(null, this);
     };
 
     var expectAsync = function (expected, params) {
@@ -262,7 +262,7 @@ describe("basic async with underscore", function () {
         var logger = params.logger || log;
         var buffer = logger(taskRunner);
         runs(function () {
-            taskRunner.run(params.value, params.context);
+            taskRunner.run({value:params.value, context:params.context});
         });
         waits(params.delay);
         runs(function () {
@@ -277,7 +277,7 @@ describe("basic async with underscore", function () {
             var contexts = params.contexts || [];
             _.each(params.values, function (value, index) {
                 setTimeout(function () {
-                    taskRunner.run(value, contexts[index]);
+                    taskRunner.run({value:value, context:contexts[index]});
                 }, 1);
             });
         });
@@ -290,22 +290,22 @@ describe("basic async with underscore", function () {
         var taskRunner = new AsyncSeriesTaskRunner(params.tasks, params.config);
         var logger = params.logger || log;
         var buffer = logger(taskRunner);
-        taskRunner.run(params.value, params.context);
+        taskRunner.run({value:params.value, context:params.context});
         expect(buffer).toEqual(expected);
     };
 
     var log = function (taskRunner) {
         var buffer = [];
-        taskRunner.on("start", function (context) {
+        taskRunner.on("start", function () {
             buffer.push("start");
         });
-        taskRunner.on("done", function (key, result, context) {
+        taskRunner.on("done", function (key, result) {
             buffer.push({key:key, result:result});
         });
-        taskRunner.on("error", function (key, error, context) {
+        taskRunner.on("error", function (key, error) {
             buffer.push({key:key, error:error});
         });
-        taskRunner.on("end", function (context) {
+        taskRunner.on("end", function () {
             buffer.push("end");
         });
         return buffer;
@@ -313,17 +313,17 @@ describe("basic async with underscore", function () {
 
     var logContext = function (taskRunner) {
         var buffer = [];
-        taskRunner.on("start", function (context) {
-            buffer.push({start:context});
+        taskRunner.on("start", function (scope) {
+            buffer.push({start:scope.context});
         });
-        taskRunner.on("done", function (key, result, context) {
-            buffer.push({done:context, result:result});
+        taskRunner.on("done", function (key, result, scope) {
+            buffer.push({done:scope.context, result:result ? result.context : result});
         });
-        taskRunner.on("error", function (key, error, context) {
-            buffer.push({error:context});
+        taskRunner.on("error", function (key, error, scope) {
+            buffer.push({error:scope.context});
         });
-        taskRunner.on("end", function (context) {
-            buffer.push({end:context});
+        taskRunner.on("end", function (scope) {
+            buffer.push({end:scope.context});
         });
         return buffer;
     };

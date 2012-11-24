@@ -44,48 +44,53 @@ var AsyncSeriesTaskRunner = function (tasks, config) {
     this.config = config || {};
     this.id = 0;
     this.running = {};
-    this.taskRunner = _.reduceRight(tasks, this.wrapTaskSeries, this.end, this);
-};
-AsyncSeriesTaskRunner.prototype = {
-    run:function (value, context) {
-        if (!context)
-            context = this;
-        ++this.id;
-        this.running[this.id] = context;
-        this.start(value, this.id, context);
-    },
-    start:function (value, id) {
-        this.trigger("start", this.running[id]);
-        this.taskRunner(value, id);
-    },
-    wrapTaskSeries:function (wrappedTasks, task, key) {
-        return function (value, id) {
-            if (!(id in this.running))
+    this.taskRunner = _.reduceRight(tasks, function (wrappedTasks, task, key) {
+        return function (iterator) {
+            if (!(iterator.id in this.running))
                 return;
-            var done = function (error, result) {
-                this.trigger("done", key, result, this.running[id]);
+            iterator.done = function (error, result) {
+                this.trigger("done", key, result, iterator);
                 if (error) {
-                    var context = this.running[id];
-                    delete(this.running[id]);
-                    this.trigger("error", key, error, context);
+                    delete(this.running[iterator.id]);
+                    this.trigger("error", key, error, iterator);
                 }
                 else
-                    wrappedTasks.call(this, value, id);
+                    wrappedTasks.call(this, iterator);
             }.bind(this);
-            task.call(this.running[id], done, value, this.config[key]);
+            iterator.config = this.config[key];
+            task.call(iterator);
         }.bind(this);
+    }, function (iterator) {
+        delete(this.running[iterator.id]);
+        this.trigger("end", iterator);
+    }, this);
+};
+AsyncSeriesTaskRunner.prototype = {
+    run:function (params) {
+        var iterator = {};
+        if (params)
+            _.extend(iterator, params);
+        ++this.id;
+        iterator.id = this.id;
+        iterator.run = this.run.bind(this, iterator);
+        iterator.stop = this.stop.bind(this, iterator);
+        iterator.stopAll = this.stop.bind(this);
+        this.running[iterator.id] = iterator;
+        this.trigger("start", iterator);
+        this.taskRunner(iterator);
     },
-    end:function (value, id) {
-        var context = this.running[id];
-        delete(this.running[id]);
-        this.trigger("end", context);
-    },
-    abort:function () {
-        var aborted = this.running;
-        this.running = {};
-        _.each(aborted, function (context, id) {
-            this.trigger("abort", context);
-        }, this);
+    stop:function (iterator) {
+        if (iterator) {
+            delete(this.running[iterator.id]);
+            this.trigger("abort", iterator);
+        }
+        else {
+            var aborted = this.running;
+            this.running = {};
+            _.each(aborted, function (iterator, id) {
+                this.trigger("abort", iterator);
+            }, this);
+        }
     }
 };
 _.extend(AsyncSeriesTaskRunner.prototype, Backbone.Events);
@@ -97,26 +102,24 @@ var AttributeValidatorProvider = function (tests, checks) {
 };
 AttributeValidatorProvider.prototype = {
     createValidator:function (config) {
-        this.checkConfig(config);
         return new AttributeValidator(this.createRunner(config));
     },
-    checkConfig:function (config) {
-        if (this.checks)
-            _.each(config, function (param, key) {
-                if (key in this.checks)
-                    this.checks[key].call(config, param, key);
-            });
-    },
     createRunner:function (config) {
-        return new AsyncSeriesTaskRunner(
-            this.createTasks(config),
-            config
-        );
+        var tasks = this.createTasks(config)
+        this.checkConfig(tasks, config);
+        return new AsyncSeriesTaskRunner(tasks, config);
     },
     createTasks:function (config) {
         if (!this.tasksBuilder)
             this.tasksBuilder = new InterdependentTaskSeriesBuilder(this.tests);
         return this.tasksBuilder.createTasks(config);
+    },
+    checkConfig:function (tasks, config) {
+        if (this.checks)
+            _.each(tasks, function (task, key) {
+                if (key in this.checks)
+                    this.checks[key].call(config, config[key], key);
+            });
     }
 };
 
@@ -124,35 +127,36 @@ AttributeValidatorProvider.prototype = {
 /** @class*/
 var AttributeValidator = Backbone.Model.extend({
     constructor:function (taskRunner) {
-        if (this.taskRunner)
-            throw new Error("Already configured.");
         this.taskRunner = taskRunner;
-        this.taskRunner.on("abort", function () {
-            this.clear();
+        this.taskRunner.on("abort", function (iterator) {
+            iterator.validator.clear();
         }, this);
-        this.taskRunner.on("error", function (key, error) {
-            this.set(key, {error:error});
-            if (this.callback instanceof Function)
-                this.callback(false);
+        this.taskRunner.on("error", function (key, error, iterator) {
+            iterator.validator.set(key, {error:error});
+            if (iterator.callback instanceof Function)
+                iterator.callback(false);
         }, this);
-        this.taskRunner.on("done", function (key, passed) {
+        this.taskRunner.on("done", function (key, passed, iterator) {
             if (typeof(passed) == "boolean")
-                this.set(key, passed);
+                iterator.validator.set(key, passed);
         }, this);
-        this.taskRunner.on("end", function () {
-            if (this.callback instanceof Function)
-                this.callback(
-                    _.all(this.attributes, function (passed) {
+        this.taskRunner.on("end", function (iterator) {
+            if (iterator.callback instanceof Function)
+                iterator.callback(
+                    _.all(iterator.validator.attributes, function (passed) {
                         return passed === true;
                     })
                 );
-        }, this);
+        });
         Backbone.Model.call(this);
     },
     check:function (value, callback) {
-        this.taskRunner.abort();
-        this.callback = callback;
-        this.taskRunner.run(value, this);
+        this.taskRunner.stop();
+        this.taskRunner.run({
+            value:value,
+            validator:this,
+            callback:callback
+        });
     }
 });
 
