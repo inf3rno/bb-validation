@@ -32,75 +32,76 @@ var toRegExp = function (value) {
 };
 
 var tests = {
-    required:function (done, value, required) {
-        var existence = value !== undefined;
-        done(!existence ? 1 : 0, existence || !required);
+    required:function () {
+        var existence = this.value !== undefined;
+        this.done(existence ? 0 : 1, existence || !this.config);
     },
-    type:["required", function (done, value, type) {
+    type:["required", function () {
         var passed;
-        if (typeof(type) == "string")
-            passed = (typeof(value) == type);
-        else if (typeof(type) == "function")
-            passed = (value instanceof type);
+        if (typeof(this.config) == "string")
+            passed = (typeof(this.value) == this.config);
+        else if (typeof(this.config) == "function")
+            passed = (this.value instanceof this.config);
         else
-            passed = (value === type);
-        done(!passed ? 1 : 0, passed);
+            passed = (this.value === this.config);
+        this.done(passed ? 0 : 1, passed);
     }],
-    min:["type", function (done, value, min) {
-        var num = toNumber(value);
+    min:["type", function () {
+        var num = toNumber(this.value);
         var err;
-        if (num < min)
+        if (num < this.config)
             err = 1;
         else
             err = 0;
-        done(err, !err);
+        this.done(err, !err);
     }],
-    max:["type", function (done, value, max) {
-        var num = toNumber(value);
+    max:["type", function () {
+        var num = toNumber(this.value);
         var err;
-        if (num > max)
+        if (num > this.config)
             err = 1;
         else
             err = 0;
-        done(err, !err);
+        this.done(err, !err);
     }],
-    range:["type", function (done, value, range) {
-        var num = toNumber(value);
+    range:["type", function () {
+        var num = toNumber(this.value);
         var err;
-        if (num < range.min)
+        if (num < this.config.min)
             err = 1;
-        else if (num > range.max)
+        else if (num > this.config.max)
             err = 2;
         else
             err = 0;
-        done(err, !err);
+        this.done(err, !err);
     }],
-    same:["required", function (done, actual, expected) {
-        var valid = actual === expected;
-        done(valid ? 0 : 1, valid);
+    same:["required", function () {
+        var valid = this.value === this.config;
+        this.done(valid ? 0 : 1, valid);
     }],
-    equal:["required", function (done, actual, expected) {
+    equal:["required", function () {
         var valid;
-        if (typeof(expected) == "object")
-            valid = _.isEqual(actual, expected);
+        if (typeof(this.config) == "object")
+            valid = _.isEqual(this.value, this.config);
         else
-            valid = actual === expected;
-        done(valid ? 0 : 1, valid);
+            valid = this.value === this.config;
+        this.done(valid ? 0 : 1, valid);
     }],
-    contained:["required", function (done, item, list) {
-        var valid = list.indexOf(item) != -1;
-        done(valid ? 0 : 1, valid);
+    contained:["required", function () {
+        var valid = this.config.indexOf(this.value) != -1;
+        this.done(valid ? 0 : 1, valid);
     }],
-    match:["type", function (done, value, expressions) {
+    match:["type", function () {
+        var value = this.value;
         var match = function (expression) {
             return expression.test(value);
         };
         var valid = true;
-        if (expressions.all && !_.all(expressions.all, match))
+        if (this.config.all && !_.all(this.config.all, match))
             valid = false;
-        if (expressions.any && !_.any(expressions.any, match))
+        if (this.config.any && !_.any(this.config.any, match))
             valid = false;
-        done(valid ? 0 : 1, valid);
+        this.done(valid ? 0 : 1, valid);
     }]
 };
 

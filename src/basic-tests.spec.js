@@ -653,11 +653,12 @@ describe("tests", function () {
         var isDone = false;
         var mock = {};
         runs(function () {
-            task(function (e, r) {
+            o.done = function (e, r) {
                 mock.err = e;
                 mock.result = r;
                 isDone = true;
-            }, o.value, o.config);
+            };
+            task.call(o);
         });
         waitsFor(function () {
             return isDone == true;
