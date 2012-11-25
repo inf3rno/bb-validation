@@ -172,5 +172,6 @@ var checks = {
 
 module.exports = {
     patterns:patterns,
-    attributeValidatorProvider:new validation.AttributeValidatorProvider(tests, checks)
+    tests:tests,
+    checks:checks
 };

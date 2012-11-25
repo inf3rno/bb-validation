@@ -630,7 +630,7 @@ describe("tests", function () {
     });
 
     var expectCheck = function (value, expected) {
-        var check = basic.attributeValidatorProvider.checks[test];
+        var check = basic.checks[test];
         var mock = {};
         mock[test] = value;
         check.call(mock, value, test);
@@ -638,7 +638,7 @@ describe("tests", function () {
     };
 
     var expectCheckThrow = function (value, exception) {
-        var check = basic.attributeValidatorProvider.checks[test];
+        var check = basic.checks[test];
         var mock = {};
         mock[test] = value;
         var caller = function () {
@@ -648,7 +648,7 @@ describe("tests", function () {
     };
 
     var expectTest = function (o) {
-        var arr = basic.attributeValidatorProvider.tests[test];
+        var arr = basic.tests[test];
         var task = (arr instanceof Array) ? arr[arr.length - 1] : arr;
         var isDone = false;
         var mock = {};

@@ -44,11 +44,13 @@ var AsyncSeriesTaskRunner = function (tasks, config) {
     this.config = config || {};
     this.id = 0;
     this.running = {};
-    this.taskRunner = _.reduceRight(tasks, function (wrappedTasks, task, key) {
+    this.series = _.reduceRight(tasks, function (wrappedTasks, task, key) {
         return function (iterator) {
             if (!(iterator.id in this.running))
                 return;
             iterator.done = function (error, result) {
+                if (!(iterator.id in this.running))
+                    return;
                 this.trigger("done", key, result, iterator);
                 if (error) {
                     delete(this.running[iterator.id]);
@@ -66,31 +68,34 @@ var AsyncSeriesTaskRunner = function (tasks, config) {
     }, this);
 };
 AsyncSeriesTaskRunner.prototype = {
-    run:function (params) {
+    iterator:function (params) {
         var iterator = {};
         if (params)
             _.extend(iterator, params);
-        ++this.id;
-        iterator.id = this.id;
+        iterator.id = ++this.id;
         iterator.run = this.run.bind(this, iterator);
         iterator.stop = this.stop.bind(this, iterator);
-        iterator.stopAll = this.stop.bind(this);
+        iterator.stopAll = this.stopAll.bind(this);
+        return iterator;
+    },
+    run:function (iterator) {
+        iterator.id = ++this.id;
         this.running[iterator.id] = iterator;
         this.trigger("start", iterator);
-        this.taskRunner(iterator);
+        this.series(iterator);
     },
     stop:function (iterator) {
-        if (iterator) {
-            delete(this.running[iterator.id]);
+        if (!iterator.id in this.running)
+            return
+        delete(this.running[iterator.id]);
+        this.trigger("abort", iterator);
+    },
+    stopAll:function () {
+        var aborted = this.running;
+        this.running = {};
+        _.each(aborted, function (iterator, id) {
             this.trigger("abort", iterator);
-        }
-        else {
-            var aborted = this.running;
-            this.running = {};
-            _.each(aborted, function (iterator, id) {
-                this.trigger("abort", iterator);
-            }, this);
-        }
+        }, this);
     }
 };
 _.extend(AsyncSeriesTaskRunner.prototype, Backbone.Events);
@@ -128,6 +133,9 @@ AttributeValidatorProvider.prototype = {
 var AttributeValidator = Backbone.Model.extend({
     constructor:function (taskRunner) {
         this.taskRunner = taskRunner;
+        this.taskRunner.on("start", function (iterator) {
+            this.iterator = iterator;
+        }, this);
         this.taskRunner.on("abort", function (iterator) {
             iterator.validator.clear();
         }, this);
@@ -147,11 +155,12 @@ var AttributeValidator = Backbone.Model.extend({
                         return passed === true;
                     })
                 );
-        });
+        }, this);
         Backbone.Model.call(this);
     },
     check:function (value, callback) {
-        this.taskRunner.stop();
+        if (this.iterator)
+            this.iterator.stop();
         this.taskRunner.run({
             value:value,
             validator:this,
@@ -160,16 +169,11 @@ var AttributeValidator = Backbone.Model.extend({
     }
 });
 
-var settings = {
-    attributeValidatorProvider:new AttributeValidatorProvider({})
-};
 
 module.exports = {
     InterdependentTaskSeriesBuilder:InterdependentTaskSeriesBuilder,
     AsyncSeriesTaskRunner:AsyncSeriesTaskRunner,
-    AttributeValidatorProvider:AttributeValidatorProvider,
-    AttributeValidator:AttributeValidator,
     install:function (pack) {
-        _.extend(settings, pack);
+
     }
 };

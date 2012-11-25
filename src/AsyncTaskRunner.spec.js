@@ -105,7 +105,7 @@ describe("basic async with underscore", function () {
                 {key:"a", result:null}
             ], {
                 tasks:{a:delayNext, b:abortIfValueEqualsConfig, c:delayNext},
-                config:{b:1},
+                config:{b:2},
                 values:[1, 2],
                 delay:10
             });
@@ -262,7 +262,7 @@ describe("basic async with underscore", function () {
         var logger = params.logger || log;
         var buffer = logger(taskRunner);
         runs(function () {
-            taskRunner.run({value:params.value, context:params.context});
+            taskRunner.iterator({value:params.value, context:params.context}).run();
         });
         waits(params.delay);
         runs(function () {
@@ -277,7 +277,7 @@ describe("basic async with underscore", function () {
             var contexts = params.contexts || [];
             _.each(params.values, function (value, index) {
                 setTimeout(function () {
-                    taskRunner.run({value:value, context:contexts[index]});
+                    taskRunner.iterator({value:value, context:contexts[index]}).run();
                 }, 1);
             });
         });
@@ -290,7 +290,7 @@ describe("basic async with underscore", function () {
         var taskRunner = new AsyncSeriesTaskRunner(params.tasks, params.config);
         var logger = params.logger || log;
         var buffer = logger(taskRunner);
-        taskRunner.run({value:params.value, context:params.context});
+        taskRunner.iterator({value:params.value, context:params.context}).run();
         expect(buffer).toEqual(expected);
     };
 
