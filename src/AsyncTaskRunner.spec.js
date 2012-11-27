@@ -96,22 +96,6 @@ describe("basic async with underscore", function () {
             });
         });
 
-        it("breaks both of the concurrent calls by abort", function () {
-            expectConcurrent([
-                "start",
-                "start",
-                {key:"a", result:null},
-                {key:"b", result:null},
-                {key:"a", result:null}
-            ], {
-                tasks:{a:delayNext, b:abortIfValueEqualsConfig, c:delayNext},
-                config:{b:2},
-                values:[1, 2],
-                delay:10
-            });
-        });
-
-
     });
 
     describe("task series context", function () {
@@ -247,11 +231,6 @@ describe("basic async with underscore", function () {
     };
     var emptyTask = function () {
 
-    };
-    var abortIfValueEqualsConfig = function () {
-        if (this.value == this.config)
-            this.stopAll();
-        this.done(null, null);
     };
     var resultsContext = function () {
         this.done(null, this);

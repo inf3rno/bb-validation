@@ -75,7 +75,6 @@ AsyncSeriesTaskRunner.prototype = {
         iterator.id = ++this.id;
         iterator.run = this.run.bind(this, iterator);
         iterator.stop = this.stop.bind(this, iterator);
-        iterator.stopAll = this.stopAll.bind(this);
         return iterator;
     },
     run:function (iterator) {
