@@ -1,0 +1,84 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+</head>
+<body>
+<script src="lib/require.js"></script>
+<script>
+    require.config({
+        paths:{
+            backbone:"lib/backbone",
+            underscore:"lib/underscore-min",
+            jquery:"lib/jquery-1.8.3.min",
+            domReady:"lib/domReady"
+        },
+        shim:{
+            backbone:{
+                deps:["underscore", "jquery"],
+                exports:"Backbone"
+            },
+            underscore:{
+                exports:"_"
+            }
+        }
+    });
+
+    require(["jquery", "underscore", "backbone", "domReady!", "src/backbone-validator", "src/basic-tests"], function ($, _, Backbone, domReady, validator, tests) {
+        validator.install(tests);
+
+
+        var View = Backbone.View.extend({
+            tagName:"div",
+            className:"test",
+            template:_.template(
+                    '<input class="email" type="text" name="email" value="<%= o.email %>" /><div class="error"></div><br/>' +
+                            '<input class="password" type="password" name="password" value="<%= o.password %>" /><div class="error"></div>',
+                    null,
+                    {variable:"o"}
+            ),
+            initialize:function () {
+                this.render();
+            },
+            render:function () {
+                this.model.validator.on("change", function () {
+                    _.each(this.model.validator.attributes, function (passed, attribute) {
+
+                    }, this);
+                }, this);
+                this.$el.html(this.template(this.model.toJSON()));
+                return this;
+            }
+        });
+
+        var Model = validator.Model.extend({
+            schema:{
+                email:{
+                    required:true,
+                    type:String,
+                    match:"email",
+                    max:127
+                },
+                password:{
+                    required:true,
+                    type:String,
+                    min:5,
+                    max:127
+                }
+            }
+        });
+
+
+        var model = new Model({
+            email:"test@test.hu",
+            password:""
+        });
+
+        var view = new View({
+            model:model
+        });
+        $("body").append(view.$el);
+    });
+</script>
+</body>
+</html>
