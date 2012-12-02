@@ -5,8 +5,12 @@ define(function (require, exports, module) {
     var _ = require("underscore"),
         Backbone = require("backbone");
 
-    module.exports = {
+    var Model = Backbone.Model.extend({
 
+    });
+
+    module.exports = {
+        Model:Model
     };
 
 });
