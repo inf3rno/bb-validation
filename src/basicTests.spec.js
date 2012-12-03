@@ -1,5 +1,5 @@
 var _ = require("underscore"),
-    basic = require("./basic-tests");
+    basic = require("./basicTests");
 
 describe("patterns", function () {
     var pattern;
@@ -610,9 +610,8 @@ describe("tests", function () {
     var expectCheck = function (value, expected) {
         var check = basic.checks[test];
         var mock = {};
-        mock[test] = value;
-        mock[test] = check.call(mock, value, test);
-        expect(mock[test]).toEqual(expected);
+        mock.patterns = basic.patterns;
+        expect(check.call(mock, value, test)).toEqual(expected);
     };
 
     var expectCheckThrow = function (value, exception) {

@@ -26,7 +26,7 @@ define(function (require, exports, module) {
     var toRegExp = function (value) {
         var regexp;
         if (typeof(value) == "string")
-            regexp = patterns[value];
+            regexp = this.patterns[value];
         else
             regexp = value;
         if (!(regexp instanceof RegExp))
@@ -165,9 +165,9 @@ define(function (require, exports, module) {
                 if (!_.size(patterns))
                     throw new Error("Invalid config." + key + ": empty operator." + operator + " given.");
                 _.each(patterns, function (pattern, index) {
-                    patterns[index] = toRegExp(pattern);
-                });
-            });
+                    patterns[index] = toRegExp.call(this, pattern);
+                }, this);
+            }, this);
             return expressions;
         },
         duplicate:function (duplicate, key) {
