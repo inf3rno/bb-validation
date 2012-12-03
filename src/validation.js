@@ -5,28 +5,41 @@ define(function (require, exports, module) {
     var _ = require("underscore"),
         Backbone = require("backbone");
 
+    var inherit = Object.create || function (proto) {
+        var C = function () {
+            this.constructor = C;
+        };
+        C.prototype = proto;
+        return new C();
+    };
+
     var Validator = Backbone.Model.extend({
         checks:{},
         tests:{},
         patterns:{}
-    });
-    Validator.extend = function (protoProps, staticProps) {
-        var child = Backbone.Model.extend.apply(this, arguments);
-        child.prototype.checks = Object.create(child.prototype.checks, {});
-        child.prototype.tests = Object.create(child.prototype.tests, {});
-        child.prototype.patterns = Object.create(child.prototype.patterns, {});
-        return child;
-    };
-    Validator.install = function (o) {
-        if (!o)
+    }, {
+        install:function (pack) {
+            if (!pack)
+                throw new Error("No install package given.");
+            var installable = {checks:true, tests:true, patterns:true};
+            _.each(pack, function (addons, property) {
+                if (!installable[property])
+                    throw new Error("Property " + property + " is not installable.");
+                if (this.__super__ && this.prototype[property] === this.__super__[property]) {
+                    this.prototype[property] = inherit(this.__super__[property]);
+                }
+                _.extend(this.prototype[property], addons);
+            }, this);
             return this;
-        _.extend(this.prototype.checks, o.checks);
-        _.extend(this.prototype.tests, o.tests);
-        _.extend(this.prototype.patterns, o.patterns);
-        return this;
-    };
+        }
+    });
 
     var Model = Backbone.Model.extend({
+        Validator:Validator,
+        constructor:function () {
+            Backbone.Model.apply(this, arguments);
+            this.validator = new this.Validator();
+        }
     });
 
     module.exports = {
