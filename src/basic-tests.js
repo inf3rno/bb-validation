@@ -3,9 +3,7 @@ if (typeof define !== 'function')
 
 define(function (require, exports, module) {
 
-    var _ = require("underscore"),
-        Backbone = require("backbone"),
-        validation = require("./backbone-validator");
+    var _ = require("underscore");
 
     var patterns = {
         digits:/^\d+$/,
@@ -37,11 +35,16 @@ define(function (require, exports, module) {
     };
 
     var tests = {
-        required:function () {
+        required:function (done) {
             var existence = this.value !== undefined;
-            this.done(existence ? 0 : 1, existence || !this.config);
+            if (!existence && this.config)
+                done(true);
+            else if (!existence)
+                done(false, {abort:true});
+            else
+                done(false);
         },
-        type:["required", function () {
+        type:["required", function (done) {
             var passed;
             if (typeof(this.config) == "string")
                 passed = (typeof(this.value) == this.config);
@@ -49,54 +52,42 @@ define(function (require, exports, module) {
                 passed = (this.value instanceof this.config);
             else
                 passed = (this.value === this.config);
-            this.done(passed ? 0 : 1, passed);
+            done(!passed);
         }],
-        min:["type", function () {
+        min:["type", function (done) {
             var num = toNumber(this.value);
-            var err;
-            if (num < this.config)
-                err = 1;
-            else
-                err = 0;
-            this.done(err, !err);
+            done(num < this.config);
         }],
-        max:["type", function () {
+        max:["type", function (done) {
             var num = toNumber(this.value);
-            var err;
-            if (num > this.config)
-                err = 1;
-            else
-                err = 0;
-            this.done(err, !err);
+            done(num > this.config);
         }],
-        range:["type", function () {
+        range:["type", function (done) {
             var num = toNumber(this.value);
             var err;
             if (num < this.config.min)
-                err = 1;
+                err = "min";
             else if (num > this.config.max)
-                err = 2;
+                err = "max";
             else
-                err = 0;
-            this.done(err, !err);
+                err = false;
+            done(err);
         }],
-        same:["required", function () {
-            var valid = this.value === this.config;
-            this.done(valid ? 0 : 1, valid);
+        same:["required", function (done) {
+            done(this.value !== this.config);
         }],
-        equal:["required", function () {
+        equal:["required", function (done) {
             var valid;
             if (typeof(this.config) == "object")
                 valid = _.isEqual(this.value, this.config);
             else
                 valid = this.value === this.config;
-            this.done(valid ? 0 : 1, valid);
+            done(!valid);
         }],
-        contained:["required", function () {
-            var valid = this.config.indexOf(this.value) != -1;
-            this.done(valid ? 0 : 1, valid);
+        contained:["required", function (done) {
+            done(this.config.indexOf(this.value) == -1);
         }],
-        match:["type", function () {
+        match:["type", function (done) {
             var value = this.value;
             var match = function (expression) {
                 return expression.test(value);
@@ -106,13 +97,16 @@ define(function (require, exports, module) {
                 valid = false;
             if (this.config.any && !_.any(this.config.any, match))
                 valid = false;
-            this.done(valid ? 0 : 1, valid);
-        }]
+            done(!valid);
+        }],
+        duplicate:function (done) {
+            done(this.model.get(this.config) != this.value);
+        }
     };
 
     var checks = {
-        required:function (required, key) {
-            this[key] = required === undefined || !!required;
+        required:function (required) {
+            return required === undefined || !!required;
         },
         type:function (type, key) {
             if (type == "null")
@@ -131,28 +125,32 @@ define(function (require, exports, module) {
             }
             if (type !== null && (typeof(type) != "string" || ["undefined", "boolean", "number", "string", "object", "function"].indexOf(type) == -1) && !(type instanceof Function))
                 throw new Error("Invalid config." + key + ": must be Function or type or null.");
-            this[key] = type;
+            return type;
         },
         min:function (min, key) {
             if (typeof(min) != "number" || isNaN(min))
                 throw new Error("Invalid config." + key + ": must be number.");
+            return min;
         },
         max:function (max, key) {
             if (typeof(max) != "number" || isNaN(max))
                 throw new Error("Invalid config." + key + ": must be number.");
+            return max;
         },
         range:function (range, key) {
             if ((range instanceof Array) && range.length == 2 && typeof(range[0]) == "number" && !isNaN(range[0]) && typeof(range[1]) == "number" && !isNaN(range[1]))
-                this[key] = range = {
+                range = {
                     min:Math.min(range[0], range[1]),
                     max:Math.max(range[0], range[1])
                 };
             if (typeof(range) != "object" || typeof(range.min) != "number" || isNaN(range.min) || typeof(range.max) != "number" || isNaN(range.max) || range.max < range.min)
                 throw new Error("Invalid config." + key + ": must be range.");
+            return range;
         },
         contained:function (list, key) {
             if (!(list instanceof Array))
                 throw new Error("Invalid config." + key + ": must be array.");
+            return list;
         },
         match:function (expressions, key) {
             if (typeof(expressions) == "string" || (expressions instanceof RegExp) || (expressions instanceof Array))
@@ -170,15 +168,20 @@ define(function (require, exports, module) {
                     patterns[index] = toRegExp(pattern);
                 });
             });
-            this[key] = expressions;
+            return expressions;
+        },
+        duplicate:function (duplicate, key) {
+            if (typeof(duplicate) != "string")
+                throw  new Error("Invalid config. " + key + ": invalid attribute name given.");
+            return duplicate;
         }
     };
 
 
     module.exports = {
-        patterns:patterns,
+        checks:checks,
         tests:tests,
-        checks:checks
+        patterns:patterns
     };
 
 });

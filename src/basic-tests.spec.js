@@ -1,8 +1,5 @@
 var _ = require("underscore"),
-    Backbone = require("backbone"),
-    validation = require("./backbone-validator"),
     basic = require("./basic-tests");
-
 
 describe("patterns", function () {
     var pattern;
@@ -144,8 +141,7 @@ describe("tests", function () {
                 expectTest({
                     value:value,
                     config:true,
-                    err:0,
-                    result:true
+                    err:false
                 });
             });
         });
@@ -153,8 +149,7 @@ describe("tests", function () {
         it("should fail and break if required but value is undefined", function () {
             expectTest({
                 config:true,
-                err:1,
-                result:false
+                err:true
             });
         });
 
@@ -162,16 +157,15 @@ describe("tests", function () {
             expectTest({
                 value:0,
                 config:false,
-                err:0,
-                result:true
+                err:false
             });
         });
 
         it("should pass and break if not required and not given", function () {
             expectTest({
                 config:false,
-                err:1,
-                result:true
+                err:false,
+                options:{abort:true}
             });
         });
 
@@ -223,8 +217,7 @@ describe("tests", function () {
                 expectTest({
                     value:o[0],
                     config:o[1],
-                    err:0,
-                    result:true
+                    err:false
                 });
             })
         });
@@ -252,8 +245,7 @@ describe("tests", function () {
                 expectTest({
                     value:o[0],
                     config:o[1],
-                    err:1,
-                    result:false
+                    err:true
                 });
             })
         });
@@ -278,8 +270,7 @@ describe("tests", function () {
                 expectTest({
                     value:value,
                     config:3.3333,
-                    err:0,
-                    result:true
+                    err:false
                 });
             });
         });
@@ -289,8 +280,7 @@ describe("tests", function () {
                 expectTest({
                     value:value,
                     config:3.3333,
-                    err:1,
-                    result:false
+                    err:true
                 });
             });
         });
@@ -315,8 +305,7 @@ describe("tests", function () {
                 expectTest({
                     value:value,
                     config:3.3333,
-                    err:1,
-                    result:false
+                    err:true
                 });
             });
         });
@@ -326,8 +315,7 @@ describe("tests", function () {
                 expectTest({
                     value:value,
                     config:3.3333,
-                    err:0,
-                    result:true
+                    err:false
                 });
             });
         });
@@ -376,30 +364,28 @@ describe("tests", function () {
                 expectTest({
                     value:o[0],
                     config:{min:o[1], max:o[2]},
-                    err:0,
-                    result:true
+                    err:false
                 });
             });
         });
 
         it("should fail and break if number out of range (error: 1 by lower, 2 by bigger)", function () {
             _.each([
-                [0.1, 0, 0, 2],
-                [-0.1, 0, 0, 1],
-                [-2, -1, 3, 1],
-                [4, -1, 3, 2],
-                [0, 1, 100, 1],
-                [101, 1, 100, 2],
-                [-101, -100, -1, 1],
-                [-0.5, -100, -1, 2],
-                [0, -100, -1, 2],
-                [1, -100, -1, 2]
+                [0.1, 0, 0, "max"],
+                [-0.1, 0, 0, "min"],
+                [-2, -1, 3, "min"],
+                [4, -1, 3, "max"],
+                [0, 1, 100, "min"],
+                [101, 1, 100, "max"],
+                [-101, -100, -1, "min"],
+                [-0.5, -100, -1, "max"],
+                [0, -100, -1, "max"],
+                [1, -100, -1, "max"]
             ], function (o) {
                 expectTest({
                     value:o[0],
                     config:{min:o[1], max:o[2]},
-                    err:o[3],
-                    result:false
+                    err:o[3]
                 });
             });
         });
@@ -424,8 +410,7 @@ describe("tests", function () {
                 expectTest({
                     value:value,
                     config:value,
-                    err:0,
-                    result:true
+                    err:false
                 });
             });
         });
@@ -449,8 +434,7 @@ describe("tests", function () {
                 expectTest({
                     value:o[0],
                     config:o[1],
-                    err:1,
-                    result:false
+                    err:true
                 });
             });
         });
@@ -485,8 +469,7 @@ describe("tests", function () {
                 expectTest({
                     value:o[0],
                     config:o[1],
-                    err:0,
-                    result:true
+                    err:false
                 });
             });
         });
@@ -505,8 +488,7 @@ describe("tests", function () {
                 expectTest({
                     value:o[0],
                     config:o[1],
-                    err:1,
-                    result:false
+                    err:true
                 });
             });
         });
@@ -546,8 +528,7 @@ describe("tests", function () {
                 expectTest({
                     value:value,
                     config:[0, 1, "a"],
-                    err:0,
-                    result:true
+                    err:false
                 });
             });
         });
@@ -562,8 +543,7 @@ describe("tests", function () {
                 expectTest({
                     value:value,
                     config:[0, 1, "a"],
-                    err:1,
-                    result:false
+                    err:true
                 });
             });
         });
@@ -606,8 +586,7 @@ describe("tests", function () {
                 expectTest({
                     value:o[0],
                     config:o[1],
-                    err:0,
-                    result:true
+                    err:false
                 });
             });
         });
@@ -622,8 +601,7 @@ describe("tests", function () {
                 expectTest({
                     value:o[0],
                     config:o[1],
-                    err:1,
-                    result:false
+                    err:true
                 });
             });
         });
@@ -633,7 +611,7 @@ describe("tests", function () {
         var check = basic.checks[test];
         var mock = {};
         mock[test] = value;
-        check.call(mock, value, test);
+        mock[test] = check.call(mock, value, test);
         expect(mock[test]).toEqual(expected);
     };
 
@@ -653,19 +631,19 @@ describe("tests", function () {
         var isDone = false;
         var mock = {};
         runs(function () {
-            o.done = function (e, r) {
-                mock.err = e;
-                mock.result = r;
+            o.done = function (err, options) {
+                mock.err = err;
+                mock.options = options;
                 isDone = true;
             };
-            task.call(o);
+            task.call(o, o.done);
         });
         waitsFor(function () {
             return isDone == true;
         });
         runs(function () {
             expect(mock.err).toEqual(o.err);
-            expect(mock.result).toEqual(o.result);
+            expect(mock.options).toEqual(o.options);
         });
     };
 
