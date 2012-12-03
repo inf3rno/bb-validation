@@ -1,5 +1,5 @@
 var model = new Backbone.Model({
-    validate:{
+    schema:{
         email:{
             required:true,
             match:"email"

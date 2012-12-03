@@ -14,7 +14,7 @@ var LoginModel = Backbone.ValidableModel.extend({
             }
         }
     }),
-    validate:{
+    schema:{
         email:{
             type:String,
             match:"email"

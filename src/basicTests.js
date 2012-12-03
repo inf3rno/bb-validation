@@ -100,7 +100,7 @@ define(function (require, exports, module) {
             done(!valid);
         }],
         duplicate:function (done) {
-            done(this.model.get(this.config) != this.value);
+            done(this.attributes[this.config] != this.value);
         }
     };
 

@@ -6,21 +6,24 @@ define(function (require, exports, module) {
         Backbone = require("backbone");
 
     var inherit = Object.create || function (proto) {
-        var C = function () {
-            this.constructor = C;
+        var Surrogate = function () {
+            this.constructor = Surrogate;
         };
-        C.prototype = proto;
-        return new C();
+        Surrogate.prototype = proto;
+        return new Surrogate();
     };
 
     var Validator = Backbone.Model.extend({
         checks:{},
         tests:{},
-        patterns:{}
+        patterns:{},
+        run:function (attributes) {
+
+        }
     }, {
-        constructor:function (schema) {
+        constructor:function (model) {
             Backbone.Model.call(this);
-            this.schema = schema;
+            this.model = model;
         },
         install:function (pack) {
             if (!pack)
@@ -43,6 +46,10 @@ define(function (require, exports, module) {
         constructor:function () {
             Backbone.Model.apply(this, arguments);
             this.validator = new this.Validator(this);
+            this.validate(this.attributes);
+        },
+        validate:function (attributes) {
+            return this.validator.run(attributes);
         }
     });
 

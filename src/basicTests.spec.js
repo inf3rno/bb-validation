@@ -623,11 +623,7 @@ describe("tests", function () {
                 value:"test",
                 config:"password",
                 err:true,
-                model:{
-                    get:function (attr) {
-                        return this[attr];
-                    }
-                }
+                attributes:{}
             });
         });
 
@@ -636,11 +632,8 @@ describe("tests", function () {
                 value:"test",
                 config:"password",
                 err:false,
-                model:{
-                    password:"test",
-                    get:function (attr) {
-                        return this[attr];
-                    }
+                attributes:{
+                    password:"test"
                 }
             });
         });
