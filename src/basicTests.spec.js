@@ -607,6 +607,45 @@ describe("tests", function () {
         });
     });
 
+
+    describe("duplicate", function () {
+        beforeEach(function () {
+            test = "duplicate";
+        });
+
+        it("should configure strings only", function () {
+            expectCheck("test", "test");
+            expectCheckThrow(123);
+        });
+
+        it("should error if it's not duplication of the attribute", function () {
+            expectTest({
+                value:"test",
+                config:"password",
+                err:true,
+                model:{
+                    get:function (attr) {
+                        return this[attr];
+                    }
+                }
+            });
+        });
+
+        it("should pass if it's duplication of the attribute", function () {
+            expectTest({
+                value:"test",
+                config:"password",
+                err:false,
+                model:{
+                    password:"test",
+                    get:function (attr) {
+                        return this[attr];
+                    }
+                }
+            });
+        });
+    });
+
     var expectCheck = function (value, expected) {
         var check = basic.checks[test];
         var mock = {};
