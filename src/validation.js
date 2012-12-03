@@ -18,6 +18,10 @@ define(function (require, exports, module) {
         tests:{},
         patterns:{}
     }, {
+        constructor:function (schema) {
+            Backbone.Model.call(this);
+            this.schema = schema;
+        },
         install:function (pack) {
             if (!pack)
                 throw new Error("No install package given.");
@@ -38,7 +42,7 @@ define(function (require, exports, module) {
         Validator:Validator,
         constructor:function () {
             Backbone.Model.apply(this, arguments);
-            this.validator = new this.Validator();
+            this.validator = new this.Validator(this);
         }
     });
 

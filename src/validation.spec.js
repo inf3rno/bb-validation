@@ -9,11 +9,23 @@ describe("validation.Model", function () {
         expect(Model.prototype instanceof Backbone.Model).toBe(true);
     });
 
-    it("creates a validator instance for every model instance", function () {
+    it("creates different validator instances for each model instance", function () {
         var model = new Model();
         expect(model.validator).not.toBe(undefined);
         var model2 = new Model();
         expect(model2.validator).not.toBe(model.validator);
+    });
+
+    it("puts the schema data to the validator initializer", function () {
+        var schema = {};
+        var Model2 = Model.extend({
+            Validator:function (model) {
+                this.schema = model.schema;
+            },
+            schema:schema
+        });
+        var model2 = new Model2();
+        expect(model2.validator.schema).toBe(schema);
     });
 
 });
