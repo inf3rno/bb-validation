@@ -1,7 +1,10 @@
 var _ = require("underscore"),
     Backbone = require("backbone"),
-    Model = require("./validation").Model,
-    Validator = require("./validation").Validator;
+    validation = require("./validation"),
+    Model = validation.Model,
+    Validator = validation.Validator,
+    Runner = validation.Runner,
+    DependencyResolver = validation.DependencyResolver;
 
 describe("validation.Model", function () {
 
@@ -158,4 +161,155 @@ describe("validation.Validator", function () {
         custom:new RegExp()
     };
 
+});
+
+describe("validation.Runner", function () {
+});
+
+describe("validation.DependencyResolver", function () {
+
+    describe("createTestMap", function () {
+        it("returns empty definitions by empty config", function () {
+            expectTestOrder(
+                [],
+                []
+            );
+        });
+
+        it("returns definitions in config key order if no dependency", function () {
+            expectTestOrder(
+                ["a"],
+                ["a"]
+            );
+            expectTestOrder(
+                ["a", "b"],
+                ["a", "b"]
+            );
+            expectTestOrder(
+                ["b", "a"],
+                ["b", "a"]
+            );
+            expectTestOrder(
+                ["b", "c", "a"],
+                ["b", "c", "a"]
+            );
+            expectTestOrder(
+                ["a", "b", "c"],
+                ["a", "b", "c"]
+            );
+        });
+
+        it("returns definitions in dependency and config key order by one level depth dependencies", function () {
+            expectTestOrder(
+                ["a", "b"],
+                ["a", "b_a"]
+            );
+            expectTestOrder(
+                ["a", "b"],
+                ["b_a", "a"]
+            );
+            expectTestOrder(
+                ["a", "b"],
+                ["b_a"]
+            );
+            expectTestOrder(
+                ["a", "b", "c"],
+                ["b_a", "c_a"]
+            );
+            expectTestOrder(
+                ["a", "c", "b"],
+                ["c_a", "b_a"]
+            );
+            expectTestOrder(
+                ["a", "d", "b", "c"],
+                ["d_a", "c_a_b"]
+            );
+        });
+        it("returns definitions in dependency and config key order by multi level depth dependencies", function () {
+            expectTestOrder(
+                ["a", "b", "c"],
+                ["a", "b_a", "c_ab"]
+            );
+            expectTestOrder(
+                ["a", "b", "c"],
+                ["a", "c_ab", "b_a"]
+            );
+            expectTestOrder(
+                ["a", "b", "c"],
+                ["c_ab", "b_a"]
+            );
+            expectTestOrder(
+                ["a", "b", "c"],
+                ["b_a", "c_ab"]
+            );
+            expectTestOrder(
+                ["a", "b", "c"],
+                ["c_ab"]
+            );
+            expectTestOrder(
+                ["a", "d", "b", "c"],
+                ["d_a", "c_ab"]
+            );
+            expectTestOrder(
+                ["a", "b", "c", "d"],
+                ["c_ab", "d_a"]
+            );
+            expectTestOrder(
+                ["a", "d", "b", "e", "c"],
+                ["d_a", "e_ab", "c_ab"]
+            );
+        });
+    });
+
+    var expectTestOrder = function (expectedMap, names) {
+        var expectedNames = [];
+        var expectedTests = [];
+        _.each(expectedMap, function (name) {
+            expectedNames.push(name);
+            expectedTests.push(tests[name]);
+        });
+        var actualMap = resolver.createTestMap(names);
+        var actualNames = [];
+        var actualTests = [];
+        _.each(actualMap, function (test, definitionName) {
+            actualNames.push(definitionNameToTestName[definitionName]);
+            actualTests.push(test);
+        });
+        expect(expectedNames).toEqual(actualNames);
+        expect(expectedTests).toEqual(actualTests);
+    };
+
+    var tests = {
+        a:0,
+        b:1,
+        c:2,
+        d:3,
+        e:4
+    };
+    var definitionNameToTestName = {
+        a:"a",
+        b:"b",
+        b_a:"b",
+        e_ab:"e",
+        c_ab:"c",
+        d_ab:"d",
+        c:"c",
+        d_a:"d",
+        e_ab:"e",
+        c_a:"c",
+        c_a_b:"c"
+    };
+    var definitions = {
+        a:tests.a,
+        b:tests.b,
+        b_a:["a", tests.b],
+        c_ab:["b_a", tests.c],
+        d_ab:["b_a", tests.d],
+        c:tests.c,
+        d_a:["a", tests.d],
+        e_ab:["b_a", tests.e],
+        c_a:["a", tests.c],
+        c_a_b:["a", "b", tests.c]
+    };
+    var resolver = new DependencyResolver(definitions);
 });

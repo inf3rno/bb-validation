@@ -90,8 +90,8 @@ define(function (require, exports, module) {
         }
     };
 
-    var DependencyResolver = function (tests) {
-        this.tests = tests;
+    var DependencyResolver = function (definitions) {
+        this.definitions = definitions;
     };
     DependencyResolver.prototype = {
         createTestMap:function (names) {
@@ -104,7 +104,7 @@ define(function (require, exports, module) {
         appendIfNotContained:function (name, testMap) {
             if (name in testMap)
                 return;
-            if (!(name in this.tests))
+            if (!(name in this.definitions))
                 throw new SyntaxError("Task " + name + " is not registered.");
             _.each(this.getDependencies(name), function (key) {
                 this.appendIfNotContained(key, testMap);
@@ -112,14 +112,14 @@ define(function (require, exports, module) {
             testMap[name] = this.getTest(name);
         },
         getDependencies:function (name) {
-            var definition = this.tests[name];
+            var definition = this.definitions[name];
             if (definition instanceof Array)
                 return definition.slice(0, -1);
             else
                 return [];
         },
         getTest:function (name) {
-            var definition = this.tests[name];
+            var definition = this.definitions[name];
             if (definition instanceof Array)
                 return definition[definition.length - 1];
             else
