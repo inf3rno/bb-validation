@@ -20,27 +20,14 @@ define(function (require, exports, module) {
         constructor:function (model) {
             Backbone.Model.call(this);
             this.model = model;
+            this.on("done", function (attribute, result) {
+                this.set(attribute, result);
+            });
         },
         run:function (attributes) {
             _.each(this.model.schema, function (settings, attribute) {
-                var error;
-                var result = false;
-                var done = function (err) {
-                    error = err;
-                };
-                var runner = {};
-                _.all(settings, function (config, test) {
-                    var runTest = this.tests[test];
-                    if (typeof(runTest) != "function")
-                        throw new Error("Invalid test name.");
-                    runTest.call(runner, done);
-                    if (error) {
-                        result = {};
-                        result[test] = error;
-                    }
-                    return !error;
-                }, this);
-                this.set(attribute, result);
+                var runner = new Runner(this, settings, attribute);
+                runner.run();
             }, this);
         }
     }, {
@@ -60,6 +47,35 @@ define(function (require, exports, module) {
         }
     });
 
+    var Runner = function (validator, settings, attribute) {
+        this.validator = validator;
+        this.settings = settings;
+        this.attribute = attribute;
+    };
+    Runner.prototype = {
+        run:function () {
+            var error;
+            var result = false;
+            var done = function (err) {
+                error = err;
+            };
+            var runner = {};
+            _.all(this.settings, function (config, test) {
+                var runTest = this.validator.tests[test];
+                if (typeof(runTest) != "function")
+                    throw new Error("Invalid test name.");
+                runTest.call(runner, done);
+                if (error) {
+                    result = {};
+                    result[test] = error;
+                }
+                return !error;
+            }, this);
+            this.validator.trigger("done", this.attribute, result);
+        }
+    };
+
+
     var Model = Backbone.Model.extend({
         Validator:Validator,
         constructor:function () {
@@ -74,7 +90,8 @@ define(function (require, exports, module) {
 
     module.exports = {
         Model:Model,
-        Validator:Validator
+        Validator:Validator,
+        Runner:Runner
     };
 
 });
