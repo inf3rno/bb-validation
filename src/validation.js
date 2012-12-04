@@ -17,14 +17,33 @@ define(function (require, exports, module) {
         checks:{},
         tests:{},
         patterns:{},
-        run:function (attributes) {
-
-        }
-    }, {
         constructor:function (model) {
             Backbone.Model.call(this);
             this.model = model;
         },
+        run:function (attributes) {
+            _.each(this.model.schema, function (settings, attribute) {
+                var error;
+                var result = false;
+                var done = function (err) {
+                    error = err;
+                };
+                var runner = {};
+                _.all(settings, function (config, test) {
+                    var runTest = this.tests[test];
+                    if (typeof(runTest) != "function")
+                        throw new Error("Invalid test name.");
+                    runTest.call(runner, done);
+                    if (error) {
+                        result = {};
+                        result[test] = error;
+                    }
+                    return !error;
+                }, this);
+                this.set(attribute, result);
+            }, this);
+        }
+    }, {
         install:function (pack) {
             if (!pack)
                 throw new Error("No install package given.");

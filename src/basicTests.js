@@ -99,9 +99,9 @@ define(function (require, exports, module) {
                 valid = false;
             done(!valid);
         }],
-        duplicate:function (done) {
+        duplicate:["required", function (done) {
             done(this.attributes[this.config] != this.value);
-        }
+        }]
     };
 
     var checks = {

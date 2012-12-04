@@ -92,6 +92,41 @@ describe("validation.Validator", function () {
         expect(Validator2.prototype.patterns.custom2).toEqual(patterns.custom2);
     });
 
+    it("stops by error by each attribute, but every attribute in schema is processed", function () {
+        var Validator2 = Validator.extend({});
+        Validator2.install({
+            tests:{
+                a:function (done) {
+                    done();
+                },
+                b:function (done) {
+                    done("error");
+                },
+                c:function (done) {
+                    done();
+                }
+            }
+        });
+        var model = {
+            schema:{
+                myAttr:{
+                    a:null,
+                    b:null,
+                    c:null
+                },
+                myAttr2:{
+                    a:null,
+                    c:null
+                }
+            }
+        };
+        var validator = new Validator2(model);
+        validator.run({});
+        var result = validator.toJSON();
+        expect(result.myAttr).toEqual({b:"error"});
+        expect(result.myAttr2).toBe(false);
+    });
+
     var tests = {
         custom:function (done) {
             done();
@@ -122,6 +157,5 @@ describe("validation.Validator", function () {
     var patternsOverride = {
         custom:new RegExp()
     };
-
 
 });
