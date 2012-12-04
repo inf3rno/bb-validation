@@ -13,6 +13,17 @@ define(function (require, exports, module) {
         return new Surrogate();
     };
 
+    var Model = Backbone.Model.extend({
+        constructor:function () {
+            Backbone.Model.apply(this, arguments);
+            this.validator = new this.Validator(this);
+            this.validate(this.attributes);
+        },
+        validate:function (attributes) {
+            return this.validator.run(attributes);
+        }
+    });
+
     var Validator = Backbone.Model.extend({
         checks:{},
         tests:{},
@@ -50,6 +61,8 @@ define(function (require, exports, module) {
         }
     });
 
+    Model.prototype.Validator = Validator;
+
     var Runner = function (validator, settings, attribute) {
         this.validator = validator;
         this.settings = settings;
@@ -82,18 +95,43 @@ define(function (require, exports, module) {
         }
     };
 
-
-    var Model = Backbone.Model.extend({
-        Validator:Validator,
-        constructor:function () {
-            Backbone.Model.apply(this, arguments);
-            this.validator = new this.Validator(this);
-            this.validate(this.attributes);
+    var InterdependentTaskSeriesBuilder = function (taskStore) {
+        this.taskStore = taskStore;
+    };
+    InterdependentTaskSeriesBuilder.prototype = {
+        createTasks:function (config) {
+            var tasks = {};
+            _.each(config, function (params, key) {
+                this.appendIfNotContained(key, tasks);
+            }, this);
+            return tasks;
         },
-        validate:function (attributes) {
-            return this.validator.run(attributes);
+        appendIfNotContained:function (key, tasks) {
+            if (key in tasks)
+                return;
+            if (!(key in this.taskStore))
+                throw new SyntaxError("Task " + key + " is not registered.");
+            _.each(this.dependencies(key), function (key) {
+                this.appendIfNotContained(key, tasks);
+            }, this);
+            tasks[key] = this.task(key);
+        },
+        dependencies:function (key) {
+            var record = this.taskStore[key];
+            if (record instanceof Array)
+                return record.slice(0, -1);
+            else
+                return [];
+        },
+        task:function (key) {
+            var record = this.taskStore[key];
+            if (record instanceof Array)
+                return record[record.length - 1];
+            else
+                return record;
         }
-    });
+    };
+
 
     module.exports = {
         Model:Model,
