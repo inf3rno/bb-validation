@@ -31,9 +31,11 @@ define(function (require, exports, module) {
         constructor:function (model) {
             Backbone.Model.call(this);
             this.model = model;
+            this.dependencyResolver = new DependencyResolver(this.tests);
             this.runners = {};
             _.each(this.model.schema, function (settings, attribute) {
-                this.runners[attribute] = new Runner(this, settings, attribute);
+                var tests = this.dependencyResolver.createTestMap(_.keys(settings));
+                this.runners[attribute] = new Runner(this, tests, settings, attribute);
             }, this);
             this.on("done", function (attribute, result) {
                 this.set(attribute, result);
@@ -63,12 +65,11 @@ define(function (require, exports, module) {
 
     Model.prototype.Validator = Validator;
 
-    var Runner = function (validator, settings, attribute) {
+    var Runner = function (validator, tests, settings, attribute) {
         this.validator = validator;
+        this.tests = tests;
         this.settings = settings;
         this.attribute = attribute;
-        this.dependencyResolver = new DependencyResolver(validator.tests);
-        this.tests = this.dependencyResolver.createTestMap(_.keys(this.settings));
     };
     Runner.prototype = {
         run:function () {
