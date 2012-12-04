@@ -20,13 +20,16 @@ define(function (require, exports, module) {
         constructor:function (model) {
             Backbone.Model.call(this);
             this.model = model;
+            this.runners = {};
+            _.each(this.model.schema, function (settings, attribute) {
+                this.runners[attribute] = new Runner(this, settings, attribute);
+            }, this);
             this.on("done", function (attribute, result) {
                 this.set(attribute, result);
             });
         },
         run:function (attributes) {
-            _.each(this.model.schema, function (settings, attribute) {
-                var runner = new Runner(this, settings, attribute);
+            _.each(this.runners, function (runner, attribute) {
                 runner.run();
             }, this);
         }
@@ -51,6 +54,13 @@ define(function (require, exports, module) {
         this.validator = validator;
         this.settings = settings;
         this.attribute = attribute;
+        this.tests = {};
+        _.each(this.settings, function (config, test) {
+            var runTest = this.validator.tests[test];
+            if (typeof(runTest) != "function")
+                throw new Error("Invalid test name.");
+            this.tests[test] = runTest;
+        }, this);
     };
     Runner.prototype = {
         run:function () {
@@ -61,10 +71,7 @@ define(function (require, exports, module) {
             };
             var runner = {};
             _.all(this.settings, function (config, test) {
-                var runTest = this.validator.tests[test];
-                if (typeof(runTest) != "function")
-                    throw new Error("Invalid test name.");
-                runTest.call(runner, done);
+                this.tests[test].call(runner, done);
                 if (error) {
                     result = {};
                     result[test] = error;
