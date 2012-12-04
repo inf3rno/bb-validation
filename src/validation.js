@@ -76,13 +76,12 @@ define(function (require, exports, module) {
             var result = false;
             var done = function (err) {
                 error = err;
-            };
-            var runner = {};
-            _.all(this.settings, function (config, test) {
-                this.tests[test].call(runner, done);
+            }.bind(this);
+            _.all(this.settings, function (config, name) {
+                this.tests[name].call(this, done);
                 if (error) {
                     result = {};
-                    result[test] = error;
+                    result[name] = error;
                 }
                 return !error;
             }, this);
