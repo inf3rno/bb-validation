@@ -95,41 +95,6 @@ describe("validation.Validator", function () {
         expect(Validator2.prototype.patterns.custom2).toEqual(patterns.custom2);
     });
 
-    it("stops by error by each attribute, but every attribute in schema is processed", function () {
-        var Validator2 = Validator.extend({});
-        Validator2.install({
-            tests:{
-                a:function (done) {
-                    done();
-                },
-                b:function (done) {
-                    done("error");
-                },
-                c:function (done) {
-                    done();
-                }
-            }
-        });
-        var model = {
-            schema:{
-                myAttr:{
-                    a:null,
-                    b:null,
-                    c:null
-                },
-                myAttr2:{
-                    a:null,
-                    c:null
-                }
-            }
-        };
-        var validator = new Validator2(model);
-        validator.run({});
-        var result = validator.toJSON();
-        expect(result.myAttr).toEqual({b:"error"});
-        expect(result.myAttr2).toBe(false);
-    });
-
     var tests = {
         custom:function (done) {
             done();
@@ -164,19 +129,49 @@ describe("validation.Validator", function () {
 });
 
 describe("validation.Runner", function () {
+    it("stops by error", function () {
+        var called = {};
+        var testMap = {
+            a:function (done) {
+                called.a = true;
+                done();
+            },
+            b:function (done) {
+                called.b = true;
+                done("error");
+            },
+            c:function (done) {
+                called.c = true;
+                done();
+            }
+        };
+        var settings = {
+            a:null,
+            b:null,
+            c:null
+        };
+        var runner = new Runner(testMap, settings);
+        var result;
+        runner.on("done", function (r) {
+            result = r;
+        });
+        runner.run({});
+        expect(called).toEqual({a:true, b:true});
+        expect(result).toEqual({b:"error"});
+    });
 });
 
 describe("validation.DependencyResolver", function () {
 
     describe("createTestMap", function () {
-        it("returns empty definitions by empty config", function () {
+        it("returns empty tests by empty config", function () {
             expectTestOrder(
                 [],
                 []
             );
         });
 
-        it("returns definitions in config key order if no dependency", function () {
+        it("returns tests in config key order if no dependency", function () {
             expectTestOrder(
                 ["a"],
                 ["a"]
@@ -199,7 +194,7 @@ describe("validation.DependencyResolver", function () {
             );
         });
 
-        it("returns definitions in dependency and config key order by one level depth dependencies", function () {
+        it("returns tests in dependency and config key order by one level depth dependencies", function () {
             expectTestOrder(
                 ["a", "b"],
                 ["a", "b_a"]
@@ -225,7 +220,7 @@ describe("validation.DependencyResolver", function () {
                 ["d_a", "c_a_b"]
             );
         });
-        it("returns definitions in dependency and config key order by multi level depth dependencies", function () {
+        it("returns tests in dependency and config key order by multi level depth dependencies", function () {
             expectTestOrder(
                 ["a", "b", "c"],
                 ["a", "b_a", "c_ab"]
@@ -262,31 +257,31 @@ describe("validation.DependencyResolver", function () {
     });
 
     var expectTestOrder = function (expectedMap, names) {
-        var expectedNames = [];
+        var expectedKeys = [];
         var expectedTests = [];
-        _.each(expectedMap, function (name) {
-            expectedNames.push(name);
-            expectedTests.push(tests[name]);
+        _.each(expectedMap, function (key) {
+            expectedKeys.push(key);
+            expectedTests.push(testStore[key]);
         });
         var actualMap = resolver.createTestMap(names);
-        var actualNames = [];
+        var actualKeys = [];
         var actualTests = [];
-        _.each(actualMap, function (test, definitionName) {
-            actualNames.push(definitionNameToTestName[definitionName]);
+        _.each(actualMap, function (test, name) {
+            actualKeys.push(nameToStoreKey[name]);
             actualTests.push(test);
         });
-        expect(expectedNames).toEqual(actualNames);
+        expect(expectedKeys).toEqual(actualKeys);
         expect(expectedTests).toEqual(actualTests);
     };
 
-    var tests = {
+    var testStore = {
         a:0,
         b:1,
         c:2,
         d:3,
         e:4
     };
-    var definitionNameToTestName = {
+    var nameToStoreKey = {
         a:"a",
         b:"b",
         b_a:"b",
@@ -299,17 +294,17 @@ describe("validation.DependencyResolver", function () {
         c_a:"c",
         c_a_b:"c"
     };
-    var definitions = {
-        a:tests.a,
-        b:tests.b,
-        b_a:["a", tests.b],
-        c_ab:["b_a", tests.c],
-        d_ab:["b_a", tests.d],
-        c:tests.c,
-        d_a:["a", tests.d],
-        e_ab:["b_a", tests.e],
-        c_a:["a", tests.c],
-        c_a_b:["a", "b", tests.c]
+    var tests = {
+        a:testStore.a,
+        b:testStore.b,
+        b_a:["a", testStore.b],
+        c_ab:["b_a", testStore.c],
+        d_ab:["b_a", testStore.d],
+        c:testStore.c,
+        d_a:["a", testStore.d],
+        e_ab:["b_a", testStore.e],
+        c_a:["a", testStore.c],
+        c_a_b:["a", "b", testStore.c]
     };
-    var resolver = new DependencyResolver(definitions);
+    var resolver = new DependencyResolver(tests);
 });

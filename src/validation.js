@@ -66,8 +66,8 @@ define(function (require, exports, module) {
 
     Model.prototype.Validator = Validator;
 
-    var Runner = function (tests, settings) {
-        this.tests = tests;
+    var Runner = function (testMap, settings) {
+        this.testMap = testMap;
         this.settings = settings;
     };
     _.extend(Runner.prototype, Backbone.Events, {
@@ -78,7 +78,7 @@ define(function (require, exports, module) {
                 error = err;
             }.bind(this);
             _.all(this.settings, function (config, name) {
-                this.tests[name].call(this, done);
+                this.testMap[name].call(this, done);
                 if (error) {
                     result = {};
                     result[name] = error;
@@ -91,8 +91,8 @@ define(function (require, exports, module) {
 
     Validator.prototype.Runner = Runner;
 
-    var DependencyResolver = function (definitions) {
-        this.definitions = definitions;
+    var DependencyResolver = function (tests) {
+        this.tests = tests;
     };
     DependencyResolver.prototype = {
         createTestMap:function (names) {
@@ -105,7 +105,7 @@ define(function (require, exports, module) {
         appendIfNotContained:function (name, testMap) {
             if (name in testMap)
                 return;
-            if (!(name in this.definitions))
+            if (!(name in this.tests))
                 throw new SyntaxError("Task " + name + " is not registered.");
             _.each(this.getDependencies(name), function (key) {
                 this.appendIfNotContained(key, testMap);
@@ -113,14 +113,14 @@ define(function (require, exports, module) {
             testMap[name] = this.getTest(name);
         },
         getDependencies:function (name) {
-            var definition = this.definitions[name];
+            var definition = this.tests[name];
             if (definition instanceof Array)
                 return definition.slice(0, -1);
             else
                 return [];
         },
         getTest:function (name) {
-            var definition = this.definitions[name];
+            var definition = this.tests[name];
             if (definition instanceof Array)
                 return definition[definition.length - 1];
             else
