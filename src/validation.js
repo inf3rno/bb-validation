@@ -95,40 +95,40 @@ define(function (require, exports, module) {
         }
     };
 
-    var InterdependentTaskSeriesBuilder = function (taskStore) {
-        this.taskStore = taskStore;
+    var DependencyResolver = function (tests) {
+        this.tests = tests;
     };
-    InterdependentTaskSeriesBuilder.prototype = {
-        createTasks:function (config) {
-            var tasks = {};
-            _.each(config, function (params, key) {
-                this.appendIfNotContained(key, tasks);
+    DependencyResolver.prototype = {
+        createTestList:function (names) {
+            var testList = {};
+            _.each(names, function (name) {
+                this.appendIfNotContained(name, testList);
             }, this);
-            return tasks;
+            return testList;
         },
-        appendIfNotContained:function (key, tasks) {
-            if (key in tasks)
+        appendIfNotContained:function (name, testList) {
+            if (name in testList)
                 return;
-            if (!(key in this.taskStore))
-                throw new SyntaxError("Task " + key + " is not registered.");
-            _.each(this.dependencies(key), function (key) {
-                this.appendIfNotContained(key, tasks);
+            if (!(name in this.tests))
+                throw new SyntaxError("Task " + name + " is not registered.");
+            _.each(this.getDependencies(name), function (key) {
+                this.appendIfNotContained(key, testList);
             }, this);
-            tasks[key] = this.task(key);
+            testList[name] = this.getTest(name);
         },
-        dependencies:function (key) {
-            var record = this.taskStore[key];
-            if (record instanceof Array)
-                return record.slice(0, -1);
+        getDependencies:function (name) {
+            var definition = this.tests[name];
+            if (definition instanceof Array)
+                return definition.slice(0, -1);
             else
                 return [];
         },
-        task:function (key) {
-            var record = this.taskStore[key];
-            if (record instanceof Array)
-                return record[record.length - 1];
+        getTest:function (name) {
+            var definition = this.tests[name];
+            if (definition instanceof Array)
+                return definition[definition.length - 1];
             else
-                return record;
+                return definition;
         }
     };
 
@@ -136,7 +136,8 @@ define(function (require, exports, module) {
     module.exports = {
         Model:Model,
         Validator:Validator,
-        Runner:Runner
+        Runner:Runner,
+        DependencyResolver:DependencyResolver
     };
 
 });
