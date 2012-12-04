@@ -31,11 +31,11 @@ define(function (require, exports, module) {
         constructor:function (model) {
             Backbone.Model.call(this);
             this.model = model;
-            this.dependencyResolver = new DependencyResolver(this.tests);
+            this.dependencyResolver = new this.DependencyResolver(this.tests);
             this.runners = {};
             _.each(this.model.schema, function (settings, attribute) {
                 var tests = this.dependencyResolver.createTestMap(_.keys(settings));
-                var runner = new Runner(tests, settings);
+                var runner = new this.Runner(tests, settings);
                 runner.on("done", function (result) {
                     this.set(attribute, result);
                 }, this)
@@ -89,6 +89,8 @@ define(function (require, exports, module) {
         }
     });
 
+    Validator.prototype.Runner = Runner;
+
     var DependencyResolver = function (definitions) {
         this.definitions = definitions;
     };
@@ -126,6 +128,7 @@ define(function (require, exports, module) {
         }
     };
 
+    Validator.prototype.DependencyResolver = DependencyResolver;
 
     module.exports = {
         Model:Model,
