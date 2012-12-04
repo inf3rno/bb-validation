@@ -67,13 +67,8 @@ define(function (require, exports, module) {
         this.validator = validator;
         this.settings = settings;
         this.attribute = attribute;
-        this.tests = {};
-        _.each(this.settings, function (config, test) {
-            var runTest = this.validator.tests[test];
-            if (typeof(runTest) != "function")
-                throw new Error("Invalid test name.");
-            this.tests[test] = runTest;
-        }, this);
+        this.dependencyResolver = new DependencyResolver(validator.tests);
+        this.tests = this.dependencyResolver.createTestMap(_.keys(this.settings));
     };
     Runner.prototype = {
         run:function () {
@@ -99,22 +94,22 @@ define(function (require, exports, module) {
         this.tests = tests;
     };
     DependencyResolver.prototype = {
-        createTestList:function (names) {
-            var testList = {};
+        createTestMap:function (names) {
+            var testMap = {};
             _.each(names, function (name) {
-                this.appendIfNotContained(name, testList);
+                this.appendIfNotContained(name, testMap);
             }, this);
-            return testList;
+            return testMap;
         },
-        appendIfNotContained:function (name, testList) {
-            if (name in testList)
+        appendIfNotContained:function (name, testMap) {
+            if (name in testMap)
                 return;
             if (!(name in this.tests))
                 throw new SyntaxError("Task " + name + " is not registered.");
             _.each(this.getDependencies(name), function (key) {
-                this.appendIfNotContained(key, testList);
+                this.appendIfNotContained(key, testMap);
             }, this);
-            testList[name] = this.getTest(name);
+            testMap[name] = this.getTest(name);
         },
         getDependencies:function (name) {
             var definition = this.tests[name];
