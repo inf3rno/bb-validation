@@ -35,11 +35,12 @@ define(function (require, exports, module) {
             this.runners = {};
             _.each(this.model.schema, function (settings, attribute) {
                 var tests = this.dependencyResolver.createTestMap(_.keys(settings));
-                this.runners[attribute] = new Runner(this, tests, settings, attribute);
+                var runner = new Runner(tests, settings);
+                runner.on("done", function (result) {
+                    this.set(attribute, result);
+                }, this)
+                this.runners[attribute] = runner;
             }, this);
-            this.on("done", function (attribute, result) {
-                this.set(attribute, result);
-            });
         },
         run:function (attributes) {
             _.each(this.runners, function (runner, attribute) {
@@ -65,13 +66,11 @@ define(function (require, exports, module) {
 
     Model.prototype.Validator = Validator;
 
-    var Runner = function (validator, tests, settings, attribute) {
-        this.validator = validator;
+    var Runner = function (tests, settings) {
         this.tests = tests;
         this.settings = settings;
-        this.attribute = attribute;
     };
-    Runner.prototype = {
+    _.extend(Runner.prototype, Backbone.Events, {
         run:function () {
             var error;
             var result = false;
@@ -87,9 +86,9 @@ define(function (require, exports, module) {
                 }
                 return !error;
             }, this);
-            this.validator.trigger("done", this.attribute, result);
+            this.trigger("done", result);
         }
-    };
+    });
 
     var DependencyResolver = function (definitions) {
         this.definitions = definitions;
