@@ -95,6 +95,111 @@ describe("validation.Validator", function () {
         expect(Validator2.prototype.patterns.custom2).toEqual(patterns.custom2);
     });
 
+    it("creates dependency resolver with tests", function () {
+        var mockModel = {
+            schema:{
+                attr1:{
+                    test1:"a",
+                    test2:"b"
+                },
+                attr2:{
+                    test1:"c"
+                }
+            }
+        };
+        var mockResolver = jasmine.createSpyObj("resolver", ["initialize", "createTestMap"]);
+        var mockRunner = jasmine.createSpyObj("runner", ["initialize", "on"]);
+        var Validator2 = Validator.extend({
+            DependencyResolver:function () {
+                mockResolver.initialize.apply(mockResolver, arguments);
+                return mockResolver;
+            },
+            Runner:function () {
+                return mockRunner;
+            }
+        });
+        var validator = new Validator2(mockModel);
+        expect(mockResolver.initialize.callCount).toEqual(1);
+        expect(mockResolver.initialize).toHaveBeenCalledWith(Validator2.prototype.tests);
+        expect(mockResolver.createTestMap.callCount).toEqual(2);
+    });
+
+    it("creates runners with dependency resolver outputs", function () {
+        var mockModel = {
+            schema:{
+                attr1:{
+                    test1:"a",
+                    test2:"b"
+                },
+                attr2:{
+                    test1:"c"
+                }
+            }
+        };
+        var testMap1 = {test1:function () {
+        }, test2:function () {
+        }};
+        var testMap2 = {test1:function () {
+        }};
+        var mockResolver = jasmine.createSpyObj("resolver", ["initialize", "createTestMap"]);
+        mockResolver.createTestMap.andCallFake(function (names) {
+            if (names.length == 2)
+                return testMap1;
+            else if (names.length == 1)
+                return testMap2;
+        });
+        var mockRunner = jasmine.createSpyObj("runner", ["initialize", "on"]);
+        var Validator2 = Validator.extend({
+            DependencyResolver:function () {
+                mockResolver.initialize.apply(mockResolver, arguments);
+                return mockResolver;
+            },
+            Runner:function () {
+                mockRunner.initialize.apply(mockRunner, arguments);
+                return mockRunner;
+            }
+        });
+        var validator = new Validator2(mockModel);
+        expect(mockResolver.initialize.callCount).toEqual(1);
+        expect(mockResolver.initialize).toHaveBeenCalledWith(Validator2.prototype.tests);
+
+        expect(mockRunner.initialize.callCount).toEqual(2);
+        expect(mockRunner.initialize).toHaveBeenCalledWith(testMap1, mockModel.schema.attr1);
+        expect(mockRunner.initialize).toHaveBeenCalledWith(testMap2, mockModel.schema.attr2);
+
+        expect(mockRunner.on).toHaveBeenCalled();
+    });
+
+    if ("calls the runners by run", function () {
+        var mockModel = {
+            schema:{
+                attr1:{
+                    test1:"a",
+                    test2:"b"
+                },
+                attr2:{
+                    test1:"c"
+                }
+            }
+        };
+        var mockResolver = jasmine.createSpyObj("resolver", ["createTestMap"]);
+        var mockRunner = jasmine.createSpyObj("runner", ["on", "run"]);
+        var Validator2 = Validator.extend({
+            DependencyResolver:function () {
+                return mockResolver;
+            },
+            Runner:function () {
+                return mockRunner;
+            }
+        });
+        var validator = new Validator2(mockModel);
+        expect(mockRunner.run).not.toHaveBeenCalled();
+        var attributes = {test:1};
+        validator.run(attributes);
+        expect(mockRunner.run.callCount).toEqual(1);
+        expect(mockRunner.run).toHaveBeenCalledWith(attributes);
+    });
+
     var tests = {
         custom:function (done) {
             done();
