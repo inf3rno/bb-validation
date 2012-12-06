@@ -234,6 +234,44 @@ describe("validation.Validator", function () {
 });
 
 describe("validation.Runner", function () {
+    it("calls tests with the proper settings property", function () {
+        var called = {};
+        var register = function (done) {
+            called[this.name] = {
+                config:this.config,
+                value:this.value,
+                attributes:this.attributes
+            };
+            done();
+        };
+        var testMap = {
+            a:register,
+            b:register
+        };
+        var settings = {
+            a:1,
+            b:2
+        };
+        var runner = new Runner(testMap, settings);
+        var attributes = {
+            a:"attr1",
+            b:"attr2"
+        };
+        runner.run(attributes);
+        expect(called).toEqual({
+            a:{
+                config:settings.a,
+                value:attributes.a,
+                attributes:attributes
+            },
+            b:{
+                config:settings.b,
+                value:attributes.b,
+                attributes:attributes
+            },
+        });
+    });
+
     it("stops by error", function () {
         var called = {};
         var testMap = {

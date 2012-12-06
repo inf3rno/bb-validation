@@ -71,13 +71,17 @@ define(function (require, exports, module) {
         this.settings = settings;
     };
     _.extend(Runner.prototype, Backbone.Events, {
-        run:function () {
+        run:function (attributes) {
+            this.attributes = attributes;
             var error;
             var result = false;
             var done = function (err) {
                 error = err;
             }.bind(this);
             _.all(this.settings, function (config, name) {
+                this.config = config;
+                this.name = name;
+                this.value = this.attributes[name];
                 this.testMap[name].call(this, done);
                 if (error) {
                     result = {};
