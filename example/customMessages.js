@@ -1,4 +1,4 @@
-var model = new Backbone.Model({
+var model = new Backbone.ValidableModel({
     schema:{
         email:{
             required:true,

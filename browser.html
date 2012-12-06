@@ -24,9 +24,8 @@
         }
     });
 
-    require(["jquery", "underscore", "backbone", "domReady!", "src/backbone-validator", "src/basicTests"], function ($, _, Backbone, domReady, validator, tests) {
-        validator.install(tests);
-
+    require(["jquery", "underscore", "backbone", "domReady!", "src/validation", "src/basicTests"], function ($, _, Backbone, domReady, validation, basics) {
+        validation.install(basics);
 
         var View = Backbone.View.extend({
             tagName:"div",
@@ -42,8 +41,8 @@
             },
             render:function () {
                 this.model.validator.on("change", function () {
-                    _.each(this.model.validator.attributes, function (passed, attribute) {
-
+                    _.each(this.model.validator.attributes, function (errors, attribute) {
+                        //errors: false or {test: message} format
                     }, this);
                 }, this);
                 this.$el.html(this.template(this.model.toJSON()));
@@ -51,7 +50,7 @@
             }
         });
 
-        var Model = validator.Model.extend({
+        var Model = validation.Model.extend({
             schema:{
                 email:{
                     required:true,
