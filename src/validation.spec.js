@@ -336,6 +336,26 @@ describe("validation.Runner", function () {
             expect(called).toEqual(["a", "b"]);
         });
     });
+
+    it("triggers done without tests", function () {
+        var test = jasmine.createSpy("test").andCallFake(function (done) {
+            done();
+        });
+
+        var testMap = {
+            a:test,
+            b:test
+        };
+        var settings = {};
+        var runner = new Runner(testMap, settings);
+        var isDone = false;
+        runner.on("done", function (r) {
+            isDone = true;
+        });
+        runner.run({});
+        expect(isDone).toEqual(true);
+        expect(test).not.toHaveBeenCalled();
+    });
 });
 
 describe("validation.DependencyResolver", function () {

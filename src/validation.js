@@ -80,6 +80,8 @@ define(function (require, exports, module) {
             this.next();
         },
         next:function () {
+            if (this.error || this.pointer >= this.names.length)
+                return this.trigger("done", this.result);
             this.name = this.names[this.pointer];
             this.config = this.settings[this.name];
             this.value = this.attributes[this.name];
@@ -93,10 +95,7 @@ define(function (require, exports, module) {
                 this.result[this.name] = this.error;
             }
             ++this.pointer;
-            if (!this.error && this.pointer < this.names.length)
-                this.next();
-            else
-                this.trigger("done", this.result);
+            this.next();
         }
     });
 
