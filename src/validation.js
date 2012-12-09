@@ -69,27 +69,34 @@ define(function (require, exports, module) {
     var Runner = function (testMap, settings) {
         this.testMap = testMap;
         this.settings = settings;
+        this.names = _.keys(this.settings);
     };
     _.extend(Runner.prototype, Backbone.Events, {
         run:function (attributes) {
             this.attributes = attributes;
-            var error;
-            var result = false;
-            var done = function (err) {
-                error = err;
-            }.bind(this);
-            _.all(this.settings, function (config, name) {
-                this.config = config;
-                this.name = name;
-                this.value = this.attributes[name];
-                this.testMap[name].call(this, done);
-                if (error) {
-                    result = {};
-                    result[name] = error;
-                }
-                return !error;
-            }, this);
-            this.trigger("done", result);
+            this.error = false;
+            this.result = false;
+            this.pointer = 0;
+            this.next();
+        },
+        next:function () {
+            this.name = this.names[this.pointer];
+            this.config = this.settings[this.name];
+            this.value = this.attributes[this.name];
+            this.testMap[this.name].call(this, this.done.bind(this));
+            return !this.error;
+        },
+        done:function (err) {
+            this.error = err;
+            if (this.error) {
+                this.result = {};
+                this.result[this.name] = this.error;
+            }
+            ++this.pointer;
+            if (!this.error && this.pointer < this.names.length)
+                this.next();
+            else
+                this.trigger("done", this.result);
         }
     });
 

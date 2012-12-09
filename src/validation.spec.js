@@ -268,7 +268,7 @@ describe("validation.Runner", function () {
                 config:settings.b,
                 value:attributes.b,
                 attributes:attributes
-            },
+            }
         });
     });
 
@@ -302,6 +302,7 @@ describe("validation.Runner", function () {
         expect(called).toEqual({a:true, b:true});
         expect(result).toEqual({b:"error"});
     });
+
 });
 
 describe("validation.DependencyResolver", function () {
