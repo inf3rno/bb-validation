@@ -303,6 +303,39 @@ describe("validation.Runner", function () {
         expect(result).toEqual({b:"error"});
     });
 
+    it("keeps correct order by async tests", function () {
+        var called = [];
+        var testMap = {
+            a:function (done) {
+                setTimeout(function () {
+                    called.push(this.name);
+                    done();
+                }.bind(this), 1);
+            },
+            b:function (done) {
+                called.push(this.name);
+                done();
+            }
+        };
+        var settings = {
+            a:null,
+            b:null
+        };
+        var isDone = false;
+        var runner = new Runner(testMap, settings);
+        runner.on("done", function () {
+            isDone = true;
+        });
+        runs(function () {
+            runner.run({});
+        });
+        waitsFor(function () {
+            return isDone;
+        });
+        runs(function () {
+            expect(called).toEqual(["a", "b"]);
+        });
+    });
 });
 
 describe("validation.DependencyResolver", function () {
