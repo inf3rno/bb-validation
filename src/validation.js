@@ -36,7 +36,7 @@ define(function (require, exports, module) {
             _.each(this.model.schema, function (settings, attribute) {
                 var tests = this.dependencyResolver.createTestMap(_.keys(settings));
                 var runner = new this.Runner(tests, settings);
-                runner.on("done", function (result) {
+                runner.on("end", function (result) {
                     this.set(attribute, result);
                 }, this)
                 this.runners[attribute] = runner;
@@ -80,22 +80,26 @@ define(function (require, exports, module) {
             this.next();
         },
         next:function () {
-            if (this.error || this.pointer >= this.names.length)
-                return this.trigger("done", this.result);
-            this.name = this.names[this.pointer];
-            this.config = this.settings[this.name];
-            this.value = this.attributes[this.name];
-            this.testMap[this.name].call(this, this.done.bind(this));
-            return !this.error;
+            if (!this.error && this.pointer < this.names.length) {
+                this.name = this.names[this.pointer];
+                this.config = this.settings[this.name];
+                this.value = this.attributes[this.name];
+                this.testMap[this.name].call(this, this.done.bind(this));
+            }
+            else
+                this.end();
         },
-        done:function (err) {
-            this.error = err;
+        done:function (error) {
+            this.error = error;
             if (this.error) {
                 this.result = {};
                 this.result[this.name] = this.error;
             }
             ++this.pointer;
             this.next();
+        },
+        end:function () {
+            this.trigger("end", this.result);
         }
     });
 

@@ -295,7 +295,7 @@ describe("validation.Runner", function () {
         };
         var runner = new Runner(testMap, settings);
         var result;
-        runner.on("done", function (r) {
+        runner.on("end", function (r) {
             result = r;
         });
         runner.run({});
@@ -323,7 +323,7 @@ describe("validation.Runner", function () {
         };
         var isDone = false;
         var runner = new Runner(testMap, settings);
-        runner.on("done", function () {
+        runner.on("end", function () {
             isDone = true;
         });
         runs(function () {
@@ -349,7 +349,7 @@ describe("validation.Runner", function () {
         var settings = {};
         var runner = new Runner(testMap, settings);
         var isDone = false;
-        runner.on("done", function (r) {
+        runner.on("end", function (r) {
             isDone = true;
         });
         runner.run({});
