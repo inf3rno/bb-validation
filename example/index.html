@@ -37,15 +37,30 @@
                     {variable:"o"}
             ),
             initialize:function () {
-                this.render();
+                if (this.model)
+                    this.render();
             },
             render:function () {
                 this.model.validator.on("change", function () {
                     _.each(this.model.validator.attributes, function (errors, attribute) {
-                        //errors: false or {test: message} format
+                        var $input = this.$inputs[attribute];
+                        $input.css({
+                            backgroundColor:errors ? "red" : "green"
+                        });
+                        $input.next().html(JSON.stringify(errors));
                     }, this);
                 }, this);
                 this.$el.html(this.template(this.model.toJSON()));
+                this.$inputs = {
+                    email:$(".email", this.$el),
+                    password:$(".password", this.$el)
+                };
+                _.each(this.$inputs, function ($input, attribute) {
+                    $input.change(function () {
+                        this.model.set(attribute, $input.val());
+                    }.bind(this));
+                }, this);
+                this.model.validate(this.model.attributes);
                 return this;
             }
         });

@@ -35,6 +35,11 @@ define(function (require, exports, module) {
             this.runners = {};
             _.each(this.model.schema, function (settings, attribute) {
                 var tests = this.dependencyResolver.createTestMap(_.keys(settings));
+                _.each(settings, function (config, name) {
+                    var check = this.checks[name];
+                    if (check)
+                        settings[name] = check.call(this, config, name);
+                }, this);
                 var runner = new this.Runner(tests, settings);
                 runner.on("end", function (result) {
                     this.set(attribute, result);
@@ -44,7 +49,7 @@ define(function (require, exports, module) {
         },
         run:function (attributes) {
             _.each(this.runners, function (runner, attribute) {
-                runner.run();
+                runner.run(attributes, attributes[attribute]);
             }, this);
         }
     }, {
