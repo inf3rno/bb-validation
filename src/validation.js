@@ -73,9 +73,10 @@ define(function (require, exports, module) {
         this.id = 0;
     };
     _.extend(Runner.prototype, Backbone.Events, {
-        run:function (attributes) {
+        run:function (attributes, value) {
             ++this.id;
             this.attributes = attributes;
+            this.value = value;
             this.error = false;
             this.result = false;
             this.pointer = 0;
@@ -85,7 +86,6 @@ define(function (require, exports, module) {
             if (!this.error && this.pointer < this.names.length) {
                 this.name = this.names[this.pointer];
                 this.config = this.settings[this.name];
-                this.value = this.attributes[this.name];
                 this.testMap[this.name].call(this, this.done.bind(this, this.id));
             }
             else

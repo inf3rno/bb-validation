@@ -254,19 +254,19 @@ describe("validation.Runner", function () {
         };
         var runner = new Runner(testMap, settings);
         var attributes = {
-            a:"attr1",
-            b:"attr2"
+            attr1:"value1",
+            attr2:"value2"
         };
-        runner.run(attributes);
+        runner.run(attributes, attributes.attr1);
         expect(called).toEqual({
             a:{
                 config:settings.a,
-                value:attributes.a,
+                value:attributes.attr1,
                 attributes:attributes
             },
             b:{
                 config:settings.b,
-                value:attributes.b,
+                value:attributes.attr1,
                 attributes:attributes
             }
         });
