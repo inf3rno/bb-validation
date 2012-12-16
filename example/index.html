@@ -31,8 +31,10 @@
             tagName:"div",
             className:"test",
             template:_.template(
-                    '<input class="email" type="text" name="email" value="<%= o.email %>" /><div class="error"></div><br/>' +
-                            '<input class="password" type="password" name="password" value="<%= o.password %>" /><div class="error"></div>',
+                    '<label for="email">Email: <input class="email" type="text" name="email" value="<%= o.email %>" /><span class="error"></span></label><br/>' +
+                            '<label for="password">Password: <input class="password" type="password" name="password" value="<%= o.password %>" /><span class="error"></span></label><br/>' +
+                            '<label for="password2">Verifier password: <input class="password2" type="password" name="password2" value="<%= o.password2 %>" /><span class="error"></span></label><br/>' +
+                            '<input type="submit" class="submit" />',
                     null,
                     {variable:"o"}
             ),
@@ -42,26 +44,60 @@
             },
             render:function () {
                 this.model.validator.on("change", function () {
+                    var valid = true;
                     _.each(this.model.validator.attributes, function (errors, attribute) {
                         var $input = this.$inputs[attribute];
-                        $input.css({
-                            backgroundColor:errors ? "red" : "green"
-                        });
-                        $input.next().html(JSON.stringify(errors));
+                        var message = "";
+                        if (errors) {
+                            valid = false;
+                            var chunks = [];
+                            _.each(errors, function (error, name) {
+                                if (this.messages[attribute][name])
+                                    chunks.push(this.messages[attribute][name]);
+                            }, this);
+                            if (!chunks.length)
+                                chunks.push("Your input is not valid.");
+                            message = chunks.join("<br/>");
+                        }
+                        $input.next().html(message);
                     }, this);
+                    if (valid)
+                        this.$submit.removeAttr("disabled");
+                    else
+                        this.$submit.attr("disabled", "disabled");
                 }, this);
                 this.$el.html(this.template(this.model.toJSON()));
                 this.$inputs = {
                     email:$(".email", this.$el),
-                    password:$(".password", this.$el)
+                    password:$(".password", this.$el),
+                    password2:$(".password2", this.$el)
                 };
+                this.$submit = $(".submit", this.$el);
                 _.each(this.$inputs, function ($input, attribute) {
                     $input.change(function () {
                         this.model.set(attribute, $input.val());
                     }.bind(this));
+                    $input.next().css({color:"red"});
                 }, this);
                 this.model.validate(this.model.attributes);
                 return this;
+            },
+            messages:{
+                email:{
+                    required:"The email address is not given.",
+                    type:"Email address must be string",
+                    match:"Not an email address",
+                    max:"The given email address is too long."
+                },
+                password:{
+                    required:"The password is not given",
+                    type:"The password must be string",
+                    min:"The password is too short.",
+                    max:"The password is too long."
+                },
+                password2:{
+                    duplicate:"The verifier password does not equal with the password."
+                }
             }
         });
 
@@ -77,7 +113,10 @@
                     required:true,
                     type:String,
                     min:5,
-                    max:127
+                    max:14
+                },
+                password2:{
+                    duplicate:"password"
                 }
             }
         });
