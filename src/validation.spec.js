@@ -356,6 +356,46 @@ describe("validation.Runner", function () {
         expect(isDone).toEqual(true);
         expect(test).not.toHaveBeenCalled();
     });
+
+    it("restarts sequence by a second call of run", function () {
+        var called = [];
+        var testMap = {
+            a:function (done) {
+                called.push(this.name);
+                done();
+            },
+            b:function (done) {
+                setTimeout(function () {
+                    called.push(this.name);
+                    done();
+                }.bind(this), 1);
+            },
+            c:function (done) {
+                called.push(this.name);
+                done();
+            }
+        };
+        var settings = {
+            a:null,
+            b:null,
+            c:null
+        };
+        var runner = new Runner(testMap, settings);
+        var atEnd = false;
+        runner.on("end", function (r) {
+            atEnd = true;
+        });
+        runs(function () {
+            runner.run({});
+            runner.run({});
+        });
+        waitsFor(function () {
+            return atEnd;
+        });
+        runs(function () {
+            expect(called).toEqual(["a", "a", "b", "b", "c"]);
+        });
+    });
 });
 
 describe("validation.DependencyResolver", function () {

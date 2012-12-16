@@ -70,9 +70,11 @@ define(function (require, exports, module) {
         this.testMap = testMap;
         this.settings = settings;
         this.names = _.keys(this.settings);
+        this.id = 0;
     };
     _.extend(Runner.prototype, Backbone.Events, {
         run:function (attributes) {
+            ++this.id;
             this.attributes = attributes;
             this.error = false;
             this.result = false;
@@ -84,12 +86,14 @@ define(function (require, exports, module) {
                 this.name = this.names[this.pointer];
                 this.config = this.settings[this.name];
                 this.value = this.attributes[this.name];
-                this.testMap[this.name].call(this, this.done.bind(this));
+                this.testMap[this.name].call(this, this.done.bind(this, this.id));
             }
             else
                 this.end();
         },
-        done:function (error) {
+        done:function (id, error) {
+            if (this.id != id)
+                return;
             this.error = error;
             if (this.error) {
                 this.result = {};
@@ -99,6 +103,9 @@ define(function (require, exports, module) {
             this.next();
         },
         end:function () {
+            delete(this.name);
+            delete(this.config);
+            delete(this.value);
             this.trigger("end", this.result);
         }
     });
