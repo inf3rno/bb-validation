@@ -79,7 +79,7 @@
                     }.bind(this));
                     $input.next().css({color:"red"});
                 }, this);
-                this.model.validate(this.model.attributes);
+                this.model.validator.trigger("change");
                 return this;
             },
             messages:{
