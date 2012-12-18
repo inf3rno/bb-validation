@@ -1,6 +1,103 @@
-**Backbone validation plugin beta
-version 0.9.**
+**Backbone validation plugin 
+version 1.0.**
 
-This is a basic plugin for Backbone validation, and works in browser and in nodejs either. The validator has custom message support, so you can write error messages on your chosen language (this feature is part of the basic form example, not the package yet, and I think I'll extend it with several i18n plugin connectors).
+This is a plugin for Backbone validation, and works both in browsers and node.js applications. The main classes in this package: **Messenger**, **Aggregator**, **Model**, **Validator**.
 
-Please look at the source code of example/index.html for plugin interface information. A detailed wiki is coming soon...
+The **Model** uses the normal **Backbone.Model** ***validate*** method, but because the asynchronous validation it always sets the values. The **Model** does not use the **Backbone.Model** ***error*** event, the errors are collected by the **Validator**.
+
+If you want to create a validable **Model** class, you can do it very simply, for example:
+
+    var RegistrationModel = validation.Model.extend({
+        schema:{
+            email:{
+                required:true,
+                type:String,
+                match:"email",
+                max:127
+            },
+            password:{
+                required:true,
+                type:String,
+                range:{
+                    min:5,
+                    max:14
+                }
+            },
+            password2:{
+                duplicate:"password"
+            }
+        }
+    });
+
+But before that you have to define your custom tester functions. I created a ***basic test collection***, I use that in the example above. You can install it the following way:
+
+    require(["jquery", "underscore", "backbone", "domReady!", "../src/validation", "../src/basicTests"], function ($, _, Backbone, domReady, validation, basics) {
+        validation.Validator.install(basics);
+        ...
+    });
+
+Or your can extend the **Validator** class if you want to create a custom branch of tests. In that case you can create a custom **Model** which uses your **Validator**.
+
+    var MyValidator = validation.Validator.extend({}).install(myTests);
+    var MyModel = validation.Model.extend({
+        Validator: MyValidator
+    });
+
+If you want to create your custom test library, then please study the basic tests first. (I'm thinking about overwrite this part of code, because it is not a common way of dependency injection, and it does not use inversion of control containers. I don't think it's necessary, but if there is a special demand for it, I can do it.)
+
+
+By the instantiation of the **Model** class, a **Validator** instance will be created automatically with the given schema. You can reach this instance under **model.validator** property. The **Validator** is an extension of **Backbone.Model**. It runs the tests on the attributes by any change of the **Model**, and it's attributes are the results of those tests. If there is no error by an attribute, then the result is ***false***. In case of error, the result is an object with the name of the tests, and the code of the error, for example:
+
+    {type:true}
+    {range:"min"}
+    ...
+
+Normally a test has only two outputs: the error is **true** or **false**. In extreme cases there are more outputs, for example by a range test the error can be **false**, **"min"** and **"max"**. This is important if you want to display an error specific message. For example by **"min"**: **"Too short."**, by **"max"**: **"Too long."**. Btw. you can use min and max tests instead of a range test.
+
+As I mentioned the **Validator** is a **Backbone.Model** extension either, so you can pass **Backbone.View**s to it. I created two **View** type for the **Validator**: they are **Messenger** and **Aggregator**.
+
+The **Messenger** can give detailed international error messages.
+
+        var InputErrors = validation.Messenger.extend({
+            messages:{
+                email:{
+                    required:"The email address is not given.",
+                    type:"Email address must be string",
+                    match:"Not an email address",
+                    max:"The given email address is too long."
+                },
+                password:{
+                    required:"The password is not given",
+                    type:"The password must be string",
+                    range:{
+                        min:"The password is too short.",
+                        max:"The password is too long."
+                    }
+                },
+                password2:{
+                    duplicate:"The verifier password does not equal with the password."
+                }
+            },
+            display:function (attribute, chunks) {
+                var $input = this.options.$inputs[attribute];
+                var message = "";
+                if (chunks)
+                    message = chunks.join("<br/>");
+                $input.next().html(message);
+            }
+        });
+
+By any change of the **Validator**, the ***display*** method of the **Messenger** is called twice. By the first time it is called by the unRender, and without chunks, by the second time it is called by the render, and by message chunks, if the attribute has errors. It is prepared to multiple error message per attribute handling, despite this feature is not supported in my asynchronous test runners. They are running the tests just in sequence, and the abort by every error. If you need, you can write a custom test runner, which supports multiple errors by attribute. (I don't think I need this feature.)
+
+The **Aggregator** can summarize the result of the tests, for example there are no errors, so you can send the form, etc...
+
+        var SubmitButtonDisabler = validation.Aggregator.extend({
+            display:function (errors) {
+                if (errors)
+                    this.options.$submit.attr("disabled", "disabled");
+                else
+                    this.options.$submit.removeAttr("disabled");
+            }
+        });
+
+If something is not clear, please check the example folder first, and after that you can still write an issue! Good work! :-)

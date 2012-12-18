@@ -38,8 +38,10 @@
                 password:{
                     required:true,
                     type:String,
-                    min:5,
-                    max:14
+                    range:{
+                        min:5,
+                        max:14
+                    }
                 },
                 password2:{
                     duplicate:"password"
@@ -58,8 +60,10 @@
                 password:{
                     required:"The password is not given",
                     type:"The password must be string",
-                    min:"The password is too short.",
-                    max:"The password is too long."
+                    range:{
+                        min:"The password is too short.",
+                        max:"The password is too long."
+                    }
                 },
                 password2:{
                     duplicate:"The verifier password does not equal with the password."
