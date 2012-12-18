@@ -13,6 +13,74 @@ define(function (require, exports, module) {
         return new Surrogate();
     };
 
+    var View = Backbone.View.extend({
+        initialize:function () {
+            this.model.on("change", function () {
+                this.unRender();
+                this.render();
+            }, this);
+            this.render();
+        },
+        render:function () {
+        },
+        unRender:function () {
+        }
+    });
+
+    var Aggregator = View.extend({
+        render:function () {
+            var summary = false;
+            _.all(this.model.attributes, function (errors, attribute) {
+                if (errors)
+                    summary = true;
+                return !summary;
+            }, this);
+            this.display(summary);
+            return this;
+        },
+        display:function (errors) {
+        }
+    });
+
+    var Messenger = View.extend({
+        unknownMessage:"Not valid.",
+        initialize:function () {
+            if (this.options.unknownMessage)
+                this.unknownMessage = this.options.unknownMessage;
+            if (!this.messages && !this.options.messages)
+                throw new Error("No messages given.");
+            if (this.options.messages)
+                this.messages = this.options.messages;
+            View.prototype.initialize.apply(this, arguments);
+        },
+        render:function () {
+            _.each(this.model.attributes, function (errors, attribute) {
+                var chunks;
+                if (errors) {
+                    chunks = [];
+                    _.each(errors, function (error, name) {
+                        var section = this.messages[attribute][name];
+                        if (typeof(section) == "string")
+                            chunks.push(section);
+                        else if (section && section[error])
+                            chunks.push(section[error]);
+                    }, this);
+                    if (!chunks.length)
+                        chunks.push(this.unknownMessage);
+                }
+                this.display(attribute, chunks);
+            }, this);
+            return this;
+        },
+        unRender:function () {
+            _.each(this.model.attributes, function (errors, attribute) {
+                this.display(attribute);
+            }, this);
+        },
+        display:function (attribute, chunks) {
+        }
+    });
+
     var Model = Backbone.Model.extend({
         constructor:function () {
             Backbone.Model.apply(this, arguments);
@@ -51,15 +119,6 @@ define(function (require, exports, module) {
             _.each(this.runners, function (runner, attribute) {
                 runner.run(attributes, attributes[attribute]);
             }, this);
-        },
-        hasErrors:function () {
-            var result = false;
-            _.all(this.attributes, function (errors, attribute) {
-                if (errors)
-                    result = true;
-                return !result;
-            }, this);
-            return result;
         }
     }, {
         install:function (pack) {
@@ -166,6 +225,9 @@ define(function (require, exports, module) {
     Validator.prototype.DependencyResolver = DependencyResolver;
 
     module.exports = {
+        View:View,
+        Aggregator:Aggregator,
+        Messenger:Messenger,
         Model:Model,
         Validator:Validator,
         Runner:Runner,

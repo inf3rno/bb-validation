@@ -200,18 +200,6 @@ describe("validation.Validator", function () {
         expect(mockRunner.run).toHaveBeenCalledWith(attributes);
     });
 
-    it("summarizes errors", function () {
-        var validator = new Validator({schema:{}});
-        validator.set({
-            a:false,
-            b:false,
-            c:false
-        });
-        expect(validator.hasErrors()).toBe(false);
-        validator.set("d", true);
-        expect(validator.hasErrors()).toBe(true);
-    });
-
     var tests = {
         custom:function (done) {
             done();
