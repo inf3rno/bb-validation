@@ -1,9 +1,28 @@
 **Backbone validation plugin 
 version 1.0.**
 
-This is a plugin for Backbone validation, and works both in browsers and node.js applications. The main classes in this package: **Messenger**, **Aggregator**, **Model**, **Validator**.
+This is a plugin for Backbone validation, which works both in browsers and node.js applications. The main classes in this package are: **Model**, **Validator**, **Messenger** and **Aggregator**.
 
-The **Model** uses the normal **Backbone.Model** ***validate*** method, but because the asynchronous validation it always sets the values. The **Model** does not use the **Backbone.Model** ***error*** event, the errors are collected by the **Validator**.
+**1.) Installation, custom test libraries**
+
+Before anything else you have to define your custom tester functions. I created a ***basic test collection***. You can install it the following way with **require.js** :
+
+    require(["jquery", "underscore", "backbone", "domReady!", "../src/validation", "../src/basicTests"], function ($, _, Backbone, domReady, validation, basics) {
+        validation.Validator.install(basics);
+        ...
+    });
+
+Or you can extend the **Validator** class if you want to create a custom branch of tests. In that case you can create a custom **Model** class which uses your custom **Validator** class.
+
+    var MyValidator = validation.Validator.extend({}).install(myTests);
+    var MyModel = validation.Model.extend({
+        Validator: MyValidator
+    });
+
+If you want to create your custom test library, then please study the basic tests first.
+
+
+**2.) Model and Validator**
 
 If you want to create a validable **Model** class, you can do it very simply, for example:
 
@@ -29,32 +48,20 @@ If you want to create a validable **Model** class, you can do it very simply, fo
         }
     });
 
-But before that you have to define your custom tester functions. I created a ***basic test collection***, I use that in the example above. You can install it the following way:
 
-    require(["jquery", "underscore", "backbone", "domReady!", "../src/validation", "../src/basicTests"], function ($, _, Backbone, domReady, validation, basics) {
-        validation.Validator.install(basics);
-        ...
-    });
-
-Or your can extend the **Validator** class if you want to create a custom branch of tests. In that case you can create a custom **Model** which uses your **Validator**.
-
-    var MyValidator = validation.Validator.extend({}).install(myTests);
-    var MyModel = validation.Model.extend({
-        Validator: MyValidator
-    });
-
-If you want to create your custom test library, then please study the basic tests first. (I'm thinking about overwrite this part of code, because it is not a common way of dependency injection, and it does not use inversion of control containers. I don't think it's necessary, but if there is a special demand for it, I can do it.)
-
-
-By the instantiation of the **Model** class, a **Validator** instance will be created automatically with the given schema. You can reach this instance under **model.validator** property. The **Validator** is an extension of **Backbone.Model**. It runs the tests on the attributes by any change of the **Model**, and it's attributes are the results of those tests. If there is no error by an attribute, then the result is ***false***. In case of error, the result is an object with the name of the tests, and the code of the error, for example:
+The **Model** uses the normal **Backbone.Model** ***validate*** method, but because the asynchronous validation it always sets the values. The **Model** does not use the **Backbone.Model** ***error*** event, the errors are collected by the **Validator**. By the instantiation of the **Model** class, a **Validator** instance will be created automatically with the given schema. You can reach this instance under the **model.validator** property. The **Validator** is an extension of **Backbone.Model**. It runs the tests on the attributes by any change of the **Model**, and the **Validator** attributes are the results of those tests. If there is no error by a **Model** attribute, the result is ***false***. In case of any error, the result is an object with the name of the failed test, and the code of the error, for example:
 
     {type:true}
+or
+
     {range:"min"}
-    ...
 
-Normally a test has only two outputs: the error is **true** or **false**. In extreme cases there are more outputs, for example by a range test the error can be **false**, **"min"** and **"max"**. This is important if you want to display an error specific message. For example by **"min"**: **"Too short."**, by **"max"**: **"Too long."**. Btw. you can use min and max tests instead of a range test.
 
-As I mentioned the **Validator** is a **Backbone.Model** extension either, so you can pass **Backbone.View**s to it. I created two **View** type for the **Validator**: they are **Messenger** and **Aggregator**.
+Normally a test has only two possible outputs: the error is **true** or **false**. In extreme cases there are more possible outputs, for example by a range test the error can be **false**, **"min"** and **"max"**. This is important if you want to display an error specific message. For example by **"min"**: **"Too short."**, by **"max"**: **"Too long."**. Btw. you can still use min and max tests instead of a range test.
+
+**3.) Validator views: Messenger and Aggregator**
+
+As I mentioned before; the **Validator** is a **Backbone.Model** extension also, and because of that, you can pass **Backbone.View**s to it. I created two classes of this kind: **Messenger** and **Aggregator**.
 
 The **Messenger** can give detailed international error messages.
 
@@ -87,7 +94,7 @@ The **Messenger** can give detailed international error messages.
             }
         });
 
-By any change of the **Validator**, the ***display*** method of the **Messenger** is called twice. By the first time it is called by the unRender, and without chunks, by the second time it is called by the render, and by message chunks, if the attribute has errors. It is prepared to multiple error message per attribute handling, despite this feature is not supported in my asynchronous test runners. They are running the tests just in sequence, and the abort by every error. If you need, you can write a custom test runner, which supports multiple errors by attribute. (I don't think I need this feature.)
+By any change of the **Validator**, the ***display*** method of the **Messenger** is called twice. By the first time it is called by the unRender without chunks, by the second time it is called by the render with message chunks depending on errors. The **Messenger** is prepared to multiple error messages per attribute handling, despite the fact, that this feature is not supported in my asynchronous test runners. My runners are running the tests in sequence, and they abort by every error. If you need, you can write a custom test runner, which supports multiple errors by attribute.
 
 The **Aggregator** can summarize the result of the tests, for example there are no errors, so you can send the form, etc...
 
