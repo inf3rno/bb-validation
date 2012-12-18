@@ -44,12 +44,10 @@
             },
             render:function () {
                 this.model.validator.on("change", function () {
-                    var valid = true;
                     _.each(this.model.validator.attributes, function (errors, attribute) {
                         var $input = this.$inputs[attribute];
                         var message = "";
                         if (errors) {
-                            valid = false;
                             var chunks = [];
                             _.each(errors, function (error, name) {
                                 if (this.messages[attribute][name])
@@ -61,10 +59,10 @@
                         }
                         $input.next().html(message);
                     }, this);
-                    if (valid)
-                        this.$submit.removeAttr("disabled");
-                    else
+                    if (this.model.validator.hasErrors())
                         this.$submit.attr("disabled", "disabled");
+                    else
+                        this.$submit.removeAttr("disabled");
                 }, this);
                 this.$el.html(this.template(this.model.toJSON()));
                 this.$inputs = {

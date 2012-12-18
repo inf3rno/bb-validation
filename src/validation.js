@@ -51,6 +51,15 @@ define(function (require, exports, module) {
             _.each(this.runners, function (runner, attribute) {
                 runner.run(attributes, attributes[attribute]);
             }, this);
+        },
+        hasErrors:function () {
+            var result = false;
+            _.all(this.attributes, function (errors, attribute) {
+                if (errors)
+                    result = true;
+                return !result;
+            }, this);
+            return result;
         }
     }, {
         install:function (pack) {
