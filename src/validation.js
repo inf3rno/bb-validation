@@ -82,7 +82,7 @@ define(function (require, exports, module) {
     var AbstractModel = Backbone.Model.extend({
         constructor:function () {
             if (this.validator)
-                this.Validator = this.Validator.extend({}).install(this.validator);
+                this.Validator = this.Validator.extend({}).customize(this.validator);
             this.validator = new this.Validator(this);
             Backbone.Model.apply(this, arguments);
             this.validate(this.attributes);
@@ -160,12 +160,16 @@ define(function (require, exports, module) {
             }, this);
         }
     }, {
-        install:function (pack) {
+        extendable:{
+            checks:true,
+            tests:true,
+            patterns:true
+        },
+        customize:function (pack) {
             if (!pack)
                 return;
-            var extendable = {checks:true, tests:true, patterns:true};
             _.each(pack, function (value, property) {
-                if (extendable[property]) {
+                if (this.extendable[property]) {
                     var needNewBranch = this.prototype[property] && this.__super__ && this.prototype[property] === this.__super__[property];
                     if (needNewBranch)
                         this.prototype[property] = Object.create(this.__super__[property]);

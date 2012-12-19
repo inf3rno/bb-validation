@@ -65,13 +65,13 @@ describe("validation.Model", function () {
 describe("validation.Validator", function () {
 
     it("can install custom tests", function () {
-        Validator.install({
+        Validator.customize({
             tests:tests
         });
         expect(Validator.prototype.tests.custom).toEqual(tests.custom);
     });
     it("can install custom checks and patterns either", function () {
-        Validator.install({
+        Validator.customize({
             checks:checks,
             patterns:patterns
         });
@@ -82,7 +82,7 @@ describe("validation.Validator", function () {
 
     it("can inherit tests, checks, patterns, but cannot override super", function () {
         var Validator2 = Validator.extend({});
-        Validator2.install({
+        Validator2.customize({
             tests:testsOverride,
             checks:checkOverride,
             patterns:patternsOverride

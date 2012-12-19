@@ -25,7 +25,7 @@
     });
 
     require(["jquery", "underscore", "backbone", "domReady!", "../src/validation", "../src/basicTests"], function ($, _, Backbone, domReady, validation, basics) {
-        validation.Validator.install(basics);
+        validation.Validator.customize(basics);
 
         var RegistrationModel = validation.Model.extend({
             schema:{

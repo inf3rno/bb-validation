@@ -8,13 +8,13 @@ This is a plugin for Backbone validation, which works both in browsers and node.
 Before anything else you have to define your custom tester functions. I created a ***basic test collection***. You can install it the following way with **require.js** :
 
     require(["jquery", "underscore", "backbone", "domReady!", "../src/validation", "../src/basicTests"], function ($, _, Backbone, domReady, validation, basics) {
-        validation.Validator.install(basics);
+        validation.Validator.customize(basics);
         ...
     });
 
 Or you can extend the **Validator** class if you want to create a custom branch of tests. In that case you can create a custom **Model** class which uses your custom **Validator** class.
 
-    var MyValidator = validation.Validator.extend({}).install(myTests);
+    var MyValidator = validation.Validator.extend({}).customize(myTests);
     var MyModel = validation.Model.extend({
         Validator: MyValidator
     });
