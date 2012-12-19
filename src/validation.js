@@ -95,7 +95,6 @@ define(function (require, exports, module) {
         },
         validate:function (attributes) {
             this.validator.run(attributes);
-            return false;
         }
     });
 
@@ -103,9 +102,9 @@ define(function (require, exports, module) {
         validate:function (attributes) {
             this.validator.run(attributes);
             if (this.validator.pending)
-                throw new Error("Cannot use asynchronous tests in sync model.");
+                throw new Error("Cannot use asynchronous tests in a sync model.");
             if (!this.validator.errors)
-                return false;
+                return;
             var error = {};
             _.each(this.validator.attributes, function (errors, attribute) {
                 if (errors)
