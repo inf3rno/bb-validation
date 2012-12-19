@@ -92,6 +92,8 @@ define(function (require, exports, module) {
             var override = this.override;
             if (options && options.override != undefined)
                 override = options.override;
+            if (!override && this.validator.pending)
+                throw new Error("Cannot use asynchronous tests without override.");
             return override || valid;
         },
         validate:function (attributes) {
