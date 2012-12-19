@@ -5,13 +5,14 @@ define(function (require, exports, module) {
     var _ = require("underscore"),
         Backbone = require("backbone");
 
-    var inherit = Object.create || function (proto) {
-        var Surrogate = function () {
-            this.constructor = Surrogate;
+    if (!Object.create)
+        Object.create = function (proto) {
+            var Surrogate = function () {
+                this.constructor = Surrogate;
+            };
+            Surrogate.prototype = proto;
+            return new Surrogate();
         };
-        Surrogate.prototype = proto;
-        return new Surrogate();
-    };
 
     var View = Backbone.View.extend({
         initialize:function () {
@@ -161,14 +162,14 @@ define(function (require, exports, module) {
     }, {
         install:function (pack) {
             if (!pack)
-                throw new Error("No install package given.");
+                return;
             var installable = {checks:true, tests:true, patterns:true};
             _.each(pack, function (addons, property) {
                 if (!installable[property])
-                    throw new Error("Property " + property + " is not installable.");
-                if (this.__super__ && this.prototype[property] === this.__super__[property]) {
-                    this.prototype[property] = inherit(this.__super__[property]);
-                }
+                    return;
+                var needNewBranch = this.__super__ && this.prototype[property] === this.__super__[property];
+                if (needNewBranch)
+                    this.prototype[property] = Object.create(this.__super__[property]);
                 _.extend(this.prototype[property], addons);
             }, this);
             return this;

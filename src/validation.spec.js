@@ -75,6 +75,7 @@ describe("validation.Validator", function () {
             checks:checks,
             patterns:patterns
         });
+        expect(Validator.prototype.tests.custom).toEqual(tests.custom);
         expect(Validator.prototype.checks.custom).toEqual(checks.custom);
         expect(Validator.prototype.patterns.custom).toEqual(patterns.custom);
     });
