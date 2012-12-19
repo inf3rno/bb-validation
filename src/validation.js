@@ -176,7 +176,7 @@ define(function (require, exports, module) {
         }
     });
 
-    AsyncModel.prototype.Validator = Validator;
+    AbstractModel.prototype.Validator = Validator;
 
     var Runner = function (testMap, settings) {
         this.testMap = testMap;
