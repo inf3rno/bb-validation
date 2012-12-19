@@ -50,7 +50,6 @@ describe("validation.Model", function () {
             a:1
         });
         expect(model2.validator.run).toHaveBeenCalledWith({a:1, b:1});
-        expect(model2.validator.run).not.toHaveBeenCalledWith(model2.attributes);
         model2.validator = createMockValidator();
         model2.validator.run.andReturn("error");
         model2.unset("a");

@@ -29,13 +29,7 @@ define(function (require, exports, module) {
 
     var Aggregator = View.extend({
         render:function () {
-            var summary = false;
-            _.all(this.model.attributes, function (errors, attribute) {
-                if (errors)
-                    summary = true;
-                return !summary;
-            }, this);
-            this.display(summary);
+            this.display(this.model.errors, this.model.pending);
             return this;
         },
         display:function (errors) {
@@ -56,6 +50,7 @@ define(function (require, exports, module) {
         render:function () {
             _.each(this.model.attributes, function (errors, attribute) {
                 var chunks;
+                var pending = false;
                 if (errors) {
                     chunks = [];
                     _.each(errors, function (error, name) {
@@ -68,7 +63,9 @@ define(function (require, exports, module) {
                     if (!chunks.length)
                         chunks.push(this.unknownMessage);
                 }
-                this.display(attribute, chunks);
+                else if (errors === undefined)
+                    pending = true;
+                this.display(attribute, chunks, pending);
             }, this);
             return this;
         },
@@ -77,7 +74,7 @@ define(function (require, exports, module) {
                 this.display(attribute);
             }, this);
         },
-        display:function (attribute, chunks) {
+        display:function (attribute, chunks, pending) {
         }
     });
 
@@ -87,8 +84,25 @@ define(function (require, exports, module) {
             this.validator = new this.Validator(this);
             this.validate(this.attributes);
         },
+        override:true,
+        _validate:function (attrs, options) {
+            var valid = Backbone.Model.prototype._validate.apply(this, arguments);
+            var override = this.override;
+            if (options && options.override != undefined)
+                override = options.override;
+            return override || valid;
+        },
         validate:function (attributes) {
-            return this.validator.run(attributes);
+            this.validator.run(attributes);
+            var summary = false;
+            _.each(this.validator.attributes, function (errors, attribute) {
+                if (!errors)
+                    return;
+                if (!summary)
+                    summary = {};
+                summary[attribute] = errors;
+            });
+            return summary;
         }
     });
 
@@ -96,6 +110,8 @@ define(function (require, exports, module) {
         checks:{},
         tests:{},
         patterns:{},
+        errors:0,
+        pending:0,
         constructor:function (model) {
             Backbone.Model.call(this);
             this.model = model;
@@ -109,13 +125,27 @@ define(function (require, exports, module) {
                         settings[name] = check.call(this, config, name);
                 }, this);
                 var runner = new this.Runner(tests, settings);
+                runner.on("run", function () {
+                    ++this.pending;
+                    this.set(attribute, undefined, {old:this.get(attribute)});
+                }, this);
                 runner.on("end", function (result) {
-                    this.set(attribute, result);
-                }, this)
+                    --this.pending;
+                    this.set(attribute, result, {old:this.get(attribute)});
+                }, this);
                 this.runners[attribute] = runner;
+                this.on("change:" + attribute, function (model, value, options) {
+                    if (!!options.old != !!value) {
+                        if (value)
+                            ++this.errors;
+                        else
+                            --this.errors;
+                    }
+                }, this);
             }, this);
         },
         run:function (attributes) {
+            this.pending = 0;
             _.each(this.runners, function (runner, attribute) {
                 runner.run(attributes, attributes[attribute]);
             }, this);
@@ -153,6 +183,7 @@ define(function (require, exports, module) {
             this.error = false;
             this.result = false;
             this.pointer = 0;
+            this.trigger("run");
             this.next();
         },
         next:function () {
