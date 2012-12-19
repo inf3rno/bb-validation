@@ -163,14 +163,16 @@ define(function (require, exports, module) {
         install:function (pack) {
             if (!pack)
                 return;
-            var installable = {checks:true, tests:true, patterns:true};
-            _.each(pack, function (addons, property) {
-                if (!installable[property])
-                    return;
-                var needNewBranch = this.__super__ && this.prototype[property] === this.__super__[property];
-                if (needNewBranch)
-                    this.prototype[property] = Object.create(this.__super__[property]);
-                _.extend(this.prototype[property], addons);
+            var extendable = {checks:true, tests:true, patterns:true};
+            _.each(pack, function (value, property) {
+                if (extendable[property]) {
+                    var needNewBranch = this.prototype[property] && this.__super__ && this.prototype[property] === this.__super__[property];
+                    if (needNewBranch)
+                        this.prototype[property] = Object.create(this.__super__[property]);
+                    _.extend(this.prototype[property], value);
+                }
+                else
+                    this.prototype[property] = value;
             }, this);
             return this;
         }
