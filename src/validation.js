@@ -78,34 +78,40 @@ define(function (require, exports, module) {
         }
     });
 
-    var Model = Backbone.Model.extend({
-        override:true,
+    var AbstractModel = Backbone.Model.extend({
         constructor:function () {
             if (this.validator)
                 this.Validator = this.Validator.extend({}).install(this.validator);
             this.validator = new this.Validator(this);
             Backbone.Model.apply(this, arguments);
             this.validate(this.attributes);
-        },
+        }
+    });
+
+    var AsyncModel = AbstractModel.extend({
         _validate:function (attrs, options) {
-            var valid = Backbone.Model.prototype._validate.apply(this, arguments);
-            if (!this.override && this.validator.pending)
-                throw new Error("Cannot use asynchronous tests without override.");
-            return this.override || valid;
+            Backbone.Model.prototype._validate.apply(this, arguments);
+            return true;
         },
         validate:function (attributes) {
             this.validator.run(attributes);
-            if (this.override)
+            return false;
+        }
+    });
+
+    var SyncModel = AbstractModel.extend({
+        validate:function (attributes) {
+            this.validator.run(attributes);
+            if (this.validator.pending)
+                throw new Error("Cannot use asynchronous tests in sync model.");
+            if (!this.validator.errors)
                 return false;
-            var summary = false;
-            if (this.validator.errors) {
-                summary = {};
-                _.each(this.validator.attributes, function (errors, attribute) {
-                    if (errors)
-                        summary[attribute] = errors;
-                });
-            }
-            return summary;
+            var error = {};
+            _.each(this.validator.attributes, function (errors, attribute) {
+                if (errors)
+                    error[attribute] = errors;
+            });
+            return error;
         }
     });
 
@@ -170,7 +176,7 @@ define(function (require, exports, module) {
         }
     });
 
-    Model.prototype.Validator = Validator;
+    AsyncModel.prototype.Validator = Validator;
 
     var Runner = function (testMap, settings) {
         this.testMap = testMap;
@@ -262,7 +268,8 @@ define(function (require, exports, module) {
         View:View,
         Aggregator:Aggregator,
         Messenger:Messenger,
-        Model:Model,
+        Model:AsyncModel,
+        SyncModel:SyncModel,
         Validator:Validator,
         Runner:Runner,
         DependencyResolver:DependencyResolver
