@@ -81,6 +81,8 @@ define(function (require, exports, module) {
     var Model = Backbone.Model.extend({
         constructor:function () {
             Backbone.Model.apply(this, arguments);
+            if (this.validator)
+                this.Validator = this.Validator.extend({}).install(this.validator);
             this.validator = new this.Validator(this);
             this.validate(this.attributes);
         },

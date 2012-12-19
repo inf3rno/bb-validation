@@ -34,7 +34,7 @@
                     type:String,
                     match:"email",
                     max:127,
-                    registered:null
+                    registered:1000
                 },
                 password:{
                     required:true,
@@ -48,7 +48,7 @@
                     duplicate:"password"
                 }
             },
-            Validator:validation.Validator.extend({}).install({
+            validator:{
                 tests:{
                     registered:function (done) {
                         var registeredEmails = {
@@ -56,14 +56,16 @@
                             "test@test.hu":true
                         };
                         setTimeout(function () {
-                            if (registeredEmails[this.value])
-                                done(true);
-                            else
-                                done();
-                        }.bind(this), 2000);
+                            done(registeredEmails[this.value]);
+                        }.bind(this), this.config);
+                    }
+                },
+                checks:{
+                    registered:function (delay, key) {
+                        return delay || 1;
                     }
                 }
-            })
+            }
         });
 
         var InputErrors = validation.Messenger.extend({
