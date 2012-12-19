@@ -79,33 +79,32 @@ define(function (require, exports, module) {
     });
 
     var Model = Backbone.Model.extend({
+        override:true,
         constructor:function () {
-            Backbone.Model.apply(this, arguments);
             if (this.validator)
                 this.Validator = this.Validator.extend({}).install(this.validator);
             this.validator = new this.Validator(this);
+            Backbone.Model.apply(this, arguments);
             this.validate(this.attributes);
         },
-        override:true,
         _validate:function (attrs, options) {
             var valid = Backbone.Model.prototype._validate.apply(this, arguments);
-            var override = this.override;
-            if (options && options.override != undefined)
-                override = options.override;
-            if (!override && this.validator.pending)
+            if (!this.override && this.validator.pending)
                 throw new Error("Cannot use asynchronous tests without override.");
-            return override || valid;
+            return this.override || valid;
         },
         validate:function (attributes) {
             this.validator.run(attributes);
+            if (this.override)
+                return false;
             var summary = false;
-            _.each(this.validator.attributes, function (errors, attribute) {
-                if (!errors)
-                    return;
-                if (!summary)
-                    summary = {};
-                summary[attribute] = errors;
-            });
+            if (this.validator.errors) {
+                summary = {};
+                _.each(this.validator.attributes, function (errors, attribute) {
+                    if (errors)
+                        summary[attribute] = errors;
+                });
+            }
             return summary;
         }
     });
