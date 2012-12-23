@@ -170,7 +170,8 @@ describe("validation.Validator", function () {
         expect(mockRunner.on).toHaveBeenCalled();
     });
 
-    if ("calls the runners by run", function () {
+
+    it("calls the runners by run", function () {
         var mockModel = {
             schema:{
                 attr1:{
@@ -196,8 +197,7 @@ describe("validation.Validator", function () {
         expect(mockRunner.run).not.toHaveBeenCalled();
         var attributes = {test:1};
         validator.run(attributes);
-        expect(mockRunner.run.callCount).toEqual(1);
-        expect(mockRunner.run).toHaveBeenCalledWith(attributes);
+        expect(mockRunner.run.callCount).toEqual(2);
     });
 
     var tests = {
