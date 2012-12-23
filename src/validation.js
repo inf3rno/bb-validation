@@ -85,7 +85,7 @@ define(function (require, exports, module) {
                 this.Validator = this.Validator.extend({}).customize(this.validator);
             this.validator = new this.Validator(this);
             Backbone.Model.apply(this, arguments);
-            this.validate(this.attributes);
+            this.validate(this.attributes, true);
         }
     });
 
@@ -153,10 +153,10 @@ define(function (require, exports, module) {
                 }, this);
             }, this);
         },
-        run:function (attributes) {
+        run:function (attributes, force) {
             this.pending = 0;
             _.each(this.runners, function (runner, attribute) {
-                if (this.model.get(attribute) !== attributes[attribute])
+                if (force || this.model.get(attribute) !== attributes[attribute])
                     runner.run(attributes, attributes[attribute]);
             }, this);
         }

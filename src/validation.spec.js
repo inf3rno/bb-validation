@@ -213,9 +213,6 @@ describe("validation.Validator", function () {
                 attr2:{
                     test1:"c"
                 }
-            },
-            get:function (attr) {
-                return {};
             }
         };
         var mockResolver = jasmine.createSpyObj("resolver", ["createTestMap"]);
@@ -230,9 +227,32 @@ describe("validation.Validator", function () {
         });
         var validator = new Validator2(mockModel);
         expect(mockRunner.run).not.toHaveBeenCalled();
-        var attributes = {test:1};
+        var attributes = {attr1:1};
+        mockModel.get = function (attr) {
+            return attributes[attr];
+        };
+        validator.run(attributes);
+        expect(mockRunner.run.callCount).toEqual(0);
+        validator.run(attributes, true);
+        expect(mockRunner.run.callCount).toEqual(2);
+        mockRunner.run.reset();
+
+        mockModel.get = function (attr) {
+            if (attr == "attr1")
+                return attributes.attr1;
+            else
+                return {};
+        };
+        validator.run(attributes);
+        expect(mockRunner.run.callCount).toEqual(1);
+        mockRunner.run.reset();
+
+        mockModel.get = function (attr) {
+            return {};
+        };
         validator.run(attributes);
         expect(mockRunner.run.callCount).toEqual(2);
+        mockRunner.run.reset();
     });
 
     var tests = {
