@@ -153,10 +153,10 @@ define(function (require, exports, module) {
                 }, this);
             }, this);
         },
-        run:function (attributes, force) {
+        run:function (attributes) {
             this.pending = 0;
             _.each(this.runners, function (runner, attribute) {
-                if (force || this.model.get(attribute) !== attributes[attribute])
+                if (this.model.get(attribute) !== attributes[attribute])
                     runner.run(attributes, attributes[attribute]);
             }, this);
         }

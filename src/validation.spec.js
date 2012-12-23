@@ -233,8 +233,6 @@ describe("validation.Validator", function () {
         };
         validator.run(attributes);
         expect(mockRunner.run.callCount).toEqual(0);
-        validator.run(attributes, true);
-        expect(mockRunner.run.callCount).toEqual(2);
         mockRunner.run.reset();
 
         mockModel.get = function (attr) {
