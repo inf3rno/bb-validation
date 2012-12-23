@@ -169,9 +169,23 @@ define(function (require, exports, module) {
             }, this);
         },
         run:function (attributes) {
-            _.each(this.runners, function (runner, attribute) {
-                if (this.model.get(attribute) === attributes[attribute])
+            var calling = {};
+            var add = function (attribute) {
+                if (calling[attribute])
                     return;
+                calling[attribute] = true;
+                if (this.attributeRelations[attribute])
+                    _.each(this.attributeRelations[attribute], function (flag, attribute) {
+                        add.call(this, attribute);
+                    }, this);
+            };
+            _.each(this.runners, function (runner, attribute) {
+                if (this.model.get(attribute) !== attributes[attribute])
+                    add.call(this, attribute);
+            }, this);
+            _.each(calling, function (flag, attribute) {
+
+                var runner = this.runners[attribute];
                 if (!runner.pending)
                     ++this.pending;
                 runner.run(attributes, attributes[attribute]);

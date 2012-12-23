@@ -616,7 +616,9 @@ describe("tests", function () {
         it("should configure strings only", function () {
             expectCheck("test", "test");
             expectCheckThrow(123);
-            expectRelation("test", "test");
+            expectRelations("password", "verifier", [
+                ["password", "verifier"]
+            ]);
         });
 
         it("should error if it's not duplication of the attribute", function () {
@@ -649,13 +651,15 @@ describe("tests", function () {
         expect(check.call(mock, value, test)).toEqual(expected);
     };
 
-    var expectRelation = function (value, expected) {
+    var expectRelations = function (value, attribute, relations) {
         var check = basic.checks[test];
         var mock = {};
         mock.patterns = basic.patterns;
         mock.related = jasmine.createSpy("related");
-        check.call(mock, value, test, "attr");
-        expect(mock.related).toHaveBeenCalledWith("attr", expected);
+        check.call(mock, value, test, attribute);
+        _.each(relations, function (relation) {
+            expect(mock.related).toHaveBeenCalledWith(relation[0], relation[1]);
+        });
     };
 
     var expectCheckThrow = function (value, exception) {
