@@ -110,7 +110,7 @@
         });
 
         var RegistrationForm = Backbone.View.extend({
-            tagName:"div",
+            tagName:"form",
             className:"test",
             template:_.template(
                     '<label for="email">Email: <input class="email" type="text" name="email" value="<%= o.email %>" /><span class="error"></span></label><br/>' +
@@ -148,6 +148,7 @@
                 return this;
             }
         });
+        $("body").append("<style>.test{margin: 50px;} .test input{margin: 5px;}</style>");
         var form = new RegistrationForm({
             model:new RegistrationModel({
                 email:"test@test.hu",
@@ -156,6 +157,14 @@
             })
         });
         $("body").append(form.$el);
+        var form2 = new RegistrationForm({
+            model:new RegistrationModel({
+                email:"test@test.it",
+                password:"password",
+                password2:"password"
+            })
+        });
+        $("body").append(form2.$el);
     });
 </script>
 </body>

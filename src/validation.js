@@ -82,7 +82,7 @@ define(function (require, exports, module) {
     var AbstractModel = Backbone.Model.extend({
         constructor:function () {
             if (this.validator) {
-                this.Validator = this.Validator.extend({}).customize(this.validator);
+                this.constructor.prototype.Validator = this.Validator.extend({}).customize(this.validator);
                 this.constructor.prototype.validator = undefined;
             }
             this.validator = new this.Validator(this);
@@ -208,7 +208,7 @@ define(function (require, exports, module) {
         },
         customize:function (pack) {
             if (!pack)
-                return;
+                return this;
             _.each(pack, function (value, property) {
                 if (this.extendable[property]) {
                     var needNewBranch = this.prototype[property] && this.__super__ && this.prototype[property] === this.__super__[property];
