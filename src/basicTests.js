@@ -170,9 +170,10 @@ define(function (require, exports, module) {
             }, this);
             return expressions;
         },
-        duplicate:function (duplicate, key) {
+        duplicate:function (duplicate, key, attribute) {
             if (typeof(duplicate) != "string")
                 throw  new Error("Invalid config. " + key + ": invalid attribute name given.");
+            this.depend(attribute, duplicate);
             return duplicate;
         }
     };

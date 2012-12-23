@@ -127,6 +127,7 @@ define(function (require, exports, module) {
         patterns:{},
         errors:0,
         pending:0,
+        dependencies:{},
         constructor:function (model) {
             Backbone.Model.call(this);
             this.model = model;
@@ -137,7 +138,7 @@ define(function (require, exports, module) {
                 _.each(settings, function (config, name) {
                     var check = this.checks[name];
                     if (check)
-                        settings[name] = check.call(this, config, name);
+                        settings[name] = check.call(this, config, name, attribute);
                 }, this);
                 var runner = new this.Runner(tests, settings);
                 runner.on("run", function () {
@@ -156,6 +157,15 @@ define(function (require, exports, module) {
                             --this.errors;
                     }
                 }, this);
+            }, this);
+        },
+        depend:function (attribute, dependencies) {
+            if (!this.dependencies[attribute])
+                this.dependencies[attribute] = {};
+            if (!(dependencies instanceof Array))
+                dependencies = [dependencies];
+            _.each(dependencies, function (dependency) {
+                this.dependencies[attribute][dependency] = true;
             }, this);
         },
         run:function (attributes) {

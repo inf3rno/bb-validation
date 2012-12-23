@@ -616,6 +616,7 @@ describe("tests", function () {
         it("should configure strings only", function () {
             expectCheck("test", "test");
             expectCheckThrow(123);
+            expectDependency("test", "test");
         });
 
         it("should error if it's not duplication of the attribute", function () {
@@ -643,7 +644,18 @@ describe("tests", function () {
         var check = basic.checks[test];
         var mock = {};
         mock.patterns = basic.patterns;
+        mock.depend = function (attr, dependency) {
+        };
         expect(check.call(mock, value, test)).toEqual(expected);
+    };
+
+    var expectDependency = function (value, expected) {
+        var check = basic.checks[test];
+        var mock = {};
+        mock.patterns = basic.patterns;
+        mock.depend = jasmine.createSpy("depend");
+        check.call(mock, value, test, "attr");
+        expect(mock.depend).toHaveBeenCalledWith("attr", expected);
     };
 
     var expectCheckThrow = function (value, exception) {

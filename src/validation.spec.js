@@ -199,9 +199,9 @@ describe("validation.Validator", function () {
         var validator = new Validator2(mockModel);
         expect(check1.callCount).toEqual(2);
         expect(check2.callCount).toEqual(1);
-        expect(check1).toHaveBeenCalledWith("a", "test1");
-        expect(check1).toHaveBeenCalledWith("c", "test1");
-        expect(check2).toHaveBeenCalledWith("b", "test2");
+        expect(check1).toHaveBeenCalledWith("a", "test1", "attr1");
+        expect(check1).toHaveBeenCalledWith("c", "test1", "attr2");
+        expect(check2).toHaveBeenCalledWith("b", "test2", "attr1");
     });
 
 
