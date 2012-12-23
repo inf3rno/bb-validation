@@ -213,6 +213,9 @@ describe("validation.Validator", function () {
                 attr2:{
                     test1:"c"
                 }
+            },
+            get:function (attr) {
+                return {};
             }
         };
         var mockResolver = jasmine.createSpyObj("resolver", ["createTestMap"]);
