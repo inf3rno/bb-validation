@@ -190,6 +190,7 @@ define(function (require, exports, module) {
         this.settings = settings;
         this.names = _.keys(this.settings);
         this.id = 0;
+        this.pending = false;
     };
     _.extend(Runner.prototype, Backbone.Events, {
         run:function (attributes, value) {
@@ -199,6 +200,7 @@ define(function (require, exports, module) {
             this.error = false;
             this.result = false;
             this.pointer = 0;
+            this.pending = true;
             this.trigger("run");
             this.next();
         },
@@ -226,6 +228,7 @@ define(function (require, exports, module) {
             delete(this.name);
             delete(this.config);
             delete(this.value);
+            this.pending = false;
             this.trigger("end", this.result);
         }
     });

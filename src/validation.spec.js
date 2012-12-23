@@ -449,6 +449,34 @@ describe("validation.Runner", function () {
             expect(called).toEqual(["a", "a", "b", "b", "c"]);
         });
     });
+
+    it("has a pending state", function () {
+        var testMap = {
+            a:function (done) {
+                setTimeout(function () {
+                    done();
+                }.bind(this), 1);
+            }
+        };
+        var settings = {
+            a:null
+        };
+        var isDone = false;
+        var runner = new Runner(testMap, settings);
+        runner.on("end", function () {
+            isDone = true;
+        });
+        runs(function () {
+            runner.run({});
+            expect(runner.pending).toBe(true);
+        });
+        waitsFor(function () {
+            return isDone;
+        });
+        runs(function () {
+            expect(runner.pending).toBe(false);
+        });
+    });
 });
 
 describe("validation.DependencyResolver", function () {
