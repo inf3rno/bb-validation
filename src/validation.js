@@ -81,8 +81,10 @@ define(function (require, exports, module) {
 
     var AbstractModel = Backbone.Model.extend({
         constructor:function () {
-            if (this.validator)
+            if (this.validator) {
                 this.Validator = this.Validator.extend({}).customize(this.validator);
+                this.constructor.prototype.validator = undefined;
+            }
             this.validator = new this.Validator(this);
             Backbone.Model.apply(this, arguments);
             this.validate(this.attributes, {force:true});
