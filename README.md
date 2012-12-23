@@ -19,6 +19,21 @@ Or you can extend the **Validator** class if you want to create a custom branch 
         Validator: MyValidator
     });
 
+The custom test packages can contains **tests**, **checks** and **patterns**.
+
+The **tests** are checking the setted value by the actual attribute, and their scope is the test runner of the attribute. The runner has properties: attributes (the attributes which the model.validate has been called with), config (the config of the current test in the schema), value (the new value by the attribute), pending (used external by validator, need for pending count), name (the name of the current test).
+
+The **checks** are called by configuring the tests, so by creating the validator with the actual **schema**, and their scope is the validator itself. They can call the **related** method of the validator, and can add relations, for example by password verifying you have to call
+
+    this.depend("password", "password2");
+
+or
+
+    this.depend("password", ["password2"]);
+This results the call of the password2 test runner by changing the password.
+The validator contains the installed **patterns** too. So you can reach the installed patterns by name.
+
+
 If you want to create your custom test library, then please study the basic tests first.
 
 
