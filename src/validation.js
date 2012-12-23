@@ -85,7 +85,7 @@ define(function (require, exports, module) {
                 this.Validator = this.Validator.extend({}).customize(this.validator);
             this.validator = new this.Validator(this);
             Backbone.Model.apply(this, arguments);
-            this.validate(this.attributes, true);
+            this.validate(this.attributes, {force:true});
         }
     });
 
@@ -94,14 +94,20 @@ define(function (require, exports, module) {
             Backbone.Model.prototype._validate.apply(this, arguments);
             return true;
         },
-        validate:function (attributes) {
-            this.validator.run(attributes);
+        validate:function (attributes, options) {
+            if (options && options.force)
+                this.validator.force(attributes);
+            else
+                this.validator.run(attributes);
         }
     });
 
     var SyncModel = AbstractModel.extend({
-        validate:function (attributes) {
-            this.validator.run(attributes);
+        validate:function (attributes, options) {
+            if (options && options.force)
+                this.validator.force(attributes);
+            else
+                this.validator.run(attributes);
             if (this.validator.pending)
                 throw new Error("Cannot use asynchronous tests in a sync model.");
             if (!this.validator.errors)
@@ -135,7 +141,6 @@ define(function (require, exports, module) {
                 }, this);
                 var runner = new this.Runner(tests, settings);
                 runner.on("run", function () {
-                    ++this.pending;
                     this.set(attribute, undefined, {old:this.get(attribute)});
                 }, this);
                 runner.on("end", function (result) {
@@ -154,10 +159,19 @@ define(function (require, exports, module) {
             }, this);
         },
         run:function (attributes) {
-            this.pending = 0;
             _.each(this.runners, function (runner, attribute) {
-                if (this.model.get(attribute) !== attributes[attribute])
-                    runner.run(attributes, attributes[attribute]);
+                if (this.model.get(attribute) === attributes[attribute])
+                    return;
+                if (!runner.pending)
+                    ++this.pending;
+                runner.run(attributes, attributes[attribute]);
+            }, this);
+        },
+        force:function (attributes) {
+            _.each(this.runners, function (runner, attribute) {
+                if (!runner.pending)
+                    ++this.pending;
+                runner.run(attributes, attributes[attribute]);
             }, this);
         }
     }, {

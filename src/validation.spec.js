@@ -20,7 +20,7 @@ describe("validation.Model", function () {
     });
 
     it("passes the model to the validator initializer, and runs validator automatically", function () {
-        var mockValidator = jasmine.createSpyObj("validator", ["initialize", "run"]);
+        var mockValidator = jasmine.createSpyObj("validator", ["initialize", "force"]);
         var Model2 = Model.extend({
             Validator:function (model) {
                 mockValidator.initialize(model);
@@ -29,12 +29,12 @@ describe("validation.Model", function () {
         });
         var model2 = new Model2();
         expect(mockValidator.initialize).toHaveBeenCalledWith(model2);
-        expect(mockValidator.run).toHaveBeenCalledWith(model2.attributes);
+        expect(mockValidator.force).toHaveBeenCalledWith(model2.attributes);
     });
 
     it("runs validator by every change with the complete attribute map", function () {
         var createMockValidator = function () {
-            return jasmine.createSpyObj("validator", ["initialize", "run"]);
+            return jasmine.createSpyObj("validator", ["initialize", "force", "run"]);
         };
         var Model2 = Model.extend({
             Validator:createMockValidator
@@ -43,13 +43,14 @@ describe("validation.Model", function () {
             a:0,
             b:1
         });
-        model2.validator = createMockValidator();
         expect(model2.validator.run).not.toHaveBeenCalled();
+        expect(model2.validator.force).toHaveBeenCalledWith({a:0, b:1});
         model2.validator.run.andReturn("error");
         model2.set({
             a:1
         });
         expect(model2.validator.run).toHaveBeenCalledWith({a:1, b:1});
+
         model2.validator = createMockValidator();
         model2.validator.run.andReturn("error");
         model2.unset("a");
@@ -58,6 +59,7 @@ describe("validation.Model", function () {
         model2.validator.run.andReturn("error");
         model2.clear();
         expect(model2.validator.run).toHaveBeenCalledWith({});
+
     });
 
 });
