@@ -170,6 +170,38 @@ describe("validation.Validator", function () {
         expect(mockRunner.on).toHaveBeenCalled();
     });
 
+    it("calls checks by construct", function () {
+        var mockModel = {
+            schema:{
+                attr1:{
+                    test1:"a",
+                    test2:"b"
+                },
+                attr2:{
+                    test1:"c"
+                }
+            }
+        };
+        var check1 = jasmine.createSpy("check1");
+        var check2 = jasmine.createSpy("check2");
+        var Validator2 = Validator.extend({}).customize({
+            checks:{
+                test1:check1, test2:check2
+            },
+            tests:{
+                test1:function () {
+                }, test2:function () {
+                }
+            }
+        });
+        var validator = new Validator2(mockModel);
+        expect(check1.callCount).toEqual(2);
+        expect(check2.callCount).toEqual(1);
+        expect(check1).toHaveBeenCalledWith("a", "test1");
+        expect(check1).toHaveBeenCalledWith("c", "test1");
+        expect(check2).toHaveBeenCalledWith("b", "test2");
+    });
+
 
     it("calls the runners by run", function () {
         var mockModel = {
