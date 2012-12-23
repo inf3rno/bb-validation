@@ -127,7 +127,7 @@ define(function (require, exports, module) {
         patterns:{},
         errors:0,
         pending:0,
-        dependencies:{},
+        attributeRelations:{},
         constructor:function (model) {
             Backbone.Model.call(this);
             this.model = model;
@@ -159,13 +159,13 @@ define(function (require, exports, module) {
                 }, this);
             }, this);
         },
-        depend:function (attribute, dependencies) {
-            if (!this.dependencies[attribute])
-                this.dependencies[attribute] = {};
-            if (!(dependencies instanceof Array))
-                dependencies = [dependencies];
-            _.each(dependencies, function (dependency) {
-                this.dependencies[attribute][dependency] = true;
+        related:function (attribute, relations) {
+            if (!this.attributeRelations[attribute])
+                this.attributeRelations[attribute] = {};
+            if (!(relations instanceof Array))
+                relations = [relations];
+            _.each(relations, function (relation) {
+                this.attributeRelations[attribute][relation] = true;
             }, this);
         },
         run:function (attributes) {

@@ -173,7 +173,7 @@ define(function (require, exports, module) {
         duplicate:function (duplicate, key, attribute) {
             if (typeof(duplicate) != "string")
                 throw  new Error("Invalid config. " + key + ": invalid attribute name given.");
-            this.depend(attribute, duplicate);
+            this.related(attribute, duplicate);
             return duplicate;
         }
     };
