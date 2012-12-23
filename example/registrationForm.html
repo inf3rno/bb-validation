@@ -24,7 +24,7 @@
         }
     });
 
-    require(["jquery", "underscore", "backbone", "domReady!", "../src/validation", "../src/basicTests"], function ($, _, Backbone, domReady, validation, basics) {
+    require(["jquery", "underscore", "backbone", "../src/validation", "../src/basicTests", "domReady!"], function ($, _, Backbone, validation, basics, domReady) {
         validation.Validator.customize(basics);
 
         var RegistrationModel = validation.Model.extend({
@@ -72,21 +72,21 @@
             messages:{
                 email:{
                     required:"The email address is not given.",
-                    type:"Email address must be string",
-                    match:"Not an email address",
+                    type:"Email address must be string.",
+                    match:"Not an email address.",
                     max:"The given email address is too long.",
                     registered:"The email address is already registered."
                 },
                 password:{
-                    required:"The password is not given",
-                    type:"The password must be string",
+                    required:"The password is not given.",
+                    type:"The password must be string.",
                     range:{
                         min:"The password is too short.",
                         max:"The password is too long."
                     }
                 },
                 password2:{
-                    duplicate:"The verifier password does not equal with the password."
+                    duplicate:"The verifier password does not equal to the password."
                 }
             },
             display:function (attribute, chunks, pending) {
@@ -148,16 +148,12 @@
                 return this;
             }
         });
-        var model = new RegistrationModel({
-            email:"test@test.hu",
-            password:"password",
-            password2:"password"
-        });
-        model.on("error", function (model, syncError, options) {
-            console.log(model.validator.errors, model.validator.pending, syncError);
-        });
         var form = new RegistrationForm({
-            model:model
+            model:new RegistrationModel({
+                email:"test@test.hu",
+                password:"password",
+                password2:"password"
+            })
         });
         $("body").append(form.$el);
     });
