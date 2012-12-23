@@ -25,11 +25,11 @@ The **tests** are checking the setted value by the actual attribute, and their s
 
 The **checks** are called by configuring the tests, so by creating the validator with the actual **schema**, and their scope is the validator itself. They can call the **related** method of the validator, and can add relations, for example by password verifying you have to call
 
-    this.depend("password", "password2");
+    this.related("password", "password2");
 
 or
 
-    this.depend("password", ["password2"]);
+    this.related("password", ["password2"]);
 This results the call of the password2 test runner by changing the password.
 The validator contains the installed **patterns** too. So you can reach the installed patterns by name.
 
