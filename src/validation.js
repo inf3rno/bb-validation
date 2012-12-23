@@ -313,6 +313,7 @@ define(function (require, exports, module) {
     Validator.prototype.DependencyResolver = DependencyResolver;
 
     module.exports = {
+        version:"1.0.0",
         View:View,
         Aggregator:Aggregator,
         Messenger:Messenger,
