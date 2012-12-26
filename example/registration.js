@@ -6,7 +6,7 @@ define(function (require, exports, module) {
         _ = require("underscore"),
         Backbone = require("backbone"),
         validation = require("../src/validation"),
-        formTemplate = require("tpl!registrationForm.tpl");
+        formTemplate = require("tpl!registrationForm.html");
 
     var RegistrationForm = Backbone.View.extend({
         tagName:"form",
