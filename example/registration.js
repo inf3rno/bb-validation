@@ -31,7 +31,6 @@ define(function (require, exports, module) {
                 $input.change(function () {
                     this.model.set(attribute, $input.val());
                 }.bind(this));
-                $input.next().css({color:"red"});
                 this.$inputs[attribute] = $input;
             }.bind(this));
             this.messenger = new InputErrors({

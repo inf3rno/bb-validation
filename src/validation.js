@@ -81,15 +81,19 @@ define(function (require, exports, module) {
 
     var AbstractModel = Backbone.Model.extend({
         constructor:function () {
-            if (this.validator) {
-                this.constructor.prototype.Validator = this.Validator.extend({}).customize(this.validator);
-                this.constructor.prototype.validator = undefined;
-            }
             this.validator = new this.Validator(this);
             Backbone.Model.apply(this, arguments);
             this.validate(this.attributes, {force:true});
         }
     });
+    AbstractModel.extend = function (instanceProps, staticProps) {
+        var validator = instanceProps.validator;
+        instanceProps.validator = undefined;
+        var extendedModel = Backbone.Model.extend.apply(this, arguments);
+        if (validator)
+            extendedModel.Validator = extendedModel.Validator.extend({}).customize(validator);
+        return extendedModel;
+    };
 
     var AsyncModel = AbstractModel.extend({
         _validate:function (attrs, options) {
