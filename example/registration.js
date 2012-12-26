@@ -10,7 +10,7 @@ define(function (require, exports, module) {
 
     var RegistrationForm = Backbone.View.extend({
         tagName:"form",
-        className:"registrationForm",
+        className:"registration",
         template:formTemplate,
         initialize:function () {
             this.render();
@@ -89,6 +89,7 @@ define(function (require, exports, module) {
     });
 
     var InputErrors = validation.Messenger.extend({
+        view:"test",
         messages:{
             email:{
                 required:"The email address is not given.",

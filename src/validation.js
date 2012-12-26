@@ -91,7 +91,7 @@ define(function (require, exports, module) {
         instanceProps.validator = undefined;
         var extendedModel = Backbone.Model.extend.apply(this, arguments);
         if (validator)
-            extendedModel.Validator = extendedModel.Validator.extend({}).customize(validator);
+            extendedModel.prototype.Validator = extendedModel.prototype.Validator.extend({}).customize(validator);
         return extendedModel;
     };
 
