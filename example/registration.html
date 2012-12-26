@@ -2,6 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="skin.css"/>
 </head>
 <body>
 <script src="../lib/require.js"></script>
@@ -11,7 +12,8 @@
             backbone:"../lib/backbone",
             underscore:"../lib/underscore-min",
             jquery:"../lib/jquery-1.8.3.min",
-            domReady:"../lib/domReady"
+            domReady:"../lib/domReady",
+            tpl:"../lib/tpl"
         },
         shim:{
             backbone:{
@@ -24,7 +26,7 @@
         }
     });
 
-    require(["jquery", "underscore", "backbone", "../src/validation", "../src/basicTests", "domReady!"], function ($, _, Backbone, validation, basics, domReady) {
+    require(["jquery", "underscore", "backbone", "../src/validation", "../src/basicTests", "domReady!", "tpl!registrationForm.tpl"], function ($, _, Backbone, validation, basics, domReady, formTemplate) {
         validation.Validator.customize(basics);
 
         var RegistrationModel = validation.Model.extend({
@@ -103,68 +105,67 @@
         var SubmitButtonDisabler = validation.Aggregator.extend({
             display:function (errors, pending) {
                 if (errors + pending)
-                    this.options.$submit.attr("disabled", "disabled");
+                    this.options.$button.attr("disabled", "disabled");
                 else
-                    this.options.$submit.removeAttr("disabled");
+                    this.options.$button.removeAttr("disabled");
             }
         });
 
         var RegistrationForm = Backbone.View.extend({
             tagName:"form",
-            className:"test",
-            template:_.template(
-                    '<label for="email">Email: <input class="email" type="text" name="email" value="<%= o.email %>" /><span class="error"></span></label><br/>' +
-                            '<label for="password">Password: <input class="password" type="password" name="password" value="<%= o.password %>" /><span class="error"></span></label><br/>' +
-                            '<label for="password2">Verifier password: <input class="password2" type="password" name="password2" value="<%= o.password2 %>" /><span class="error"></span></label><br/>' +
-                            '<input type="submit" class="submit" />',
-                    null,
-                    {variable:"o"}
-            ),
+            className:"registrationForm",
+            template:formTemplate,
             initialize:function () {
                 this.render();
             },
             render:function () {
                 this.$el.html(this.template(this.model.toJSON()));
-                this.$inputs = {
-                    email:$(".email", this.$el),
-                    password:$(".password", this.$el),
-                    password2:$(".password2", this.$el)
-                };
-                this.$submit = $(".submit", this.$el);
-                _.each(this.$inputs, function ($input, attribute) {
+                this.bindInputs();
+                this.bindButton();
+                return this;
+            },
+            bindInputs:function () {
+                this.$inputs = {};
+                $("input", this.$el).each(function (index, input) {
+                    var $input = $(input);
+                    var attribute = $input.attr("name");
+                    if (!attribute)
+                        return;
                     $input.change(function () {
                         this.model.set(attribute, $input.val());
                     }.bind(this));
                     $input.next().css({color:"red"});
-                }, this);
-                new InputErrors({
+                    this.$inputs[attribute] = $input;
+                }.bind(this));
+                this.messenger = new InputErrors({
                     model:this.model.validator,
                     $inputs:this.$inputs
                 });
-                new SubmitButtonDisabler({
+            },
+            bindButton:function () {
+                this.$button = $("button", this.$el);
+                this.aggregator = new SubmitButtonDisabler({
                     model:this.model.validator,
-                    $submit:this.$submit
+                    $button:this.$button
                 });
-                return this;
             }
         });
-        $("body").append("<style>.test{margin: 50px;} .test input{margin: 5px;}</style>");
-        var form = new RegistrationForm({
+
+        $("body").append(new RegistrationForm({
             model:new RegistrationModel({
                 email:"test@test.hu",
                 password:"password",
                 password2:"password"
             })
-        });
-        $("body").append(form.$el);
-        var form2 = new RegistrationForm({
+        }).$el);
+
+        $("body").append(new RegistrationForm({
             model:new RegistrationModel({
                 email:"test@test.it",
                 password:"password",
                 password2:"password"
             })
-        });
-        $("body").append(form2.$el);
+        }).$el);
     });
 </script>
 </body>
