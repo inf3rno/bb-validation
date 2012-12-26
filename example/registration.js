@@ -132,7 +132,7 @@ define(function (require, exports, module) {
 
 
     module.exports = {
-        create:function (attributes) {
+        createForm:function (attributes) {
             return new RegistrationForm({
                 model:new RegistrationModel(attributes)
             });
