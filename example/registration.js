@@ -8,41 +8,60 @@ define(function (require, exports, module) {
         validation = require("../src/validation"),
         formTemplate = require("tpl!registrationForm.html");
 
-    var RegistrationForm = Backbone.View.extend({
+    var AbstractForm = Backbone.View.extend({
         tagName:"form",
-        className:"registration",
-        template:formTemplate,
         initialize:function () {
             this.render();
         },
         render:function () {
-            this.$el.html(this.template(this.model.toJSON()));
+            this.displayContent();
+            this.findInputs();
             this.bindInputs();
-            this.bindButton();
+            this.findButton();
             return this;
         },
-        bindInputs:function () {
+        displayContent:function () {
+            this.$el.html(this.template(this.model.toJSON()));
+        },
+        findInputs:function () {
             this.$inputs = {};
             $("input", this.$el).each(function (index, input) {
                 var $input = $(input);
                 var attribute = $input.attr("name");
                 if (!attribute)
                     return;
+                this.$inputs[attribute] = $input;
+            }.bind(this));
+        },
+        bindInputs:function () {
+            _.each(this.$inputs, function ($input) {
                 $input.change(function () {
                     this.model.set(attribute, $input.val());
                 }.bind(this));
-                this.$inputs[attribute] = $input;
-            }.bind(this));
+            }, this);
+        },
+        findButton:function () {
+            this.$button = $("button", this.$el);
+        }
+    });
+
+    var RegistrationForm = AbstractForm.extend({
+        className:"registration",
+        template:formTemplate,
+        render:function () {
+            this.constructor.__super__.render.apply(this, arguments);
+            this.createMessenger();
+            this.createAggregator();
+            return this;
+        },
+        createMessenger:function () {
             this.messenger = new InputErrors({
-                model:this.model.validator,
-                $inputs:this.$inputs
+                form:this
             });
         },
-        bindButton:function () {
-            this.$button = $("button", this.$el);
+        createAggregator:function () {
             this.aggregator = new SubmitButtonDisabler({
-                model:this.model.validator,
-                $button:this.$button
+                form:this
             });
         }
     });
@@ -89,7 +108,6 @@ define(function (require, exports, module) {
     });
 
     var InputErrors = validation.Messenger.extend({
-        view:"test",
         messages:{
             email:{
                 required:"The email address is not given.",
@@ -110,23 +128,40 @@ define(function (require, exports, module) {
                 duplicate:"The verifier password does not equal to the password."
             }
         },
+        initialize:function () {
+            this.form = this.options.form;
+            this.model = this.form.model.validator;
+            this.$displays = {};
+            _.each(this.form.$inputs, function ($input, attribute) {
+                this.$displays[attribute] = $input.next();
+            }, this);
+            this.constructor.__super__.initialize.apply(this, arguments);
+        },
         display:function (attribute, chunks, pending) {
-            var $input = this.options.$inputs[attribute];
+            var $display = this.$displays[attribute];
+            if (!$display)
+                return;
             var message = "";
             if (chunks)
                 message += chunks.join("<br/>");
             if (pending)
                 message += "Pending ...";
-            $input.next().html(message);
+            $display.html(message);
         }
     });
 
     var SubmitButtonDisabler = validation.Aggregator.extend({
+        initialize:function () {
+            this.form = this.options.form;
+            this.model = this.form.model.validator;
+            this.$button = this.form.$button;
+            this.constructor.__super__.initialize.apply(this, arguments);
+        },
         display:function (errors, pending) {
             if (errors + pending)
-                this.options.$button.attr("disabled", "disabled");
+                this.$button.attr("disabled", "disabled");
             else
-                this.options.$button.removeAttr("disabled");
+                this.$button.removeAttr("disabled");
         }
     });
 
