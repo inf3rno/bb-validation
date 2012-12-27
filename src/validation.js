@@ -318,8 +318,34 @@ define(function (require, exports, module) {
 
     Validator.prototype.DependencyResolver = DependencyResolver;
 
-    module.exports = {
-        version:"1.0.0",
+
+    var plugin = {
+        load:function (name, require, load, config) {
+            var resources = this.parseResources(name);
+            require(resources, function () {
+                var localValidator = global.Validator.extend({});
+                _.each(arguments, function (resource) {
+                    localValidator.customize(resource);
+                }, this);
+                var local = _.extend({}, global, {
+                    Validator:localValidator,
+                    Model:global.Model.extend({
+                        Validator:localValidator
+                    }),
+                    SyncModel:global.SyncModel.extend({
+                        Validator:localValidator
+                    })
+                });
+                load(local);
+            });
+        },
+        parseResources:function (name) {
+            return name.split("+");
+        }
+    };
+
+    var global = {
+        version:"1.0.1",
         View:View,
         Aggregator:Aggregator,
         Messenger:Messenger,
@@ -327,7 +353,10 @@ define(function (require, exports, module) {
         SyncModel:SyncModel,
         Validator:Validator,
         Runner:Runner,
-        DependencyResolver:DependencyResolver
+        DependencyResolver:DependencyResolver,
+        load:plugin.load.bind(plugin)
     };
+
+    module.exports = global;
 
 });

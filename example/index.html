@@ -8,9 +8,7 @@
 <script src="../lib/require.js"></script>
 <script src="config.js"></script>
 <script>
-    require(["jquery", "../src/validation", "../src/basicTests", "domReady!", "registration"], function ($, validation, basicTests, domReady, registration) {
-        validation.Validator.customize(basicTests);
-
+    require(["jquery", "domReady!", "registration"], function ($, domReady, registration) {
         $("body").append(registration.createForm({
             email:"test@test.hu",
             password:"abc",

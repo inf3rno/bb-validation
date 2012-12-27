@@ -5,7 +5,7 @@ define(function (require, exports, module) {
     var $ = require("jquery"),
         _ = require("underscore"),
         Backbone = require("backbone"),
-        validation = require("../src/validation"),
+        validation = require("../src/validation!../src/basicTests"),
         form = require("form");
 
     var RegistrationForm = form.AbstractForm.extend({
