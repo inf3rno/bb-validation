@@ -330,13 +330,13 @@ define(function (require, exports, module) {
                 });
                 callback.apply(null, modules);
             } : _require;
-            require(this.parseResources(name), function () {
+            require(this.paramsToResources(name), function () {
                 var resources = _.toArray(arguments);
                 var branch = this.createBranch(resources);
                 load(branch);
             }.bind(this));
         },
-        parseResources:function (name) {
+        paramsToResources:function (name) {
             if (name == "")
                 return [];
             return name.split(":");
