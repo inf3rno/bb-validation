@@ -330,28 +330,32 @@ define(function (require, exports, module) {
                 });
                 callback.apply(null, modules);
             } : _require;
-            var resources = this.parseResources(name);
-            require(resources, function () {
-                var localValidator = global.Validator.extend({});
-                _.each(arguments, function (resource) {
-                    localValidator.customize(resource);
-                }, this);
-                var local = _.extend({}, global, {
-                    Validator:localValidator,
-                    Model:global.Model.extend({
-                        Validator:localValidator
-                    }),
-                    SyncModel:global.SyncModel.extend({
-                        Validator:localValidator
-                    })
-                });
-                load(local);
-            });
+            require(this.parseResources(name), function () {
+                var resources = _.toArray(arguments);
+                var branch = this.createBranch(resources);
+                load(branch);
+            }.bind(this));
         },
         parseResources:function (name) {
             if (name == "")
                 return [];
             return name.split(":");
+        },
+        createBranch:function (resources) {
+            var localValidator = global.Validator.extend({});
+            _.each(resources, function (resource) {
+                localValidator.customize(resource);
+            }, this);
+            var branch = _.extend({}, global, {
+                Validator:localValidator,
+                Model:global.Model.extend({
+                    Validator:localValidator
+                }),
+                SyncModel:global.SyncModel.extend({
+                    Validator:localValidator
+                })
+            });
+            return branch;
         }
     };
 
