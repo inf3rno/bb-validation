@@ -1,5 +1,7 @@
+var amdefine = false;
 if (typeof define !== 'function')
-    var define = require('amdefine')(module);
+    var define = require('amdefine')(module, require),
+        amdefine = true;
 
 define(function (require, exports, module) {
     var _ = require("underscore"),
@@ -320,7 +322,14 @@ define(function (require, exports, module) {
 
 
     var plugin = {
-        load:function (name, require, load, config) {
+        load:function (name, _require, load, config) {
+            var require = amdefine ? function (resources, callback) {
+                var modules = [];
+                _.each(resources, function (resource) {
+                    modules.push(_require(resource));
+                });
+                callback.apply(null, modules);
+            } : _require;
             var resources = this.parseResources(name);
             require(resources, function () {
                 var localValidator = global.Validator.extend({});
@@ -340,7 +349,9 @@ define(function (require, exports, module) {
             });
         },
         parseResources:function (name) {
-            return name.split("+");
+            if (name == "")
+                return [];
+            return name.split(":");
         }
     };
 

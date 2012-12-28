@@ -1,3 +1,6 @@
+if (typeof define !== 'function')
+    var define = require('amdefine')(module, require);
+
 var _ = require("underscore"),
     Backbone = require("backbone"),
     validation = require("./validation"),
@@ -5,6 +8,41 @@ var _ = require("underscore"),
     Validator = validation.Validator,
     Runner = validation.Runner,
     DependencyResolver = validation.DependencyResolver;
+
+
+define(function (require, exports, module) {
+    var _ = require("underscore"),
+        Backbone = require("backbone"),
+        global = require("./validation"),
+        empty = require("./validation!"),
+        local = require("./validation!../src/basicTests"),
+        basicTests = require("../src/basicTests");
+
+    describe("validation.Plugin", function () {
+
+        it("requires plugin with and without resource params", function () {
+            expect(global).not.toBe(undefined);
+            expect(empty).not.toBe(undefined);
+            expect(local).not.toBe(undefined);
+        });
+
+        it("returns different instances of plugin by different resource params", function () {
+            expect(local).not.toBe(global);
+            expect(empty).not.toBe(local);
+            expect(empty).not.toBe(global);
+        });
+
+        it("customizes the plugin with the libs in resource params", function () {
+            _.each(basicTests.tests, function (test, name) {
+                expect(test).toBe(local.Validator.prototype.tests[name]);
+                expect(test).not.toBe(empty.Validator.prototype.tests[name]);
+                expect(test).not.toBe(global.Validator.prototype.tests[name]);
+            });
+        });
+
+    });
+});
+
 
 describe("validation.Model", function () {
 
