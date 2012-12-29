@@ -8,7 +8,7 @@ define(function (require, exports, module) {
         Backbone = require("backbone");
 
     if (!Object.create)
-        Object.create = function (proto, properties) {
+        Object.create = function (proto, properties) { //properties object supported in node.js, but not in every browser
             var Surrogate = function () {
                 this.constructor = Surrogate;
             };
