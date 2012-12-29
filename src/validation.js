@@ -8,12 +8,15 @@ define(function (require, exports, module) {
         Backbone = require("backbone");
 
     if (!Object.create)
-        Object.create = function (proto) {
+        Object.create = function (proto, properties) {
             var Surrogate = function () {
                 this.constructor = Surrogate;
             };
             Surrogate.prototype = proto;
-            return new Surrogate();
+            var instance = new Surrogate();
+            if (properties)
+                _.extend(instance, properties);
+            return instance;
         };
 
     var View = Backbone.View.extend({
@@ -284,7 +287,7 @@ define(function (require, exports, module) {
     var DependencyResolver = function (tests) {
         this.tests = tests;
     };
-    DependencyResolver.prototype = {
+    _.extend(DependencyResolver.prototype, {
         createTestMap:function (names) {
             var testMap = {};
             _.each(names, function (name) {
@@ -316,51 +319,16 @@ define(function (require, exports, module) {
             else
                 return definition;
         }
-    };
+    });
 
     Validator.prototype.DependencyResolver = DependencyResolver;
 
 
-    var plugin = {
-        load:function (name, _require, load, config) {
-            var require = amdefine ? function (resources, callback) {
-                var modules = [];
-                _.each(resources, function (resource) {
-                    modules.push(_require(resource));
-                });
-                callback.apply(null, modules);
-            } : _require;
-            require(this.paramsToResources(name), function () {
-                var resources = _.toArray(arguments);
-                var branch = this.createBranch(resources);
-                load(branch);
-            }.bind(this));
-        },
-        paramsToResources:function (name) {
-            if (name == "")
-                return [];
-            return name.split(":");
-        },
-        createBranch:function (resources) {
-            var localValidator = global.Validator.extend({});
-            _.each(resources, function (resource) {
-                localValidator.customize(resource);
-            }, this);
-            var branch = _.extend({}, global, {
-                Validator:localValidator,
-                Model:global.Model.extend({
-                    Validator:localValidator
-                }),
-                SyncModel:global.SyncModel.extend({
-                    Validator:localValidator
-                })
-            });
-            return branch;
-        }
+    var Plugin = function (params) {
+        this.params = params;
+        _.extend(this, params);
     };
-
-    var global = {
-        version:"1.0.1",
+    _.extend(Plugin.prototype, {
         View:View,
         Aggregator:Aggregator,
         Messenger:Messenger,
@@ -369,9 +337,52 @@ define(function (require, exports, module) {
         Validator:Validator,
         Runner:Runner,
         DependencyResolver:DependencyResolver,
-        load:plugin.load.bind(plugin)
-    };
+        load:function (name, _require, load, config) {
+            var require = amdefine ? function (resources, callback) {
+                var modules = [];
+                _.each(resources, function (resource) {
+                    modules.push(_require(resource));
+                });
+                callback.apply(null, modules);
+            } : _require;
+            require(this.parseResourceName(name), function () {
+                var config = _.toArray(arguments);
+                var branch = this.extend(config);
+                load(branch);
+            }.bind(this));
+        },
+        parseResourceName:function (name) {
+            if (name == "")
+                return [];
+            return name.split(":");
+        },
+        extend:function (config) {
+            var localValidator = this.Validator.extend({});
+            _.each(config, function (resource) {
+                localValidator.customize(resource);
+            }, this);
+            var Branch = function (params) {
+                this.params = params;
+                _.extend(this, params);
+            };
+            Branch.prototype = Object.create(this.constructor.prototype);
+            _.extend(Branch.prototype, {
+                constructor:Branch,
+                Validator:localValidator,
+                Model:this.Model.extend({
+                    Validator:localValidator
+                }),
+                SyncModel:this.SyncModel.extend({
+                    Validator:localValidator
+                })
+            });
+            return new Branch(this.params);
+        }
+    });
 
-    module.exports = global;
+
+    module.exports = new Plugin({
+        version:"1.0.2"
+    });
 
 });
