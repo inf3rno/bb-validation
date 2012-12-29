@@ -1,4 +1,4 @@
-**Backbone validation 1.0.0.**
+**Backbone validation 1.0.0.** (the current source version and implemented features are not necessarily the same)
 
 This is a plugin for Backbone validation, which works both in browsers and node.js applications. The main classes in this package are: **Model**, **Validator**, **Messenger** and **Aggregator**.
 
