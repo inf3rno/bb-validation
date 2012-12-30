@@ -3,7 +3,7 @@ if (typeof define !== 'function')
 
 var _ = require("underscore"),
     Backbone = require("backbone"),
-    validation = require("./validation"),
+    validation = require("../src/validation"),
     Model = validation.Model,
     Validator = validation.Validator,
     Runner = validation.Runner,
@@ -13,9 +13,9 @@ var _ = require("underscore"),
 define(function (require, exports, module) {
     var _ = require("underscore"),
         Backbone = require("backbone"),
-        global = require("./validation"),
-        empty = require("./validation!"),
-        local = require("./validation!../src/basicTests"),
+        global = require("../src/validation"),
+        empty = require("../src/validation!"),
+        local = require("../src/validation!../src/basicTests"),
         basicTests = require("../src/basicTests");
 
     describe("validation.Plugin", function () {

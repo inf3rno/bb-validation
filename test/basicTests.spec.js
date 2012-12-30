@@ -1,5 +1,5 @@
 var _ = require("underscore"),
-    basic = require("./basicTests");
+    basic = require("../src/basicTests");
 
 describe("patterns", function () {
     var pattern;
