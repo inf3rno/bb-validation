@@ -2,10 +2,7 @@ if (typeof define !== 'function')
     var define = require('amdefine')(module, require);
 
 define(function (require, exports, module) {
-    var $ = require("jquery"),
-        _ = require("underscore"),
-        Backbone = require("backbone"),
-        validation = require("../src/validation!../src/basicTests"),
+    var validation = require("../src/validation!../src/basicTests"),
         form = require("form");
 
     var RegistrationForm = form.AbstractForm.extend({
