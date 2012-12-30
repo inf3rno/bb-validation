@@ -91,14 +91,6 @@ define(function (require, exports, module) {
             this.validate(this.attributes, {force:true});
         }
     });
-    AbstractModel.extend = function (instanceProps, staticProps) {
-        var validator = instanceProps.validator;
-        instanceProps.validator = undefined;
-        var extendedModel = Backbone.Model.extend.apply(this, arguments);
-        if (validator)
-            extendedModel.prototype.Validator = extendedModel.prototype.Validator.extend({}).customize(validator);
-        return extendedModel;
-    };
 
     var AsyncModel = AbstractModel.extend({
         _validate:function (attrs, options) {
@@ -357,15 +349,10 @@ define(function (require, exports, module) {
             return name.split(":");
         },
         extend:function (config) {
-            var localValidator = this.Validator.extend({});
-            _.each(config, function (resource) {
-                localValidator.customize(resource);
-            }, this);
-            var Branch = function (params) {
-                this.params = params;
-                _.extend(this, params);
+            var Branch = function () {
             };
             Branch.prototype = Object.create(this.constructor.prototype);
+            var localValidator = this.Validator.extend({});
             _.extend(Branch.prototype, {
                 constructor:Branch,
                 Validator:localValidator,
@@ -376,13 +363,21 @@ define(function (require, exports, module) {
                     Validator:localValidator
                 })
             });
-            return new Branch(this.params);
+            var branch = new Branch();
+            if (config)
+                branch.add(config);
+            return branch;
+        },
+        add:function (config) {
+            if (!(config instanceof Array))
+                config = [config];
+            _.each(config, function (resource) {
+                this.Validator.customize(resource);
+            }, this);
         }
     });
 
 
-    module.exports = new Plugin({
-        version:"1.0.2"
-    });
+    module.exports = new Plugin();
 
 });

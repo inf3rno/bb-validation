@@ -2,7 +2,24 @@ if (typeof define !== 'function')
     var define = require('amdefine')(module, require);
 
 define(function (require, exports, module) {
-    var validation = require("../src/validation!../src/basicTests"),
+    var validation = require("../src/validation!../src/basicTests").extend({
+            tests:{
+                registered:function (done) {
+                    var registeredEmails = {
+                        "test@test.com":true,
+                        "test@test.hu":true
+                    };
+                    setTimeout(function () {
+                        done(registeredEmails[this.value]);
+                    }.bind(this), this.config);
+                }
+            },
+            checks:{
+                registered:function (delay, key) {
+                    return delay || 1;
+                }
+            }
+        }),
         form = require("form");
 
     var RegistrationForm = form.AbstractForm.extend({
@@ -54,24 +71,6 @@ define(function (require, exports, module) {
             },
             password2:{
                 duplicate:"password"
-            }
-        },
-        validator:{
-            tests:{
-                registered:function (done) {
-                    var registeredEmails = {
-                        "test@test.com":true,
-                        "test@test.hu":true
-                    };
-                    setTimeout(function () {
-                        done(registeredEmails[this.value]);
-                    }.bind(this), this.config);
-                }
-            },
-            checks:{
-                registered:function (delay, key) {
-                    return delay || 1;
-                }
             }
         }
     });
