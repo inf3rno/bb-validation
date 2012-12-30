@@ -6,7 +6,10 @@
     "main":"./src/validation.js",
     "repository":{
         "type":"git",
-        "url":"https://github.com/inf3rno/backbone.validation.git"
+        "url":"https://github.com/inf3rno/bb-validation.git"
+    },
+    "bugs": {
+        "web": "https://github.com/inf3rno/bb-validation/issues"
     },
     "keywords":[
         "backbone",
