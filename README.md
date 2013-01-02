@@ -1,6 +1,6 @@
 # bb-validation
 
-This plugin is for helping the validation of Backbone models in Backbone applications. For better understanding of the validation configuration you have to check the [Plugin](doc/Plugin.md) and the [Validator](doc/Validator.md) classes in the documentation and the registration.js in the example directory. If you want to create custom views for the test results, you have to check the [Aggregator](doc/Aggregator.md) and [Messenger](doc/Messenger.md) classes in the documentation and the form.js in the example directory. 
+This plugin is for helping the validation of Backbone models in Backbone applications. For better understanding of the validation configuration you have to check the [Plugin](https://github.com/inf3rno/bb-validation/blob/master/doc/Plugin.md) and the [Validator](https://github.com/inf3rno/bb-validation/blob/master/doc/Validator.md) classes in the documentation and the registration.js in the example directory. If you want to create custom views for the test results, you have to check the [Aggregator](https://github.com/inf3rno/bb-validation/blob/master/doc/Aggregator.md) and [Messenger](https://github.com/inf3rno/bb-validation/blob/master/doc/Messenger.md) classes in the documentation and the form.js in the example directory.
 
 ## Features
 
@@ -15,14 +15,14 @@ This plugin is for helping the validation of Backbone models in Backbone applica
 
 The main classes in this package are:
 
- * [Plugin](doc/Plugin.md) - This is the class of the module or loader plugin object. A further role is helping the installation of custom test libraries.
- * [Aggregator](doc/Aggregator.md) - Aggregates the validation result. For example you can create a button which is disabled by invalid form content.
- * [Messenger](doc/Messenger.md) - Sends validation messages to the client.
- * [AsyncModel/Model](doc/AsyncModel.md) - Validates the Model asynchronously. By this solution the errors are not preventing the change of the model.
- * [SyncModel](doc/SyncModel.md) - Validates the Model synchronosly. You can use the default validation interface of the model with synchronous tests only, and validation errors will hinder the change of the model attributes.
- * [Validator](doc/Validator.md) - The Validator is responsible for running the tests by Model instantiation and by every attribute change. 
- * [Runner](doc/Runner.md) - By each attribute there is a configured Runner instance which runs the tests asynchronously in series, and updates the Validator object with the result.
- * [DependencyResolver](doc/DependencyResolver.md) - The tests can be dependent on eachother. The DependencyResolver put the tests in the proper order.
+ * [Plugin](https://github.com/inf3rno/bb-validation/blob/master/doc/Plugin.md) - This is the class of the module or loader plugin object. A further role is helping the installation of custom test libraries.
+ * [Aggregator](https://github.com/inf3rno/bb-validation/blob/master/doc/Aggregator.md) - Aggregates the validation result. For example you can create a button which is disabled by invalid form content.
+ * [Messenger](https://github.com/inf3rno/bb-validation/blob/master/doc/Messenger.md) - Sends validation messages to the client.
+ * [AsyncModel/Model](https://github.com/inf3rno/bb-validation/blob/master/doc/AsyncModel.md) - Validates the Model asynchronously. By this solution the errors are not preventing the change of the model.
+ * [SyncModel](https://github.com/inf3rno/bb-validation/blob/master/doc/SyncModel.md) - Validates the Model synchronosly. You can use the default validation interface of the model with synchronous tests only, and validation errors will hinder the change of the model attributes.
+ * [Validator](https://github.com/inf3rno/bb-validation/blob/master/doc/Validator.md) - The Validator is responsible for running the tests by Model instantiation and by every attribute change.
+ * [Runner](https://github.com/inf3rno/bb-validation/blob/master/doc/Runner.md) - By each attribute there is a configured Runner instance which runs the tests asynchronously in series, and updates the Validator object with the result.
+ * [DependencyResolver](https://github.com/inf3rno/bb-validation/blob/master/doc/DependencyResolver.md) - The tests can be dependent on eachother. The DependencyResolver put the tests in the proper order.
 
 ## Requirements
 
