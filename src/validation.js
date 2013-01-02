@@ -38,7 +38,7 @@ define(function (require, exports, module) {
             this.display(this.model.errors, this.model.pending);
             return this;
         },
-        display:function (errors) {
+        display:function (errors, pending) {
         }
     });
 
@@ -315,16 +315,14 @@ define(function (require, exports, module) {
 
     Validator.prototype.DependencyResolver = DependencyResolver;
 
-
-    var Plugin = function (params) {
-        this.params = params;
-        _.extend(this, params);
+    var Plugin = function () {
     };
     _.extend(Plugin.prototype, {
-        View:View,
+        Plugin:Plugin,
         Aggregator:Aggregator,
         Messenger:Messenger,
         Model:AsyncModel,
+        AsyncModel:AsyncModel,
         SyncModel:SyncModel,
         Validator:Validator,
         Runner:Runner,
@@ -352,16 +350,19 @@ define(function (require, exports, module) {
             var Branch = function () {
             };
             Branch.prototype = Object.create(this.constructor.prototype);
-            var localValidator = this.Validator.extend({});
+            var Validator = this.Validator.extend({});
+            var AsyncModel = this.Model.extend({
+                Validator:Validator
+            });
+            var SyncModel = this.SyncModel.extend({
+                Validator:Validator
+            });
             _.extend(Branch.prototype, {
                 constructor:Branch,
-                Validator:localValidator,
-                Model:this.Model.extend({
-                    Validator:localValidator
-                }),
-                SyncModel:this.SyncModel.extend({
-                    Validator:localValidator
-                })
+                Validator:Validator,
+                Model:AsyncModel,
+                AsyncModel:AsyncModel,
+                SyncModel:SyncModel
             });
             var branch = new Branch();
             if (config)
@@ -374,6 +375,7 @@ define(function (require, exports, module) {
             _.each(config, function (resource) {
                 this.Validator.customize(resource);
             }, this);
+            return this;
         }
     });
 
