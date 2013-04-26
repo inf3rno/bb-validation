@@ -44,64 +44,6 @@ define(function (require, exports, module) {
 });
 
 
-describe("validation.Model", function () {
-
-    it("extends backbone model", function () {
-        expect(Model.prototype instanceof Backbone.Model).toBe(true);
-    });
-
-    it("creates different validator instances for each model instance", function () {
-        var model = new Model();
-        expect(model.validator).not.toBe(undefined);
-        var model2 = new Model();
-        expect(model2.validator).not.toBe(model.validator);
-    });
-
-    it("passes the model to the validator initializer, and runs validator automatically", function () {
-        var mockValidator = jasmine.createSpyObj("validator", ["initialize", "force"]);
-        var Model2 = Model.extend({
-            Validator: function (model) {
-                mockValidator.initialize(model);
-                return mockValidator;
-            }
-        });
-        var model2 = new Model2();
-        expect(mockValidator.initialize).toHaveBeenCalledWith(model2);
-        expect(mockValidator.force).toHaveBeenCalledWith(model2.attributes);
-    });
-
-    it("runs validator by every change with the complete attribute map", function () {
-        var createMockValidator = function () {
-            return jasmine.createSpyObj("validator", ["initialize", "force", "run"]);
-        };
-        var Model2 = Model.extend({
-            Validator: createMockValidator
-        });
-        var model2 = new Model2({
-            a: 0,
-            b: 1
-        });
-        expect(model2.validator.run).not.toHaveBeenCalled();
-        expect(model2.validator.force).toHaveBeenCalledWith({a: 0, b: 1});
-        model2.validator.run.andReturn("error");
-        model2.set({
-            a: 1
-        });
-        expect(model2.validator.run).toHaveBeenCalledWith({a: 1, b: 1});
-
-        model2.validator = createMockValidator();
-        model2.validator.run.andReturn("error");
-        model2.unset("a");
-        expect(model2.validator.run).toHaveBeenCalledWith({b: 1});
-        model2.validator = createMockValidator();
-        model2.validator.run.andReturn("error");
-        model2.clear();
-        expect(model2.validator.run).toHaveBeenCalledWith({});
-
-    });
-
-});
-
 describe("validation.Validator", function () {
 
     it("can install custom tests", function () {

@@ -8,121 +8,16 @@ define(function (require, exports, module) {
         Backbone = require("backbone");
 
     if (!Object.create)
-        Object.create = function (proto, properties) { //properties object supported in node.js, but not in every browser
+        Object.create = function (proto) {
             var Surrogate = function () {
                 this.constructor = Surrogate;
             };
             Surrogate.prototype = proto;
             var instance = new Surrogate();
-            if (properties)
-                _.extend(instance, properties);
             return instance;
         };
 
-    var View = Backbone.View.extend({
-        initialize: function () {
-            this.model.on("change", function () {
-                this.unRender();
-                this.render();
-            }, this);
-            this.render();
-        },
-        render: function () {
-        },
-        unRender: function () {
-        }
-    });
 
-    var Aggregator = View.extend({
-        render: function () {
-            this.display(this.model.errors, this.model.pending);
-            return this;
-        },
-        display: function (errors, pending) {
-        }
-    });
-
-    var Messenger = View.extend({
-        unknownMessage: "Not valid.",
-        initialize: function () {
-            if (this.options.unknownMessage)
-                this.unknownMessage = this.options.unknownMessage;
-            if (!this.messages && !this.options.messages)
-                throw new Error("No messages given.");
-            if (this.options.messages)
-                this.messages = this.options.messages;
-            View.prototype.initialize.apply(this, arguments);
-        },
-        render: function () {
-            _.each(this.model.attributes, function (errors, attribute) {
-                var chunks;
-                var pending = false;
-                if (errors) {
-                    chunks = [];
-                    _.each(errors, function (error, name) {
-                        var section = this.messages[attribute][name];
-                        if (typeof(section) == "string")
-                            chunks.push(section);
-                        else if (section && section[error])
-                            chunks.push(section[error]);
-                    }, this);
-                    if (!chunks.length)
-                        chunks.push(this.unknownMessage);
-                }
-                else if (errors === undefined)
-                    pending = true;
-                this.display(attribute, chunks, pending);
-            }, this);
-            return this;
-        },
-        unRender: function () {
-            _.each(this.model.attributes, function (errors, attribute) {
-                this.display(attribute);
-            }, this);
-        },
-        display: function (attribute, chunks, pending) {
-        }
-    });
-
-    var AbstractModel = Backbone.Model.extend({
-        constructor: function () {
-            this.validator = new this.Validator(this);
-            Backbone.Model.apply(this, arguments);
-            this.validate(this.attributes, {force: true});
-        }
-    });
-
-    var AsyncModel = AbstractModel.extend({
-        _validate: function (attrs, options) {
-            Backbone.Model.prototype._validate.apply(this, arguments);
-            return true;
-        },
-        validate: function (attributes, options) {
-            if (options && options.force)
-                this.validator.force(attributes);
-            else
-                this.validator.run(attributes);
-        }
-    });
-
-    var SyncModel = AbstractModel.extend({
-        validate: function (attributes, options) {
-            if (options && options.force)
-                this.validator.force(attributes);
-            else
-                this.validator.run(attributes);
-            if (this.validator.pending)
-                throw new Error("Cannot use asynchronous tests in a sync model.");
-            if (!this.validator.errors)
-                return;
-            var error = {};
-            _.each(this.validator.attributes, function (errors, attribute) {
-                if (errors)
-                    error[attribute] = errors;
-            });
-            return error;
-        }
-    });
 
     var Validator = Backbone.Model.extend({
         checks: {},
@@ -224,8 +119,6 @@ define(function (require, exports, module) {
         }
     });
 
-    AbstractModel.prototype.Validator = Validator;
-
     var Runner = function (testMap, settings) {
         this.testMap = testMap;
         this.settings = settings;
@@ -319,11 +212,6 @@ define(function (require, exports, module) {
     };
     _.extend(Plugin.prototype, {
         Plugin: Plugin,
-        Aggregator: Aggregator,
-        Messenger: Messenger,
-        Model: AsyncModel,
-        AsyncModel: AsyncModel,
-        SyncModel: SyncModel,
         Validator: Validator,
         Runner: Runner,
         DependencyResolver: DependencyResolver,
@@ -351,18 +239,9 @@ define(function (require, exports, module) {
             };
             Branch.prototype = Object.create(this.constructor.prototype);
             var Validator = this.Validator.extend({});
-            var AsyncModel = this.Model.extend({
-                Validator: Validator
-            });
-            var SyncModel = this.SyncModel.extend({
-                Validator: Validator
-            });
             _.extend(Branch.prototype, {
                 constructor: Branch,
-                Validator: Validator,
-                Model: AsyncModel,
-                AsyncModel: AsyncModel,
-                SyncModel: SyncModel
+                Validator: Validator
             });
             var branch = new Branch();
             if (config)
