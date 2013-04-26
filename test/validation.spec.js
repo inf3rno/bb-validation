@@ -79,15 +79,6 @@ describe("validation.Validator", function () {
 
     it("creates dependency resolver with tests", function () {
         var mockModel = {
-            schema: {
-                attr1: {
-                    test1: "a",
-                    test2: "b"
-                },
-                attr2: {
-                    test1: "c"
-                }
-            }
         };
         var mockResolver = jasmine.createSpyObj("resolver", ["initialize", "createTestMap"]);
         var mockRunner = jasmine.createSpyObj("runner", ["initialize", "on"]);
@@ -100,14 +91,8 @@ describe("validation.Validator", function () {
                 return mockRunner;
             }
         });
-        var validator = new Validator2(mockModel);
-        expect(mockResolver.initialize.callCount).toEqual(1);
-        expect(mockResolver.initialize).toHaveBeenCalledWith(Validator2.prototype.tests);
-        expect(mockResolver.createTestMap.callCount).toEqual(2);
-    });
-
-    it("creates runners with dependency resolver outputs", function () {
-        var mockModel = {
+        var validator = new Validator2({
+            model: mockModel,
             schema: {
                 attr1: {
                     test1: "a",
@@ -117,6 +102,15 @@ describe("validation.Validator", function () {
                     test1: "c"
                 }
             }
+        });
+        expect(mockResolver.initialize.callCount).toEqual(1);
+        expect(mockResolver.initialize).toHaveBeenCalledWith(Validator2.prototype.tests);
+        expect(mockResolver.createTestMap.callCount).toEqual(2);
+    });
+
+    it("creates runners with dependency resolver outputs", function () {
+        var mockModel = {
+
         };
         var testMap1 = {test1: function () {
         }, test2: function () {
@@ -141,19 +135,8 @@ describe("validation.Validator", function () {
                 return mockRunner;
             }
         });
-        var validator = new Validator2(mockModel);
-        expect(mockResolver.initialize.callCount).toEqual(1);
-        expect(mockResolver.initialize).toHaveBeenCalledWith(Validator2.prototype.tests);
-
-        expect(mockRunner.initialize.callCount).toEqual(2);
-        expect(mockRunner.initialize).toHaveBeenCalledWith(testMap1, mockModel.schema.attr1);
-        expect(mockRunner.initialize).toHaveBeenCalledWith(testMap2, mockModel.schema.attr2);
-
-        expect(mockRunner.on).toHaveBeenCalled();
-    });
-
-    it("calls checks by construct", function () {
-        var mockModel = {
+        var validator = new Validator2({
+            model: mockModel,
             schema: {
                 attr1: {
                     test1: "a",
@@ -163,6 +146,19 @@ describe("validation.Validator", function () {
                     test1: "c"
                 }
             }
+        });
+        expect(mockResolver.initialize.callCount).toEqual(1);
+        expect(mockResolver.initialize).toHaveBeenCalledWith(Validator2.prototype.tests);
+
+        expect(mockRunner.initialize.callCount).toEqual(2);
+        expect(mockRunner.initialize).toHaveBeenCalledWith(testMap1, validator.schema.attr1);
+        expect(mockRunner.initialize).toHaveBeenCalledWith(testMap2, validator.schema.attr2);
+
+        expect(mockRunner.on).toHaveBeenCalled();
+    });
+
+    it("calls checks by construct", function () {
+        var mockModel = {
         };
         var check1 = jasmine.createSpy("check1");
         var check2 = jasmine.createSpy("check2");
@@ -176,7 +172,18 @@ describe("validation.Validator", function () {
                 }
             }
         });
-        var validator = new Validator2(mockModel);
+        var validator = new Validator2({
+            model: mockModel,
+            schema: {
+                attr1: {
+                    test1: "a",
+                    test2: "b"
+                },
+                attr2: {
+                    test1: "c"
+                }
+            }
+        });
         expect(check1.callCount).toEqual(2);
         expect(check2.callCount).toEqual(1);
         expect(check1).toHaveBeenCalledWith("a", "test1", "attr1");
@@ -187,15 +194,6 @@ describe("validation.Validator", function () {
 
     it("calls the runners by run", function () {
         var mockModel = {
-            schema: {
-                attr1: {
-                    test1: "a",
-                    test2: "b"
-                },
-                attr2: {
-                    test1: "c"
-                }
-            }
         };
         var mockResolver = jasmine.createSpyObj("resolver", ["createTestMap"]);
         var mockRunner = jasmine.createSpyObj("runner", ["on", "run"]);
@@ -207,7 +205,18 @@ describe("validation.Validator", function () {
                 return mockRunner;
             }
         });
-        var validator = new Validator2(mockModel);
+        var validator = new Validator2({
+            model: mockModel,
+            schema: {
+                attr1: {
+                    test1: "a",
+                    test2: "b"
+                },
+                attr2: {
+                    test1: "c"
+                }
+            }
+        });
         expect(mockRunner.run).not.toHaveBeenCalled();
         var attributes = {attr1: 1};
         mockModel.get = function (attr) {

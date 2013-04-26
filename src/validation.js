@@ -18,7 +18,6 @@ define(function (require, exports, module) {
         };
 
 
-
     var Validator = Backbone.Model.extend({
         checks: {},
         tests: {},
@@ -26,12 +25,12 @@ define(function (require, exports, module) {
         errors: 0,
         pending: 0,
         attributeRelations: {},
-        constructor: function (model) {
+        constructor: function (options) {
             Backbone.Model.call(this);
-            this.model = model;
+            _.extend(this, _.pick(options, "schema", "model"));
             this.dependencyResolver = new this.DependencyResolver(this.tests);
             this.runners = {};
-            _.each(this.model.schema, function (settings, attribute) {
+            _.each(this.schema, function (settings, attribute) {
                 var tests = this.dependencyResolver.createTestMap(_.keys(settings));
                 _.each(settings, function (config, name) {
                     var check = this.checks[name];
