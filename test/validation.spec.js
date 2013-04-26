@@ -60,7 +60,7 @@ describe("validation.Model", function () {
     it("passes the model to the validator initializer, and runs validator automatically", function () {
         var mockValidator = jasmine.createSpyObj("validator", ["initialize", "force"]);
         var Model2 = Model.extend({
-            Validator:function (model) {
+            Validator: function (model) {
                 mockValidator.initialize(model);
                 return mockValidator;
             }
@@ -75,24 +75,24 @@ describe("validation.Model", function () {
             return jasmine.createSpyObj("validator", ["initialize", "force", "run"]);
         };
         var Model2 = Model.extend({
-            Validator:createMockValidator
+            Validator: createMockValidator
         });
         var model2 = new Model2({
-            a:0,
-            b:1
+            a: 0,
+            b: 1
         });
         expect(model2.validator.run).not.toHaveBeenCalled();
-        expect(model2.validator.force).toHaveBeenCalledWith({a:0, b:1});
+        expect(model2.validator.force).toHaveBeenCalledWith({a: 0, b: 1});
         model2.validator.run.andReturn("error");
         model2.set({
-            a:1
+            a: 1
         });
-        expect(model2.validator.run).toHaveBeenCalledWith({a:1, b:1});
+        expect(model2.validator.run).toHaveBeenCalledWith({a: 1, b: 1});
 
         model2.validator = createMockValidator();
         model2.validator.run.andReturn("error");
         model2.unset("a");
-        expect(model2.validator.run).toHaveBeenCalledWith({b:1});
+        expect(model2.validator.run).toHaveBeenCalledWith({b: 1});
         model2.validator = createMockValidator();
         model2.validator.run.andReturn("error");
         model2.clear();
@@ -106,14 +106,14 @@ describe("validation.Validator", function () {
 
     it("can install custom tests", function () {
         Validator.customize({
-            tests:tests
+            tests: tests
         });
         expect(Validator.prototype.tests.custom).toEqual(tests.custom);
     });
     it("can install custom checks and patterns either", function () {
         Validator.customize({
-            checks:checks,
-            patterns:patterns
+            checks: checks,
+            patterns: patterns
         });
         expect(Validator.prototype.tests.custom).toEqual(tests.custom);
         expect(Validator.prototype.checks.custom).toEqual(checks.custom);
@@ -123,9 +123,9 @@ describe("validation.Validator", function () {
     it("can inherit tests, checks, patterns, but cannot override super", function () {
         var Validator2 = Validator.extend({});
         Validator2.customize({
-            tests:testsOverride,
-            checks:checkOverride,
-            patterns:patternsOverride
+            tests: testsOverride,
+            checks: checkOverride,
+            patterns: patternsOverride
         });
         expect(Validator2.prototype.tests.custom).toEqual(testsOverride.custom);
         expect(Validator2.prototype.tests.custom2).toEqual(tests.custom2);
@@ -137,24 +137,24 @@ describe("validation.Validator", function () {
 
     it("creates dependency resolver with tests", function () {
         var mockModel = {
-            schema:{
-                attr1:{
-                    test1:"a",
-                    test2:"b"
+            schema: {
+                attr1: {
+                    test1: "a",
+                    test2: "b"
                 },
-                attr2:{
-                    test1:"c"
+                attr2: {
+                    test1: "c"
                 }
             }
         };
         var mockResolver = jasmine.createSpyObj("resolver", ["initialize", "createTestMap"]);
         var mockRunner = jasmine.createSpyObj("runner", ["initialize", "on"]);
         var Validator2 = Validator.extend({
-            DependencyResolver:function () {
+            DependencyResolver: function () {
                 mockResolver.initialize.apply(mockResolver, arguments);
                 return mockResolver;
             },
-            Runner:function () {
+            Runner: function () {
                 return mockRunner;
             }
         });
@@ -166,20 +166,20 @@ describe("validation.Validator", function () {
 
     it("creates runners with dependency resolver outputs", function () {
         var mockModel = {
-            schema:{
-                attr1:{
-                    test1:"a",
-                    test2:"b"
+            schema: {
+                attr1: {
+                    test1: "a",
+                    test2: "b"
                 },
-                attr2:{
-                    test1:"c"
+                attr2: {
+                    test1: "c"
                 }
             }
         };
-        var testMap1 = {test1:function () {
-        }, test2:function () {
+        var testMap1 = {test1: function () {
+        }, test2: function () {
         }};
-        var testMap2 = {test1:function () {
+        var testMap2 = {test1: function () {
         }};
         var mockResolver = jasmine.createSpyObj("resolver", ["initialize", "createTestMap"]);
         mockResolver.createTestMap.andCallFake(function (names) {
@@ -190,11 +190,11 @@ describe("validation.Validator", function () {
         });
         var mockRunner = jasmine.createSpyObj("runner", ["initialize", "on"]);
         var Validator2 = Validator.extend({
-            DependencyResolver:function () {
+            DependencyResolver: function () {
                 mockResolver.initialize.apply(mockResolver, arguments);
                 return mockResolver;
             },
-            Runner:function () {
+            Runner: function () {
                 mockRunner.initialize.apply(mockRunner, arguments);
                 return mockRunner;
             }
@@ -212,25 +212,25 @@ describe("validation.Validator", function () {
 
     it("calls checks by construct", function () {
         var mockModel = {
-            schema:{
-                attr1:{
-                    test1:"a",
-                    test2:"b"
+            schema: {
+                attr1: {
+                    test1: "a",
+                    test2: "b"
                 },
-                attr2:{
-                    test1:"c"
+                attr2: {
+                    test1: "c"
                 }
             }
         };
         var check1 = jasmine.createSpy("check1");
         var check2 = jasmine.createSpy("check2");
         var Validator2 = Validator.extend({}).customize({
-            checks:{
-                test1:check1, test2:check2
+            checks: {
+                test1: check1, test2: check2
             },
-            tests:{
-                test1:function () {
-                }, test2:function () {
+            tests: {
+                test1: function () {
+                }, test2: function () {
                 }
             }
         });
@@ -245,29 +245,29 @@ describe("validation.Validator", function () {
 
     it("calls the runners by run", function () {
         var mockModel = {
-            schema:{
-                attr1:{
-                    test1:"a",
-                    test2:"b"
+            schema: {
+                attr1: {
+                    test1: "a",
+                    test2: "b"
                 },
-                attr2:{
-                    test1:"c"
+                attr2: {
+                    test1: "c"
                 }
             }
         };
         var mockResolver = jasmine.createSpyObj("resolver", ["createTestMap"]);
         var mockRunner = jasmine.createSpyObj("runner", ["on", "run"]);
         var Validator2 = Validator.extend({
-            DependencyResolver:function () {
+            DependencyResolver: function () {
                 return mockResolver;
             },
-            Runner:function () {
+            Runner: function () {
                 return mockRunner;
             }
         });
         var validator = new Validator2(mockModel);
         expect(mockRunner.run).not.toHaveBeenCalled();
-        var attributes = {attr1:1};
+        var attributes = {attr1: 1};
         mockModel.get = function (attr) {
             return attributes[attr];
         };
@@ -294,34 +294,34 @@ describe("validation.Validator", function () {
     });
 
     var tests = {
-        custom:function (done) {
+        custom: function (done) {
             done();
         },
-        custom2:function (done) {
+        custom2: function (done) {
             done();
         }
     };
     var testsOverride = {
-        custom:function (done) {
+        custom: function (done) {
             done();
         }
     };
     var checks = {
-        custom:function (config) {
+        custom: function (config) {
         },
-        custom2:function (config2) {
+        custom2: function (config2) {
         }
     };
     var checkOverride = {
-        custom:function (config) {
+        custom: function (config) {
         }
     };
     var patterns = {
-        custom:new RegExp(),
-        custom2:new RegExp()
+        custom: new RegExp(),
+        custom2: new RegExp()
     };
     var patternsOverride = {
-        custom:new RegExp()
+        custom: new RegExp()
     };
 
 });
@@ -331,36 +331,36 @@ describe("validation.Runner", function () {
         var called = {};
         var register = function (done) {
             called[this.name] = {
-                config:this.config,
-                value:this.value,
-                attributes:this.attributes
+                config: this.config,
+                value: this.value,
+                attributes: this.attributes
             };
             done();
         };
         var testMap = {
-            a:register,
-            b:register
+            a: register,
+            b: register
         };
         var settings = {
-            a:1,
-            b:2
+            a: 1,
+            b: 2
         };
         var runner = new Runner(testMap, settings);
         var attributes = {
-            attr1:"value1",
-            attr2:"value2"
+            attr1: "value1",
+            attr2: "value2"
         };
         runner.run(attributes, attributes.attr1);
         expect(called).toEqual({
-            a:{
-                config:settings.a,
-                value:attributes.attr1,
-                attributes:attributes
+            a: {
+                config: settings.a,
+                value: attributes.attr1,
+                attributes: attributes
             },
-            b:{
-                config:settings.b,
-                value:attributes.attr1,
-                attributes:attributes
+            b: {
+                config: settings.b,
+                value: attributes.attr1,
+                attributes: attributes
             }
         });
     });
@@ -368,23 +368,23 @@ describe("validation.Runner", function () {
     it("stops by error", function () {
         var called = {};
         var testMap = {
-            a:function (done) {
+            a: function (done) {
                 called.a = true;
                 done();
             },
-            b:function (done) {
+            b: function (done) {
                 called.b = true;
                 done("error");
             },
-            c:function (done) {
+            c: function (done) {
                 called.c = true;
                 done();
             }
         };
         var settings = {
-            a:null,
-            b:null,
-            c:null
+            a: null,
+            b: null,
+            c: null
         };
         var runner = new Runner(testMap, settings);
         var result;
@@ -392,27 +392,27 @@ describe("validation.Runner", function () {
             result = r;
         });
         runner.run({});
-        expect(called).toEqual({a:true, b:true});
-        expect(result).toEqual({b:"error"});
+        expect(called).toEqual({a: true, b: true});
+        expect(result).toEqual({b: "error"});
     });
 
     it("keeps correct order by async tests", function () {
         var called = [];
         var testMap = {
-            a:function (done) {
+            a: function (done) {
                 setTimeout(function () {
                     called.push(this.name);
                     done();
                 }.bind(this), 1);
             },
-            b:function (done) {
+            b: function (done) {
                 called.push(this.name);
                 done();
             }
         };
         var settings = {
-            a:null,
-            b:null
+            a: null,
+            b: null
         };
         var isDone = false;
         var runner = new Runner(testMap, settings);
@@ -436,8 +436,8 @@ describe("validation.Runner", function () {
         });
 
         var testMap = {
-            a:test,
-            b:test
+            a: test,
+            b: test
         };
         var settings = {};
         var runner = new Runner(testMap, settings);
@@ -453,25 +453,25 @@ describe("validation.Runner", function () {
     it("restarts sequence by a second call of run", function () {
         var called = [];
         var testMap = {
-            a:function (done) {
+            a: function (done) {
                 called.push(this.name);
                 done();
             },
-            b:function (done) {
+            b: function (done) {
                 setTimeout(function () {
                     called.push(this.name);
                     done();
                 }.bind(this), 1);
             },
-            c:function (done) {
+            c: function (done) {
                 called.push(this.name);
                 done();
             }
         };
         var settings = {
-            a:null,
-            b:null,
-            c:null
+            a: null,
+            b: null,
+            c: null
         };
         var runner = new Runner(testMap, settings);
         var atEnd = false;
@@ -492,14 +492,14 @@ describe("validation.Runner", function () {
 
     it("has a pending state", function () {
         var testMap = {
-            a:function (done) {
+            a: function (done) {
                 setTimeout(function () {
                     done();
                 }.bind(this), 1);
             }
         };
         var settings = {
-            a:null
+            a: null
         };
         var isDone = false;
         var runner = new Runner(testMap, settings);
@@ -633,36 +633,36 @@ describe("validation.DependencyResolver", function () {
     };
 
     var testStore = {
-        a:0,
-        b:1,
-        c:2,
-        d:3,
-        e:4
+        a: 0,
+        b: 1,
+        c: 2,
+        d: 3,
+        e: 4
     };
     var nameToStoreKey = {
-        a:"a",
-        b:"b",
-        b_a:"b",
-        e_ab:"e",
-        c_ab:"c",
-        d_ab:"d",
-        c:"c",
-        d_a:"d",
-        e_ab:"e",
-        c_a:"c",
-        c_a_b:"c"
+        a: "a",
+        b: "b",
+        b_a: "b",
+        e_ab: "e",
+        c_ab: "c",
+        d_ab: "d",
+        c: "c",
+        d_a: "d",
+        e_ab: "e",
+        c_a: "c",
+        c_a_b: "c"
     };
     var tests = {
-        a:testStore.a,
-        b:testStore.b,
-        b_a:["a", testStore.b],
-        c_ab:["b_a", testStore.c],
-        d_ab:["b_a", testStore.d],
-        c:testStore.c,
-        d_a:["a", testStore.d],
-        e_ab:["b_a", testStore.e],
-        c_a:["a", testStore.c],
-        c_a_b:["a", "b", testStore.c]
+        a: testStore.a,
+        b: testStore.b,
+        b_a: ["a", testStore.b],
+        c_ab: ["b_a", testStore.c],
+        d_ab: ["b_a", testStore.d],
+        c: testStore.c,
+        d_a: ["a", testStore.d],
+        e_ab: ["b_a", testStore.e],
+        c_a: ["a", testStore.c],
+        c_a_b: ["a", "b", testStore.c]
     };
     var resolver = new DependencyResolver(tests);
 });

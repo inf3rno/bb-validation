@@ -139,33 +139,33 @@ describe("tests", function () {
         it("should pass if required and value is not undefined", function () {
             _.each([null, "", 0, 1, "a", {}, []], function (value) {
                 expectTest({
-                    value:value,
-                    config:true,
-                    err:false
+                    value: value,
+                    config: true,
+                    err: false
                 });
             });
         });
 
         it("should fail and break if required but value is undefined", function () {
             expectTest({
-                config:true,
-                err:true
+                config: true,
+                err: true
             });
         });
 
         it("should pass if not required and given", function () {
             expectTest({
-                value:0,
-                config:false,
-                err:false
+                value: 0,
+                config: false,
+                err: false
             });
         });
 
         it("should pass and break if not required and not given", function () {
             expectTest({
-                config:false,
-                err:false,
-                options:{abort:true}
+                config: false,
+                err: false,
+                options: {abort: true}
             });
         });
 
@@ -215,9 +215,9 @@ describe("tests", function () {
                 [/a/, RegExp]
             ], function (o) {
                 expectTest({
-                    value:o[0],
-                    config:o[1],
-                    err:false
+                    value: o[0],
+                    config: o[1],
+                    err: false
                 });
             })
         });
@@ -243,9 +243,9 @@ describe("tests", function () {
                 [null, "number"]
             ], function (o) {
                 expectTest({
-                    value:o[0],
-                    config:o[1],
-                    err:true
+                    value: o[0],
+                    config: o[1],
+                    err: true
                 });
             })
         });
@@ -268,9 +268,9 @@ describe("tests", function () {
         it("should pass if number is not smaller than config", function () {
             _.each([3.3333, 3.5, 4, 10, 100, 1000], function (value) {
                 expectTest({
-                    value:value,
-                    config:3.3333,
-                    err:false
+                    value: value,
+                    config: 3.3333,
+                    err: false
                 });
             });
         });
@@ -278,9 +278,9 @@ describe("tests", function () {
         it("should fail and break if number is bigger than config", function () {
             _.each([3.3332, 3, 1, 0, -1, -4], function (value) {
                 expectTest({
-                    value:value,
-                    config:3.3333,
-                    err:true
+                    value: value,
+                    config: 3.3333,
+                    err: true
                 });
             });
         });
@@ -303,9 +303,9 @@ describe("tests", function () {
         it("should fail and break if number is smaller than config", function () {
             _.each([3.3334, 3.5, 4, 10, 100, 1000], function (value) {
                 expectTest({
-                    value:value,
-                    config:3.3333,
-                    err:true
+                    value: value,
+                    config: 3.3333,
+                    err: true
                 });
             });
         });
@@ -313,9 +313,9 @@ describe("tests", function () {
         it("should pass if number is not smaller than config", function () {
             _.each([3.3333, 3, 1, 0, -1, -4], function (value) {
                 expectTest({
-                    value:value,
-                    config:3.3333,
-                    err:false
+                    value: value,
+                    config: 3.3333,
+                    err: false
                 });
             });
         });
@@ -340,12 +340,12 @@ describe("tests", function () {
             });
 
             _.each([-1, 0, 1, 1.234, -123.142], function (value) {
-                expectCheck([100, value], {min:value, max:100});
-                expectCheck([value, 100], {min:value, max:100});
-                expectCheck([value, value], {min:value, max:value});
-                expectCheck({min:value, max:100}, {min:value, max:100});
-                expectCheck({min:value, max:value}, {min:value, max:value});
-                expectCheckThrow({min:100, max:value});
+                expectCheck([100, value], {min: value, max: 100});
+                expectCheck([value, 100], {min: value, max: 100});
+                expectCheck([value, value], {min: value, max: value});
+                expectCheck({min: value, max: 100}, {min: value, max: 100});
+                expectCheck({min: value, max: value}, {min: value, max: value});
+                expectCheckThrow({min: 100, max: value});
             });
 
         });
@@ -362,9 +362,9 @@ describe("tests", function () {
                 [-0.5, -1, 0]
             ], function (o) {
                 expectTest({
-                    value:o[0],
-                    config:{min:o[1], max:o[2]},
-                    err:false
+                    value: o[0],
+                    config: {min: o[1], max: o[2]},
+                    err: false
                 });
             });
         });
@@ -383,9 +383,9 @@ describe("tests", function () {
                 [1, -100, -1, "max"]
             ], function (o) {
                 expectTest({
-                    value:o[0],
-                    config:{min:o[1], max:o[2]},
-                    err:o[3]
+                    value: o[0],
+                    config: {min: o[1], max: o[2]},
+                    err: o[3]
                 });
             });
         });
@@ -408,9 +408,9 @@ describe("tests", function () {
                 }
             ], function (value) {
                 expectTest({
-                    value:value,
-                    config:value,
-                    err:false
+                    value: value,
+                    config: value,
+                    err: false
                 });
             });
         });
@@ -432,9 +432,9 @@ describe("tests", function () {
                 [/a/, /a/]
             ], function (o) {
                 expectTest({
-                    value:o[0],
-                    config:o[1],
-                    err:true
+                    value: o[0],
+                    config: o[1],
+                    err: true
                 });
             });
         });
@@ -462,14 +462,14 @@ describe("tests", function () {
                     []
                 ],
                 [
-                    {a:1, b:[2, null]},
-                    {a:1, b:[2, null]}
+                    {a: 1, b: [2, null]},
+                    {a: 1, b: [2, null]}
                 ]
             ], function (o) {
                 expectTest({
-                    value:o[0],
-                    config:o[1],
-                    err:false
+                    value: o[0],
+                    config: o[1],
+                    err: false
                 });
             });
         });
@@ -486,9 +486,9 @@ describe("tests", function () {
                 }]
             ], function (o) {
                 expectTest({
-                    value:o[0],
-                    config:o[1],
-                    err:true
+                    value: o[0],
+                    config: o[1],
+                    err: true
                 });
             });
         });
@@ -526,9 +526,9 @@ describe("tests", function () {
                 "a"
             ], function (value) {
                 expectTest({
-                    value:value,
-                    config:[0, 1, "a"],
-                    err:false
+                    value: value,
+                    config: [0, 1, "a"],
+                    err: false
                 });
             });
         });
@@ -541,9 +541,9 @@ describe("tests", function () {
                 ""
             ], function (value) {
                 expectTest({
-                    value:value,
-                    config:[0, 1, "a"],
-                    err:true
+                    value: value,
+                    config: [0, 1, "a"],
+                    err: true
                 });
             });
         });
@@ -555,20 +555,20 @@ describe("tests", function () {
         });
 
         it("should configure pattern if it's a name of common pattern or a regex pattern", function () {
-            expectCheck("digits", {all:[basic.patterns.digits]});
-            expectCheck("email", {all:[basic.patterns.email]});
+            expectCheck("digits", {all: [basic.patterns.digits]});
+            expectCheck("email", {all: [basic.patterns.email]});
             expectCheckThrow("test");
-            expectCheck(/a/, {all:[/a/]});
-            expectCheck(["email"], {all:[basic.patterns.email]});
-            expectCheck(["email", /a/], {all:[basic.patterns.email, /a/]});
+            expectCheck(/a/, {all: [/a/]});
+            expectCheck(["email"], {all: [basic.patterns.email]});
+            expectCheck(["email", /a/], {all: [basic.patterns.email, /a/]});
             expectCheckThrow([]);
-            expectCheckThrow({all:[]});
-            expectCheckThrow({any:[]});
-            expectCheck({all:["email"]}, {all:[basic.patterns.email]});
-            expectCheck({any:["email"]}, {any:[basic.patterns.email]});
-            expectCheck({any:"email"}, {any:[basic.patterns.email]});
-            expectCheckThrow({test:["email"]});
-            expectCheck({any:"email", all:"email"}, {any:[basic.patterns.email], all:[basic.patterns.email]});
+            expectCheckThrow({all: []});
+            expectCheckThrow({any: []});
+            expectCheck({all: ["email"]}, {all: [basic.patterns.email]});
+            expectCheck({any: ["email"]}, {any: [basic.patterns.email]});
+            expectCheck({any: "email"}, {any: [basic.patterns.email]});
+            expectCheckThrow({test: ["email"]});
+            expectCheck({any: "email", all: "email"}, {any: [basic.patterns.email], all: [basic.patterns.email]});
             expectCheckThrow(undefined);
             expectCheckThrow(0);
             expectCheckThrow(null);
@@ -577,31 +577,31 @@ describe("tests", function () {
 
         it("should pass if patterns match", function () {
             _.each([
-                ["123", {all:[basic.patterns.digits]} ],
-                ["123", {any:[basic.patterns.digits, basic.patterns.email]} ],
-                ["123", {all:[basic.patterns.digits, basic.patterns.number]} ],
-                ["123", {any:[basic.patterns.digits, basic.patterns.number]} ],
-                ["123", {all:[basic.patterns.digits, /123/], any:[basic.patterns.number, basic.patterns.email]} ]
+                ["123", {all: [basic.patterns.digits]} ],
+                ["123", {any: [basic.patterns.digits, basic.patterns.email]} ],
+                ["123", {all: [basic.patterns.digits, basic.patterns.number]} ],
+                ["123", {any: [basic.patterns.digits, basic.patterns.number]} ],
+                ["123", {all: [basic.patterns.digits, /123/], any: [basic.patterns.number, basic.patterns.email]} ]
             ], function (o) {
                 expectTest({
-                    value:o[0],
-                    config:o[1],
-                    err:false
+                    value: o[0],
+                    config: o[1],
+                    err: false
                 });
             });
         });
 
         it("should fail and break if pattern does not match", function () {
             _.each([
-                ["a123", {all:[basic.patterns.digits]} ],
-                ["123", {all:[basic.patterns.digits, basic.patterns.email]} ],
-                ["abc", {any:[basic.patterns.digits, basic.patterns.number]} ],
-                ["123", {all:[basic.patterns.digits, /123/], any:[basic.patterns.email]} ]
+                ["a123", {all: [basic.patterns.digits]} ],
+                ["123", {all: [basic.patterns.digits, basic.patterns.email]} ],
+                ["abc", {any: [basic.patterns.digits, basic.patterns.number]} ],
+                ["123", {all: [basic.patterns.digits, /123/], any: [basic.patterns.email]} ]
             ], function (o) {
                 expectTest({
-                    value:o[0],
-                    config:o[1],
-                    err:true
+                    value: o[0],
+                    config: o[1],
+                    err: true
                 });
             });
         });
@@ -623,20 +623,20 @@ describe("tests", function () {
 
         it("should error if it's not duplication of the attribute", function () {
             expectTest({
-                value:"test",
-                config:"password",
-                err:true,
-                attributes:{}
+                value: "test",
+                config: "password",
+                err: true,
+                attributes: {}
             });
         });
 
         it("should pass if it's duplication of the attribute", function () {
             expectTest({
-                value:"test",
-                config:"password",
-                err:false,
-                attributes:{
-                    password:"test"
+                value: "test",
+                config: "password",
+                err: false,
+                attributes: {
+                    password: "test"
                 }
             });
         });
