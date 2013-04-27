@@ -207,57 +207,10 @@ define(function (require, exports, module) {
 
     Validator.prototype.DependencyResolver = DependencyResolver;
 
-    var Plugin = function () {
-    };
-    _.extend(Plugin.prototype, {
-        Plugin: Plugin,
+    module.exports = {
         Validator: Validator,
         Runner: Runner,
-        DependencyResolver: DependencyResolver,
-        load: function (name, _require, load, config) {
-            var require = amdefine ? function (resources, callback) {
-                var modules = [];
-                _.each(resources, function (resource) {
-                    modules.push(_require(resource));
-                });
-                callback.apply(null, modules);
-            } : _require;
-            require(this.parseResourceName(name), function () {
-                var config = _.toArray(arguments);
-                var branch = this.extend(config);
-                load(branch);
-            }.bind(this));
-        },
-        parseResourceName: function (name) {
-            if (name == "")
-                return [];
-            return name.split(":");
-        },
-        extend: function (config) {
-            var Branch = function () {
-            };
-            Branch.prototype = Object.create(this.constructor.prototype);
-            var Validator = this.Validator.extend({});
-            _.extend(Branch.prototype, {
-                constructor: Branch,
-                Validator: Validator
-            });
-            var branch = new Branch();
-            if (config)
-                branch.add(config);
-            return branch;
-        },
-        add: function (config) {
-            if (!(config instanceof Array))
-                config = [config];
-            _.each(config, function (resource) {
-                this.Validator.customize(resource);
-            }, this);
-            return this;
-        }
-    });
-
-
-    module.exports = new Plugin();
+        DependencyResolver: DependencyResolver
+    };
 
 });
