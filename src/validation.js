@@ -207,10 +207,20 @@ define(function (require, exports, module) {
 
     Validator.prototype.DependencyResolver = DependencyResolver;
 
+    var Test = function (options) {
+        this.initialize.call(this, options);
+    };
+    _.extend(Test.prototype, {
+        initialize: function (options) {
+        }
+    })
+    Test.extend = Backbone.Model.extend;
+
     module.exports = {
         Validator: Validator,
         Runner: Runner,
-        DependencyResolver: DependencyResolver
+        DependencyResolver: DependencyResolver,
+        Test: Test
     };
 
 });

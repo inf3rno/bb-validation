@@ -3,7 +3,8 @@ if (typeof define !== 'function')
 
 define(function (require, exports, module) {
 
-    var _ = require("underscore");
+    var _ = require("underscore"),
+        validation = require("./validation")
 
     var patterns = {
         digits: /^\d+$/,
@@ -178,11 +179,32 @@ define(function (require, exports, module) {
         }
     };
 
+    var AbstractTest = validation.Test.extend({
+        initialize: function (options) {
+            this.validator = options.validator;
+            this.config = this.check(options.schema, options.key);
+        },
+        run: function (value, done) {
+            this.value = value;
+            this.test(done);
+        },
+        patterns: patterns,
+        related: function (attr, relations) {
+            return this.validator.related(attribute, relations);
+        }
+    });
+
+    var RequiredTest = AbstractTest.extend({
+        check: checks.required,
+        test: tests.required
+    });
+
 
     module.exports = {
         checks: checks,
         tests: tests,
-        patterns: patterns
+        patterns: patterns,
+        required: RequiredTest
     };
 
 });

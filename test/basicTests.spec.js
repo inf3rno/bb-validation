@@ -127,13 +127,13 @@ describe("tests", function () {
         });
 
         it("should configure true if not given or convert to boolean anyway", function () {
-            expectCheck(undefined, true);
-            expectCheck(0, false);
-            expectCheck(1, true);
-            expectCheck("", false);
-            expectCheck("a", true);
-            expectCheck(true, true);
-            expectCheck(false, false);
+            expectCheck2(undefined, true);
+            expectCheck2(0, false);
+            expectCheck2(1, true);
+            expectCheck2("", false);
+            expectCheck2("a", true);
+            expectCheck2(true, true);
+            expectCheck2(false, false);
         });
 
         it("should pass if required and value is not undefined", function () {
@@ -650,6 +650,20 @@ describe("tests", function () {
         };
         expect(check.call(mock, value, test)).toEqual(expected);
     };
+
+    var expectCheck2 = function (value, expected) {
+        var T = basic[test];
+        var t = new T({
+            validator: {
+                related: function () {
+                }
+            },
+            schema: value,
+            key: ""
+        });
+        expect(t.config).toEqual(expected);
+    };
+
 
     var expectRelations = function (value, attribute, relations) {
         var check = basic.checks[test];
