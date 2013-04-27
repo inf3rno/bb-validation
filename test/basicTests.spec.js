@@ -127,18 +127,18 @@ describe("tests", function () {
         });
 
         it("should configure true if not given or convert to boolean anyway", function () {
-            expectCheck2(undefined, true);
-            expectCheck2(0, false);
-            expectCheck2(1, true);
-            expectCheck2("", false);
-            expectCheck2("a", true);
-            expectCheck2(true, true);
-            expectCheck2(false, false);
+            expectCheck(undefined, true);
+            expectCheck(0, false);
+            expectCheck(1, true);
+            expectCheck("", false);
+            expectCheck("a", true);
+            expectCheck(true, true);
+            expectCheck(false, false);
         });
 
         it("should pass if required and value is not undefined", function () {
             _.each([null, "", 0, 1, "a", {}, []], function (value) {
-                expectTest2({
+                expectTest({
                     value: value,
                     config: true,
                     err: false
@@ -147,14 +147,14 @@ describe("tests", function () {
         });
 
         it("should fail and break if required but value is undefined", function () {
-            expectTest2({
+            expectTest({
                 config: true,
                 err: true
             });
         });
 
         it("should pass if not required and given", function () {
-            expectTest2({
+            expectTest({
                 value: 0,
                 config: false,
                 err: false
@@ -162,7 +162,7 @@ describe("tests", function () {
         });
 
         it("should pass and break if not required and not given", function () {
-            expectTest2({
+            expectTest({
                 config: false,
                 err: false,
                 options: {abort: true}
@@ -643,15 +643,6 @@ describe("tests", function () {
     });
 
     var expectCheck = function (value, expected) {
-        var check = basic.checks[test];
-        var mock = {};
-        mock.patterns = basic.patterns;
-        mock.related = function (attr, dependency) {
-        };
-        expect(check.call(mock, value, test)).toEqual(expected);
-    };
-
-    var expectCheck2 = function (value, expected) {
         var T = basic[test];
         var t = new T({
             validator: {
@@ -664,51 +655,41 @@ describe("tests", function () {
         expect(t.config).toEqual(expected);
     };
 
-
     var expectRelations = function (value, attribute, relations) {
-        var check = basic.checks[test];
-        var mock = {};
-        mock.patterns = basic.patterns;
-        mock.related = jasmine.createSpy("related");
-        check.call(mock, value, test, attribute);
+        var T = basic[test];
+        var related = jasmine.createSpy("related");
+        var t = new T({
+            validator: {
+                related: related
+            },
+            schema: value,
+            key: "",
+            attribute: attribute
+        });
         _.each(relations, function (relation) {
-            expect(mock.related).toHaveBeenCalledWith(relation[0], relation[1]);
+            expect(related).toHaveBeenCalledWith(relation[0], relation[1]);
         });
     };
 
     var expectCheckThrow = function (value, exception) {
-        var check = basic.checks[test];
+        var T = basic[test];
+
         var mock = {};
         mock[test] = value;
         var caller = function () {
-            check.call(mock, value, test);
+            var t = new T({
+                validator: {
+                    related: function () {
+                    }
+                },
+                schema: value,
+                key: ""
+            });
         };
         expect(caller).toThrow(exception);
     };
 
     var expectTest = function (o) {
-        var arr = basic.tests[test];
-        var task = (arr instanceof Array) ? arr[arr.length - 1] : arr;
-        var isDone = false;
-        var mock = {};
-        runs(function () {
-            o.done = function (err, options) {
-                mock.err = err;
-                mock.options = options;
-                isDone = true;
-            };
-            task.call(o, o.done);
-        });
-        waitsFor(function () {
-            return isDone == true;
-        });
-        runs(function () {
-            expect(mock.err).toEqual(o.err);
-            expect(mock.options).toEqual(o.options);
-        });
-    };
-
-    var expectTest2 = function (o) {
         var T = basic[test];
         var isDone = false;
         var mock = {};

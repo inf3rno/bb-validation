@@ -35,149 +35,17 @@ define(function (require, exports, module) {
         return regexp;
     };
 
-    var tests = {
-        type: ["required", function (done) {
-            var passed;
-            if (typeof(this.config) == "string")
-                passed = (typeof(this.value) == this.config);
-            else if (typeof(this.config) == "function")
-                passed = (this.value instanceof this.config);
-            else
-                passed = (this.value === this.config);
-            done(!passed);
-        }],
-        min: ["type", function (done) {
-            var num = toNumber(this.value);
-            done(num < this.config);
-        }],
-        max: ["type", function (done) {
-            var num = toNumber(this.value);
-            done(num > this.config);
-        }],
-        range: ["type", function (done) {
-            var num = toNumber(this.value);
-            var err;
-            if (num < this.config.min)
-                err = "min";
-            else if (num > this.config.max)
-                err = "max";
-            else
-                err = false;
-            done(err);
-        }],
-        same: ["required", function (done) {
-            done(this.value !== this.config);
-        }],
-        equal: ["required", function (done) {
-            var valid;
-            if (typeof(this.config) == "object")
-                valid = _.isEqual(this.value, this.config);
-            else
-                valid = this.value === this.config;
-            done(!valid);
-        }],
-        contained: ["required", function (done) {
-            done(this.config.indexOf(this.value) == -1);
-        }],
-        match: ["type", function (done) {
-            var value = this.value;
-            var match = function (expression) {
-                return expression.test(value);
-            };
-            var valid = true;
-            if (this.config.all && !_.all(this.config.all, match))
-                valid = false;
-            if (this.config.any && !_.any(this.config.any, match))
-                valid = false;
-            done(!valid);
-        }],
-        duplicate: ["required", function (done) {
-            done(this.attributes[this.config] != this.value);
-        }]
-    };
-
-    var checks = {
-        type: function (type, key) {
-            if (type == "null")
-                type = null;
-            else if (type === undefined)
-                type = "undefined";
-            else if (typeof(type) == "function") {
-                if (type == String)
-                    type = "string";
-                else if (type == Number)
-                    type = "number";
-                else if (type == Boolean)
-                    type = "boolean";
-                else if (type == Object)
-                    type = "object";
-            }
-            if (type !== null && (typeof(type) != "string" || ["undefined", "boolean", "number", "string", "object", "function"].indexOf(type) == -1) && !(type instanceof Function))
-                throw new Error("Invalid config." + key + ": must be Function or type or null.");
-            return type;
-        },
-        min: function (min, key) {
-            if (typeof(min) != "number" || isNaN(min))
-                throw new Error("Invalid config." + key + ": must be number.");
-            return min;
-        },
-        max: function (max, key) {
-            if (typeof(max) != "number" || isNaN(max))
-                throw new Error("Invalid config." + key + ": must be number.");
-            return max;
-        },
-        range: function (range, key) {
-            if ((range instanceof Array) && range.length == 2 && typeof(range[0]) == "number" && !isNaN(range[0]) && typeof(range[1]) == "number" && !isNaN(range[1]))
-                range = {
-                    min: Math.min(range[0], range[1]),
-                    max: Math.max(range[0], range[1])
-                };
-            if (typeof(range) != "object" || typeof(range.min) != "number" || isNaN(range.min) || typeof(range.max) != "number" || isNaN(range.max) || range.max < range.min)
-                throw new Error("Invalid config." + key + ": must be range.");
-            return range;
-        },
-        contained: function (list, key) {
-            if (!(list instanceof Array))
-                throw new Error("Invalid config." + key + ": must be array.");
-            return list;
-        },
-        match: function (expressions, key) {
-            if (typeof(expressions) == "string" || (expressions instanceof RegExp) || (expressions instanceof Array))
-                expressions = {all: expressions};
-            if (!_.size(expressions))
-                throw new Error("Invalid config." + key + ": empty config given.");
-            _.each(expressions, function (patterns, operator) {
-                if (operator != "any" && operator != "all")
-                    throw new Error("Invalid config." + key + ": invalid operator[" + operator + "] given.");
-                if (!(patterns instanceof Array))
-                    expressions[operator] = patterns = [patterns];
-                if (!_.size(patterns))
-                    throw new Error("Invalid config." + key + ": empty operator." + operator + " given.");
-                _.each(patterns, function (pattern, index) {
-                    patterns[index] = toRegExp.call(this, pattern);
-                }, this);
-            }, this);
-            return expressions;
-        },
-        duplicate: function (duplicate, key, attribute) {
-            if (typeof(duplicate) != "string")
-                throw  new Error("Invalid config. " + key + ": invalid attribute name given.");
-            this.related(duplicate, attribute);
-            return duplicate;
-        }
-    };
-
     var AbstractTest = validation.Test.extend({
         initialize: function (options) {
             this.validator = options.validator;
-            this.config = this.check(options.schema, options.key);
+            this.config = this.check(options.schema, options.key, options.attribute);
         },
         run: function (value, done) {
             this.value = value;
             this.test(done);
         },
         patterns: patterns,
-        related: function (attr, relations) {
+        related: function (attribute, relations) {
             return this.validator.related(attribute, relations);
         }
     });
@@ -197,12 +65,183 @@ define(function (require, exports, module) {
         }
     });
 
+    var TypeTest = AbstractTest.extend({
+        check: function (type, key) {
+            if (type == "null")
+                type = null;
+            else if (type === undefined)
+                type = "undefined";
+            else if (typeof(type) == "function") {
+                if (type == String)
+                    type = "string";
+                else if (type == Number)
+                    type = "number";
+                else if (type == Boolean)
+                    type = "boolean";
+                else if (type == Object)
+                    type = "object";
+            }
+            if (type !== null && (typeof(type) != "string" || ["undefined", "boolean", "number", "string", "object", "function"].indexOf(type) == -1) && !(type instanceof Function))
+                throw new Error("Invalid config." + key + ": must be Function or type or null.");
+            return type;
+        },
+        test: function (done) {
+            var passed;
+            if (typeof(this.config) == "string")
+                passed = (typeof(this.value) == this.config);
+            else if (typeof(this.config) == "function")
+                passed = (this.value instanceof this.config);
+            else
+                passed = (this.value === this.config);
+            done(!passed);
+        },
+        deps: ["required"]
+    });
+
+    var MinTest = AbstractTest.extend({
+        check: function (min, key) {
+            if (typeof(min) != "number" || isNaN(min))
+                throw new Error("Invalid config." + key + ": must be number.");
+            return min;
+        },
+        test: function (done) {
+            var num = toNumber(this.value);
+            done(num < this.config);
+        },
+        deps: ["type"]
+    });
+
+    var MaxTest = AbstractTest.extend({
+        check: function (max, key) {
+            if (typeof(max) != "number" || isNaN(max))
+                throw new Error("Invalid config." + key + ": must be number.");
+            return max;
+        },
+        test: function (done) {
+            var num = toNumber(this.value);
+            done(num > this.config);
+        },
+        deps: ["type"]
+    });
+
+    var RangeTest = AbstractTest.extend({
+        check: function (range, key) {
+            if ((range instanceof Array) && range.length == 2 && typeof(range[0]) == "number" && !isNaN(range[0]) && typeof(range[1]) == "number" && !isNaN(range[1]))
+                range = {
+                    min: Math.min(range[0], range[1]),
+                    max: Math.max(range[0], range[1])
+                };
+            if (typeof(range) != "object" || typeof(range.min) != "number" || isNaN(range.min) || typeof(range.max) != "number" || isNaN(range.max) || range.max < range.min)
+                throw new Error("Invalid config." + key + ": must be range.");
+            return range;
+        },
+        test: function (done) {
+            var num = toNumber(this.value);
+            var err;
+            if (num < this.config.min)
+                err = "min";
+            else if (num > this.config.max)
+                err = "max";
+            else
+                err = false;
+            done(err);
+        },
+        deps: ["type"]
+    });
+
+    var IdenticalTest = AbstractTest.extend({
+        check: null,
+        test: function (done) {
+            done(this.value !== this.config);
+        },
+        deps: ["required"]
+    });
+
+    var EqualTest = AbstractTest.extend({
+        check: null,
+        test: function (done) {
+            var valid;
+            if (typeof(this.config) == "object")
+                valid = _.isEqual(this.value, this.config);
+            else
+                valid = this.value === this.config;
+            done(!valid);
+        },
+        deps: ["required"]
+    });
+
+    var ContainedTest = AbstractTest.extend({
+        check: function (list, key) {
+            if (!(list instanceof Array))
+                throw new Error("Invalid config." + key + ": must be array.");
+            return list;
+        },
+        test: function (done) {
+            done(this.config.indexOf(this.value) == -1);
+        },
+        deps: ["required"]
+    });
+
+    var MatchTest = AbstractTest.extend({
+        check: function (expressions, key) {
+            if (typeof(expressions) == "string" || (expressions instanceof RegExp) || (expressions instanceof Array))
+                expressions = {all: expressions};
+            if (!_.size(expressions))
+                throw new Error("Invalid config." + key + ": empty config given.");
+            _.each(expressions, function (patterns, operator) {
+                if (operator != "any" && operator != "all")
+                    throw new Error("Invalid config." + key + ": invalid operator[" + operator + "] given.");
+                if (!(patterns instanceof Array))
+                    expressions[operator] = patterns = [patterns];
+                if (!_.size(patterns))
+                    throw new Error("Invalid config." + key + ": empty operator." + operator + " given.");
+                _.each(patterns, function (pattern, index) {
+                    patterns[index] = toRegExp.call(this, pattern);
+                }, this);
+            }, this);
+            return expressions;
+        },
+        test: function (done) {
+            var value = this.value;
+            var match = function (expression) {
+                return expression.test(value);
+            };
+            var valid = true;
+            if (this.config.all && !_.all(this.config.all, match))
+                valid = false;
+            if (this.config.any && !_.any(this.config.any, match))
+                valid = false;
+            done(!valid);
+        },
+        deps: ["type"]
+    });
+
+    var DuplicateTest = AbstractTest.extend({
+        check: function (duplicate, key, attribute) {
+            if (typeof(duplicate) != "string")
+                throw  new Error("Invalid config. " + key + ": invalid attribute name given.");
+            this.related(duplicate, attribute);
+            return duplicate;
+        },
+        test: function (done) {
+            done(this.attributes[this.config] != this.value);
+        },
+        deps: ["required"]
+    });
+
 
     module.exports = {
-        checks: checks,
-        tests: tests,
         patterns: patterns,
-        required: RequiredTest
+        required: RequiredTest,
+        type: TypeTest,
+        min: MinTest,
+        max: MaxTest,
+        range: RangeTest,
+        same: IdenticalTest,
+        equal: EqualTest,
+        contained: ContainedTest,
+        match: MatchTest,
+        duplicate: DuplicateTest
     };
 
 });
