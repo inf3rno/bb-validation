@@ -1,3 +1,4 @@
+require("./jasmine-stub");
 var _ = require("underscore"),
     basic = require("../src/basicTests");
 
@@ -119,11 +120,11 @@ describe("patterns", function () {
 
 describe("tests", function () {
 
-    var test;
+    var Test;
 
     describe("required", function () {
         beforeEach(function () {
-            test = "required";
+            Test = basic.required;
         });
 
         it("should configure true if not given or convert to boolean anyway", function () {
@@ -173,7 +174,7 @@ describe("tests", function () {
 
     describe("type", function () {
         beforeEach(function () {
-            test = "type";
+            Test = basic.type;
         });
 
         it("should configure type strings, functions, null but throw exception by another variable", function () {
@@ -253,7 +254,7 @@ describe("tests", function () {
 
     describe("min", function () {
         beforeEach(function () {
-            test = "min";
+            Test = basic.min;
         });
 
         it("should configure number but throw exception by any other variable", function () {
@@ -288,7 +289,7 @@ describe("tests", function () {
 
     describe("max", function () {
         beforeEach(function () {
-            test = "max";
+            Test = basic.max;
         });
 
         it("should configure number but throw exception by any other variable", function () {
@@ -323,7 +324,7 @@ describe("tests", function () {
 
     describe("range", function () {
         beforeEach(function () {
-            test = "range";
+            Test = basic.range;
         });
 
         it("should configure range but throw exception by any other variable", function () {
@@ -393,7 +394,7 @@ describe("tests", function () {
 
     describe("same", function () {
         beforeEach(function () {
-            test = "same";
+            Test = basic.same;
         });
 
         it("should pass if value and config are the same", function () {
@@ -442,7 +443,7 @@ describe("tests", function () {
 
     describe("equal", function () {
         beforeEach(function () {
-            test = "equal";
+            Test = basic.equal;
         });
 
         it("should pass if value and config are equal", function () {
@@ -496,7 +497,7 @@ describe("tests", function () {
 
     describe("contained", function () {
         beforeEach(function () {
-            test = "contained";
+            Test = basic.contained;
         });
 
         it("should configure array by throw exception by any other variable", function () {
@@ -551,7 +552,7 @@ describe("tests", function () {
 
     describe("match", function () {
         beforeEach(function () {
-            test = "match";
+            Test = basic.match;
         });
 
         it("should configure pattern if it's a name of common pattern or a regex pattern", function () {
@@ -610,7 +611,7 @@ describe("tests", function () {
 
     describe("duplicate", function () {
         beforeEach(function () {
-            test = "duplicate";
+            Test = basic.duplicate;
         });
 
         it("should configure strings only", function () {
@@ -643,8 +644,7 @@ describe("tests", function () {
     });
 
     var expectCheck = function (value, expected) {
-        var T = basic[test];
-        var t = new T({
+        var t = new Test({
             validator: {
                 related: function () {
                 }
@@ -656,9 +656,8 @@ describe("tests", function () {
     };
 
     var expectRelations = function (value, attribute, relations) {
-        var T = basic[test];
         var related = jasmine.createSpy("related");
-        var t = new T({
+        var t = new Test({
             validator: {
                 related: related
             },
@@ -672,12 +671,10 @@ describe("tests", function () {
     };
 
     var expectCheckThrow = function (value, exception) {
-        var T = basic[test];
-
-        var mock = {};
-        mock[test] = value;
-        var caller = function () {
-            var t = new T({
+        var mockTest = jasmine.createStub(Test, ["constructor"]);
+        mockTest.constructor.andCallThrough();
+        expect(function () {
+            mockTest.constructor({
                 validator: {
                     related: function () {
                     }
@@ -685,28 +682,52 @@ describe("tests", function () {
                 schema: value,
                 key: ""
             });
-        };
-        expect(caller).toThrow(exception);
+        }).toThrow(exception);
+
     };
 
-    var expectTest = function (o) {
-        var T = basic[test];
+    var expectTest = function (expected) {
+        /*
+         * value - ez az ellenőrzött érték
+         * config - ez a schema
+         * err > helyi
+         * attributes  - ez a model attribútum listája, ebből kéri le a duplicate az értéket
+         * options > helyi
+         *
+         * check(type, key, attribute)
+         * -> itt a key felesleges, csak hibaüzinek van
+         * -> az attribute is felesleges, nem szabad tudnia magáról, hogy kicsoda
+         * -> helyette a validator-nak kell id-t adnia neki
+         * -> és az id alapján azonosítani
+         * -> az attributes helyett automatikusan kapnia kell egy csak az ő részére szóló json-t az értékekről
+         * -> sőt jobb lenne, ha nem is json lenne, hanem több, vagy sima érték
+         * -> ha json, akkor a teszt belső kulcsait kell tartalmaznia, és nem a külsőket
+         *
+         * az összes check-nek schema-t kell beállítania
+         *
+         * ezek a tesztek csak a basic-re vonatoznak, szóval szerintem nyugodtan lehet
+         * belsó paramétert használni teszteléskor
+         * ha valaki az itteni toolokat akarja felhasználni, akkor max igazodik...
+         * a cucc mondjuk ettől még korántsem profi...
+         * kell egy normális interface a teszteknek
+         * */
+
         var isDone = false;
-        var mock = {};
+        var actual = {};
         runs(function () {
-            o.done = function (err, options) {
-                mock.err = err;
-                mock.options = options;
+            expected.done = function (err, options) {
+                actual.err = err;
+                actual.options = options;
                 isDone = true;
             };
-            T.prototype.test.call(o, o.done);
+            Test.prototype.test.call(expected, expected.done);
         });
         waitsFor(function () {
             return isDone == true;
         });
         runs(function () {
-            expect(mock.err).toEqual(o.err);
-            expect(mock.options).toEqual(o.options);
+            expect(actual.err).toEqual(expected.err);
+            expect(actual.options).toEqual(expected.options);
         });
     }
 
