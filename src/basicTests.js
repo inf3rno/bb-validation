@@ -36,15 +36,6 @@ define(function (require, exports, module) {
     };
 
     var tests = {
-        required: function (done) {
-            var existence = this.value !== undefined;
-            if (!existence && this.config)
-                done(true);
-            else if (!existence)
-                done(false, {abort: true});
-            else
-                done(false);
-        },
         type: ["required", function (done) {
             var passed;
             if (typeof(this.config) == "string")
@@ -106,9 +97,6 @@ define(function (require, exports, module) {
     };
 
     var checks = {
-        required: function (required) {
-            return required === undefined || !!required;
-        },
         type: function (type, key) {
             if (type == "null")
                 type = null;
@@ -195,8 +183,18 @@ define(function (require, exports, module) {
     });
 
     var RequiredTest = AbstractTest.extend({
-        check: checks.required,
-        test: tests.required
+        check: function (required) {
+            return required === undefined || !!required;
+        },
+        test: function (done) {
+            var existence = this.value !== undefined;
+            if (!existence && this.config)
+                done(true);
+            else if (!existence)
+                done(false, {abort: true});
+            else
+                done(false);
+        }
     });
 
 

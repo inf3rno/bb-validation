@@ -138,7 +138,7 @@ describe("tests", function () {
 
         it("should pass if required and value is not undefined", function () {
             _.each([null, "", 0, 1, "a", {}, []], function (value) {
-                expectTest({
+                expectTest2({
                     value: value,
                     config: true,
                     err: false
@@ -147,14 +147,14 @@ describe("tests", function () {
         });
 
         it("should fail and break if required but value is undefined", function () {
-            expectTest({
+            expectTest2({
                 config: true,
                 err: true
             });
         });
 
         it("should pass if not required and given", function () {
-            expectTest({
+            expectTest2({
                 value: 0,
                 config: false,
                 err: false
@@ -162,7 +162,7 @@ describe("tests", function () {
         });
 
         it("should pass and break if not required and not given", function () {
-            expectTest({
+            expectTest2({
                 config: false,
                 err: false,
                 options: {abort: true}
@@ -707,5 +707,26 @@ describe("tests", function () {
             expect(mock.options).toEqual(o.options);
         });
     };
+
+    var expectTest2 = function (o) {
+        var T = basic[test];
+        var isDone = false;
+        var mock = {};
+        runs(function () {
+            o.done = function (err, options) {
+                mock.err = err;
+                mock.options = options;
+                isDone = true;
+            };
+            T.prototype.test.call(o, o.done);
+        });
+        waitsFor(function () {
+            return isDone == true;
+        });
+        runs(function () {
+            expect(mock.err).toEqual(o.err);
+            expect(mock.options).toEqual(o.options);
+        });
+    }
 
 });
