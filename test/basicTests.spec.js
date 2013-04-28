@@ -1,6 +1,9 @@
 require("./jasmine-stub");
 var _ = require("underscore"),
     basic = require("../src/basicTests");
+var common = basic.common;
+var patterns = common.patterns;
+var use = basic.use;
 
 describe("patterns", function () {
     var pattern;
@@ -109,22 +112,21 @@ describe("patterns", function () {
     });
 
     var expectMatch = function (target) {
-        var regex = basic.patterns[pattern];
+        var regex = patterns[pattern];
         expect(regex.test(target)).toBe(true);
     };
     var expectNotMatch = function (target) {
-        var regex = basic.patterns[pattern];
+        var regex = patterns[pattern];
         expect(regex.test(target)).toBe(false);
     };
 });
 
 describe("tests", function () {
-
     var Test;
 
     describe("required", function () {
         beforeEach(function () {
-            Test = basic.required;
+            Test = use.required;
         });
 
         it("should configure true if not given or convert to boolean anyway", function () {
@@ -174,7 +176,7 @@ describe("tests", function () {
 
     describe("type", function () {
         beforeEach(function () {
-            Test = basic.type;
+            Test = use.type;
         });
 
         it("should configure type strings, functions, null but throw exception by another variable", function () {
@@ -254,7 +256,7 @@ describe("tests", function () {
 
     describe("min", function () {
         beforeEach(function () {
-            Test = basic.min;
+            Test = use.min;
         });
 
         it("should configure number but throw exception by any other variable", function () {
@@ -289,7 +291,7 @@ describe("tests", function () {
 
     describe("max", function () {
         beforeEach(function () {
-            Test = basic.max;
+            Test = use.max;
         });
 
         it("should configure number but throw exception by any other variable", function () {
@@ -324,7 +326,7 @@ describe("tests", function () {
 
     describe("range", function () {
         beforeEach(function () {
-            Test = basic.range;
+            Test = use.range;
         });
 
         it("should configure range but throw exception by any other variable", function () {
@@ -392,9 +394,9 @@ describe("tests", function () {
         });
     });
 
-    describe("same", function () {
+    describe("identical", function () {
         beforeEach(function () {
-            Test = basic.same;
+            Test = use.identical;
         });
 
         it("should pass if value and schema are the same", function () {
@@ -443,7 +445,7 @@ describe("tests", function () {
 
     describe("equal", function () {
         beforeEach(function () {
-            Test = basic.equal;
+            Test = use.equal;
         });
 
         it("should pass if value and schema are equal", function () {
@@ -495,9 +497,9 @@ describe("tests", function () {
         });
     });
 
-    describe("contained", function () {
+    describe("member", function () {
         beforeEach(function () {
-            Test = basic.contained;
+            Test = use.member;
         });
 
         it("should configure array by throw exception by any other variable", function () {
@@ -552,24 +554,24 @@ describe("tests", function () {
 
     describe("match", function () {
         beforeEach(function () {
-            Test = basic.match;
+            Test = use.match;
         });
 
         it("should configure pattern if it's a name of common pattern or a regex pattern", function () {
-            expectInit("digits", {all: [basic.patterns.digits]});
-            expectInit("email", {all: [basic.patterns.email]});
+            expectInit("digits", {all: [patterns.digits]});
+            expectInit("email", {all: [patterns.email]});
             expectInitThrow("test");
             expectInit(/a/, {all: [/a/]});
-            expectInit(["email"], {all: [basic.patterns.email]});
-            expectInit(["email", /a/], {all: [basic.patterns.email, /a/]});
+            expectInit(["email"], {all: [patterns.email]});
+            expectInit(["email", /a/], {all: [patterns.email, /a/]});
             expectInitThrow([]);
             expectInitThrow({all: []});
             expectInitThrow({any: []});
-            expectInit({all: ["email"]}, {all: [basic.patterns.email]});
-            expectInit({any: ["email"]}, {any: [basic.patterns.email]});
-            expectInit({any: "email"}, {any: [basic.patterns.email]});
+            expectInit({all: ["email"]}, {all: [patterns.email]});
+            expectInit({any: ["email"]}, {any: [patterns.email]});
+            expectInit({any: "email"}, {any: [patterns.email]});
             expectInitThrow({test: ["email"]});
-            expectInit({any: "email", all: "email"}, {any: [basic.patterns.email], all: [basic.patterns.email]});
+            expectInit({any: "email", all: "email"}, {any: [patterns.email], all: [patterns.email]});
             expectInitThrow(undefined);
             expectInitThrow(0);
             expectInitThrow(null);
@@ -578,11 +580,11 @@ describe("tests", function () {
 
         it("should pass if patterns match", function () {
             _.each([
-                ["123", {all: [basic.patterns.digits]} ],
-                ["123", {any: [basic.patterns.digits, basic.patterns.email]} ],
-                ["123", {all: [basic.patterns.digits, basic.patterns.number]} ],
-                ["123", {any: [basic.patterns.digits, basic.patterns.number]} ],
-                ["123", {all: [basic.patterns.digits, /123/], any: [basic.patterns.number, basic.patterns.email]} ]
+                ["123", {all: [patterns.digits]} ],
+                ["123", {any: [patterns.digits, patterns.email]} ],
+                ["123", {all: [patterns.digits, patterns.number]} ],
+                ["123", {any: [patterns.digits, patterns.number]} ],
+                ["123", {all: [patterns.digits, /123/], any: [patterns.number, patterns.email]} ]
             ], function (o) {
                 expectTestResult({
                     value: o[0],
@@ -594,10 +596,10 @@ describe("tests", function () {
 
         it("should fail and break if pattern does not match", function () {
             _.each([
-                ["a123", {all: [basic.patterns.digits]} ],
-                ["123", {all: [basic.patterns.digits, basic.patterns.email]} ],
-                ["abc", {any: [basic.patterns.digits, basic.patterns.number]} ],
-                ["123", {all: [basic.patterns.digits, /123/], any: [basic.patterns.email]} ]
+                ["a123", {all: [patterns.digits]} ],
+                ["123", {all: [patterns.digits, patterns.email]} ],
+                ["abc", {any: [patterns.digits, patterns.number]} ],
+                ["123", {all: [patterns.digits, /123/], any: [patterns.email]} ]
             ], function (o) {
                 expectTestResult({
                     value: o[0],
@@ -611,7 +613,7 @@ describe("tests", function () {
 
     describe("duplicate", function () {
         beforeEach(function () {
-            Test = basic.duplicate;
+            Test = use.duplicate;
         });
 
         it("should configure strings only", function () {
@@ -647,6 +649,7 @@ describe("tests", function () {
         var mockTest = jasmine.createStub(Test, ["constructor", "related"]);
         mockTest.constructor.andCallThrough();
         mockTest.constructor({
+            common: common,
             schema: value
         });
         expect(mockTest.schema).toEqual(expected);
@@ -656,6 +659,7 @@ describe("tests", function () {
         var mockTest = jasmine.createStub(Test, ["constructor", "related"]);
         mockTest.constructor.andCallThrough();
         mockTest.constructor({
+            common: common,
             schema: value,
             key: "",
             attribute: attribute
@@ -670,10 +674,7 @@ describe("tests", function () {
         mockTest.constructor.andCallThrough();
         expect(function () {
             mockTest.constructor({
-                validator: {
-                    related: function () {
-                    }
-                },
+                common: common,
                 schema: value,
                 key: ""
             });
@@ -688,8 +689,10 @@ describe("tests", function () {
             err: params.err,
             options: params.options
         };
+
         var mockTest = jasmine.createStub(Test, ["constructor"]);
         _.extend(mockTest, {
+            common: common,
             schema: params.schema,
             attributes: params.attributes
         });

@@ -81,7 +81,6 @@ define(function (require, exports, module) {
                     add.call(this, attribute);
             }, this);
             _.each(calling, function (flag, attribute) {
-
                 var runner = this.runners[attribute];
                 if (!runner.pending)
                     ++this.pending;
@@ -209,7 +208,8 @@ define(function (require, exports, module) {
 
     var Test = function (options) {
         _.extend(this, _.pick(options,
-            "validator",
+            "common",
+            "runner",
             "key",
             "attributes",
             "attribute"
@@ -221,7 +221,7 @@ define(function (require, exports, module) {
             this.schema = schema;
         },
         related: function (attribute, relations) {
-            return this.validator.related(attribute, relations);
+            return this.runner.relatedTo(relations);
         }
     })
     Test.extend = Backbone.Model.extend;
