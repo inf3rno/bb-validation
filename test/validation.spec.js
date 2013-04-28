@@ -45,7 +45,7 @@ describe("validation.Validator", function () {
     it("creates dependency resolver with tests", function () {
         var mockModel = {
         };
-        var mockResolver = jasmine.createSpyObj("resolver", ["initialize", "createTestMap"]);
+        var mockResolver = jasmine.createSpyObj("resolver", ["initialize", "createTestQueue"]);
         var mockRunner = jasmine.createSpyObj("runner", ["initialize", "on"]);
         var Validator2 = Validator.extend({
             DependencyResolver: function () {
@@ -70,7 +70,7 @@ describe("validation.Validator", function () {
         });
         expect(mockResolver.initialize.callCount).toEqual(1);
         expect(mockResolver.initialize).toHaveBeenCalledWith(Validator2.prototype.tests);
-        expect(mockResolver.createTestMap.callCount).toEqual(2);
+        expect(mockResolver.createTestQueue.callCount).toEqual(2);
     });
 
     it("creates runners with dependency resolver outputs", function () {
@@ -82,8 +82,8 @@ describe("validation.Validator", function () {
         }};
         var testMap2 = {test1: function () {
         }};
-        var mockResolver = jasmine.createSpyObj("resolver", ["initialize", "createTestMap"]);
-        mockResolver.createTestMap.andCallFake(function (names) {
+        var mockResolver = jasmine.createSpyObj("resolver", ["initialize", "createTestQueue"]);
+        mockResolver.createTestQueue.andCallFake(function (names) {
             if (names.length == 2)
                 return testMap1;
             else if (names.length == 1)
@@ -160,7 +160,7 @@ describe("validation.Validator", function () {
     it("calls the runners by run", function () {
         var mockModel = {
         };
-        var mockResolver = jasmine.createSpyObj("resolver", ["createTestMap"]);
+        var mockResolver = jasmine.createSpyObj("resolver", ["createTestQueue"]);
         var mockRunner = jasmine.createSpyObj("runner", ["on", "run"]);
         var Validator2 = Validator.extend({
             DependencyResolver: function () {
@@ -437,7 +437,7 @@ describe("validation.Runner", function () {
 
 describe("validation.DependencyResolver", function () {
 
-    describe("createTestMap", function () {
+    describe("createTestQueue", function () {
         it("returns empty tests by empty schema", function () {
             expectTestOrder(
                 [],
@@ -530,48 +530,71 @@ describe("validation.DependencyResolver", function () {
         });
     });
 
-    var expectTestOrder = function (expectedMap, descriptions) {
-        var tests = {};
-        var parse = function (description) {
-            if (tests[description])
+    var expectTestOrder = function (expectedLevel1ListQueue, level3Keys) {
+        var testGenerator = 0;
+        var use = {};
+        var registerTestForKey = function (level123Key) {
+            var isRegistered = !!use[level123Key];
+            if (isRegistered)
                 return;
-            if (description.length == 1) {
-                tests[description] = {};
-                return;
-            }
-            var parts = description.split("_");
-            var testName = parts[0];
-            parse(testName);
-            var test = tests[testName];
-            parts.shift();
-            var deps = [];
-            _.each(parts, function (part) {
-                var dep = part.split("").join("_");
-                deps.push(dep);
-                parse(dep);
-            });
-            deps.push(test);
-            tests[description] = deps;
-        };
-        _.each(descriptions, parse);
+            use[level123Key] = {};
+            var isLevel1 = level123Key.length == 1;
+            if (isLevel1)
+                use[level123Key].exports = ++testGenerator;
+            else {
+                var level23Key = level123Key;
+                var level23Deps = [];
 
-        var resolver = new DependencyResolver(tests);
+                var level23KeyParts = level123Key.split("_");
+
+                var level1TestSourceKey = level23KeyParts[0];
+                registerTestForKey(level1TestSourceKey);
+                level23KeyParts.shift();
+                var flatLevel12Keys = level23KeyParts;
+
+                _.each(flatLevel12Keys, function (flatLevel12Key) {
+                    var isLevel2 = flatLevel12Key.length > 1;
+                    if (isLevel2) {
+                        var level2Key = flatLevel12Key.split("").join("_");
+                        registerTestForKey(level2Key);
+                        level23Deps.push(level2Key);
+                    }
+                    else {
+                        var level1Key = flatLevel12Key;
+                        registerTestForKey(level1Key);
+                        level23Deps.push(level1Key);
+                    }
+                });
+
+                use[level23Key].exports = use[level1TestSourceKey].exports;
+                use[level23Key].deps = level23Deps;
+            }
+        };
+        _.each(level3Keys, registerTestForKey);
+
+        var resolver = new DependencyResolver(use);
 
         var expectedKeys = [];
         var expectedTests = [];
-        _.each(expectedMap, function (key) {
-            expectedKeys.push(key);
-            expectedTests.push(tests[key]);
+        _.each(expectedLevel1ListQueue, function (level1Key) {
+            expectedKeys.push(level1Key);
+            expectedTests.push(use[level1Key].exports);
         });
-        var actualMap = resolver.createTestMap(descriptions);
+        var actualLevel1Queue = resolver.createTestQueue(level3Keys);
+        var testMap = {};
+        _.each(actualLevel1Queue, function (key) {
+            testMap[key] = use[key].exports;
+        }, this);
+        var actualLevel1MapQueue = testMap;
+
         var actualKeys = [];
         var actualTests = [];
-        var nameToStoreKey = function (name) {
-            var parts = name.split("_");
+        var level3ToLevel1TestSourceKey = function (level123Key) {
+            var parts = level123Key.split("_");
             return parts[0];
         };
-        _.each(actualMap, function (test, name) {
-            actualKeys.push(nameToStoreKey(name));
+        _.each(actualLevel1MapQueue, function (test, level123Key) {
+            actualKeys.push(level3ToLevel1TestSourceKey(level123Key));
             actualTests.push(test);
         });
         expect(expectedKeys).toEqual(actualKeys);

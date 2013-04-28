@@ -31,7 +31,7 @@ define(function (require, exports, module) {
             this.dependencyResolver = new this.DependencyResolver(this.tests);
             this.runners = {};
             _.each(this.schema, function (settings, attribute) {
-                var tests = this.dependencyResolver.createTestMap(_.keys(settings));
+                var tests = this.dependencyResolver.createTestQueue(_.keys(settings));
                 _.each(settings, function (config, name) {
                     var check = this.checks[name];
                     if (check)
@@ -117,6 +117,33 @@ define(function (require, exports, module) {
         }
     });
 
+    var DependencyResolver = function (use) {
+        this.use = use;
+    };
+    _.extend(DependencyResolver.prototype, {
+        createTestQueue: function (keys) {
+            var registry = {};
+            var queue = [];
+            _.each(keys, function (key) {
+                this.add(registry, queue, key);
+            }, this);
+            return queue;
+        },
+        add: function (registry, queue, key) {
+            if (key in registry)
+                return;
+            if (!(key in this.use))
+                throw new SyntaxError("Test " + key + " is not registered.");
+            _.each(this.use[key].deps, function (depKey) {
+                this.add(registry, queue, depKey);
+            }, this);
+            registry[key] = true;
+            queue.push(key);
+        }
+    });
+
+    Validator.prototype.DependencyResolver = DependencyResolver;
+
     var Runner = function (testMap, settings) {
         this.testMap = testMap;
         this.settings = settings;
@@ -135,6 +162,9 @@ define(function (require, exports, module) {
             this.pending = true;
             this.trigger("run");
             this.next();
+        },
+        relatedTo: function (attribute) {
+
         },
         next: function () {
             if (!this.error && this.pointer < this.names.length) {
@@ -166,45 +196,6 @@ define(function (require, exports, module) {
     });
 
     Validator.prototype.Runner = Runner;
-
-    var DependencyResolver = function (tests) {
-        this.tests = tests;
-    };
-    _.extend(DependencyResolver.prototype, {
-        createTestMap: function (names) {
-            var testMap = {};
-            _.each(names, function (name) {
-                this.appendIfNotContained(name, testMap);
-            }, this);
-            return testMap;
-        },
-        appendIfNotContained: function (name, testMap) {
-            if (name in testMap)
-                return;
-            if (!(name in this.tests))
-                throw new SyntaxError("Task " + name + " is not registered.");
-            _.each(this.getDependencies(name), function (key) {
-                this.appendIfNotContained(key, testMap);
-            }, this);
-            testMap[name] = this.getTest(name);
-        },
-        getDependencies: function (name) {
-            var definition = this.tests[name];
-            if (definition instanceof Array)
-                return definition.slice(0, -1);
-            else
-                return [];
-        },
-        getTest: function (name) {
-            var definition = this.tests[name];
-            if (definition instanceof Array)
-                return definition[definition.length - 1];
-            else
-                return definition;
-        }
-    });
-
-    Validator.prototype.DependencyResolver = DependencyResolver;
 
     var Test = function (options) {
         _.extend(this, _.pick(options,
