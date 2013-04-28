@@ -38,7 +38,7 @@ define(function (require, exports, module) {
                     type = "object";
             }
             if (type !== null && (typeof(type) != "string" || ["undefined", "boolean", "number", "string", "object", "function"].indexOf(type) == -1) && !(type instanceof Function))
-                throw new Error("Invalid schema." + this.key + ": must be Function or type or null.");
+                throw new TypeError("Attribute schema must be Function or type or null.");
             this.schema = type;
         },
         run: function (done, value) {
@@ -70,7 +70,7 @@ define(function (require, exports, module) {
     var MinTest = NumberTest.extend({
         initialize: function (min) {
             if (typeof(min) != "number" || isNaN(min))
-                throw new Error("Invalid schema." + this.key + ": must be number.");
+                throw new TypeError("Attribute schema must be number.");
             this.schema = min;
         },
         run: function (done, value) {
@@ -82,7 +82,7 @@ define(function (require, exports, module) {
     var MaxTest = NumberTest.extend({
         initialize: function (max) {
             if (typeof(max) != "number" || isNaN(max))
-                throw new Error("Invalid schema." + this.key + ": must be number.");
+                throw new TypeError("Attribute schema must be number.");
             this.schema = max;
         },
         run: function (done, value) {
@@ -99,7 +99,7 @@ define(function (require, exports, module) {
                     max: Math.max(range[0], range[1])
                 };
             if (typeof(range) != "object" || typeof(range.min) != "number" || isNaN(range.min) || typeof(range.max) != "number" || isNaN(range.max) || range.max < range.min)
-                throw new Error("Invalid schema." + this.key + ": must be range.");
+                throw new TypeError("Attribute schema must be range.");
             this.schema = range;
         },
         run: function (done, value) {
@@ -138,7 +138,7 @@ define(function (require, exports, module) {
     var MemberTest = validation.Test.extend({
         initialize: function (list) {
             if (!(list instanceof Array))
-                throw new Error("Invalid schema." + this.key + ": must be array.");
+                throw new TypeError("Attribute schema must be array.");
             this.schema = list;
         },
         run: function (done, value) {
@@ -152,14 +152,14 @@ define(function (require, exports, module) {
             if (typeof(expressions) == "string" || (expressions instanceof RegExp) || (expressions instanceof Array))
                 expressions = {all: expressions};
             if (!_.size(expressions))
-                throw new Error("Invalid schema." + this.key + ": empty schema given.");
+                throw new TypeError("Empty attribute schema given.");
             _.each(expressions, function (patterns, operator) {
                 if (operator != "any" && operator != "all")
-                    throw new Error("Invalid schema." + this.key + ": invalid operator[" + operator + "] given.");
+                    throw new TypeError("Invalid operator[" + operator + "] given.");
                 if (!(patterns instanceof Array))
                     expressions[operator] = patterns = [patterns];
                 if (!_.size(patterns))
-                    throw new Error("Invalid schema." + this.key + ": empty operator." + operator + " given.");
+                    throw new TypeError("Empty operator." + operator + " given.");
                 _.each(patterns, function (pattern, index) {
                     patterns[index] = this.toRegExp(pattern);
                 }, this);
@@ -193,7 +193,7 @@ define(function (require, exports, module) {
     var DuplicateTest = validation.Test.extend({
         initialize: function (duplicationOf) {
             if (typeof(duplicationOf) != "string")
-                throw  new Error("Invalid schema. " + this.key + ": invalid attribute name given.");
+                throw new TypeError("Invalid attribute name given.");
             this.relatedTo(duplicationOf);
             this.schema = duplicationOf;
         },

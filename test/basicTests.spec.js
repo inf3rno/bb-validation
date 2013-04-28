@@ -658,8 +658,7 @@ describe("tests", function () {
         mockTest.constructor.andCallThrough();
         mockTest.constructor({
             common: common,
-            schema: value,
-            key: ""
+            schema: value
         });
         _.each(relations, function (relation) {
             expect(mockTest.relatedTo).toHaveBeenCalledWith(relation);
@@ -672,8 +671,7 @@ describe("tests", function () {
         expect(function () {
             mockTest.constructor({
                 common: common,
-                schema: value,
-                key: ""
+                schema: value
             });
         }).toThrow(exception);
 
