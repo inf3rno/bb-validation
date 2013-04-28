@@ -497,88 +497,86 @@ describe("validation.DependencyResolver", function () {
         it("returns tests in dependency and schema key order by multi level depth dependencies", function () {
             expectTestOrder(
                 ["a", "b", "c"],
-                ["a", "b_a", "c_ab"]
+                ["a", "b_a", "c_ba"]
             );
             expectTestOrder(
                 ["a", "b", "c"],
-                ["a", "c_ab", "b_a"]
+                ["a", "c_ba", "b_a"]
             );
             expectTestOrder(
                 ["a", "b", "c"],
-                ["c_ab", "b_a"]
+                ["c_ba", "b_a"]
             );
             expectTestOrder(
                 ["a", "b", "c"],
-                ["b_a", "c_ab"]
+                ["b_a", "c_ba"]
             );
             expectTestOrder(
                 ["a", "b", "c"],
-                ["c_ab"]
+                ["c_ba"]
             );
             expectTestOrder(
                 ["a", "d", "b", "c"],
-                ["d_a", "c_ab"]
+                ["d_a", "c_ba"]
             );
             expectTestOrder(
                 ["a", "b", "c", "d"],
-                ["c_ab", "d_a"]
+                ["c_ba", "d_a"]
             );
             expectTestOrder(
                 ["a", "d", "b", "e", "c"],
-                ["d_a", "e_ab", "c_ab"]
+                ["d_a", "e_ba", "c_ba"]
             );
         });
     });
 
-    var expectTestOrder = function (expectedMap, names) {
+    var expectTestOrder = function (expectedMap, descriptions) {
+        var tests = {};
+        var parse = function (description) {
+            if (tests[description])
+                return;
+            if (description.length == 1) {
+                tests[description] = {};
+                return;
+            }
+            var parts = description.split("_");
+            var testName = parts[0];
+            parse(testName);
+            var test = tests[testName];
+            parts.shift();
+            var deps = [];
+            _.each(parts, function (part) {
+                var dep = part.split("").join("_");
+                deps.push(dep);
+                parse(dep);
+            });
+            deps.push(test);
+            tests[description] = deps;
+        };
+        _.each(descriptions, parse);
+
+        var resolver = new DependencyResolver(tests);
+
         var expectedKeys = [];
         var expectedTests = [];
         _.each(expectedMap, function (key) {
             expectedKeys.push(key);
-            expectedTests.push(testStore[key]);
+            expectedTests.push(tests[key]);
         });
-        var actualMap = resolver.createTestMap(names);
+        var actualMap = resolver.createTestMap(descriptions);
         var actualKeys = [];
         var actualTests = [];
+        var nameToStoreKey = function (name) {
+            var parts = name.split("_");
+            return parts[0];
+        };
         _.each(actualMap, function (test, name) {
-            actualKeys.push(nameToStoreKey[name]);
+            actualKeys.push(nameToStoreKey(name));
             actualTests.push(test);
         });
         expect(expectedKeys).toEqual(actualKeys);
         expect(expectedTests).toEqual(actualTests);
     };
 
-    var testStore = {
-        a: 0,
-        b: 1,
-        c: 2,
-        d: 3,
-        e: 4
-    };
-    var nameToStoreKey = {
-        a: "a",
-        b: "b",
-        b_a: "b",
-        e_ab: "e",
-        c_ab: "c",
-        d_ab: "d",
-        c: "c",
-        d_a: "d",
-        e_ab: "e",
-        c_a: "c",
-        c_a_b: "c"
-    };
-    var tests = {
-        a: testStore.a,
-        b: testStore.b,
-        b_a: ["a", testStore.b],
-        c_ab: ["b_a", testStore.c],
-        d_ab: ["b_a", testStore.d],
-        c: testStore.c,
-        d_a: ["a", testStore.d],
-        e_ab: ["b_a", testStore.e],
-        c_a: ["a", testStore.c],
-        c_a_b: ["a", "b", testStore.c]
-    };
-    var resolver = new DependencyResolver(tests);
+
 });

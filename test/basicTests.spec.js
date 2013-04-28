@@ -126,7 +126,7 @@ describe("tests", function () {
 
     describe("required", function () {
         beforeEach(function () {
-            Test = use.required;
+            Test = use.required.exports;
         });
 
         it("should configure true if not given or convert to boolean anyway", function () {
@@ -176,7 +176,7 @@ describe("tests", function () {
 
     describe("type", function () {
         beforeEach(function () {
-            Test = use.type;
+            Test = use.type.exports;
         });
 
         it("should configure type strings, functions, null but throw exception by another variable", function () {
@@ -256,7 +256,7 @@ describe("tests", function () {
 
     describe("min", function () {
         beforeEach(function () {
-            Test = use.min;
+            Test = use.min.exports;
         });
 
         it("should configure number but throw exception by any other variable", function () {
@@ -291,7 +291,7 @@ describe("tests", function () {
 
     describe("max", function () {
         beforeEach(function () {
-            Test = use.max;
+            Test = use.max.exports;
         });
 
         it("should configure number but throw exception by any other variable", function () {
@@ -326,7 +326,7 @@ describe("tests", function () {
 
     describe("range", function () {
         beforeEach(function () {
-            Test = use.range;
+            Test = use.range.exports;
         });
 
         it("should configure range but throw exception by any other variable", function () {
@@ -396,7 +396,7 @@ describe("tests", function () {
 
     describe("identical", function () {
         beforeEach(function () {
-            Test = use.identical;
+            Test = use.identical.exports;
         });
 
         it("should pass if value and schema are the same", function () {
@@ -445,7 +445,7 @@ describe("tests", function () {
 
     describe("equal", function () {
         beforeEach(function () {
-            Test = use.equal;
+            Test = use.equal.exports;
         });
 
         it("should pass if value and schema are equal", function () {
@@ -499,7 +499,7 @@ describe("tests", function () {
 
     describe("member", function () {
         beforeEach(function () {
-            Test = use.member;
+            Test = use.member.exports;
         });
 
         it("should configure array by throw exception by any other variable", function () {
@@ -554,7 +554,7 @@ describe("tests", function () {
 
     describe("match", function () {
         beforeEach(function () {
-            Test = use.match;
+            Test = use.match.exports;
         });
 
         it("should configure pattern if it's a name of common pattern or a regex pattern", function () {
@@ -613,7 +613,7 @@ describe("tests", function () {
 
     describe("duplicate", function () {
         beforeEach(function () {
-            Test = use.duplicate;
+            Test = use.duplicate.exports;
         });
 
         it("should configure strings only", function () {
@@ -674,7 +674,6 @@ describe("tests", function () {
                 schema: value
             });
         }).toThrow(exception);
-
     };
 
     var expectTestResult = function (params) {

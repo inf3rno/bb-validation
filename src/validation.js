@@ -218,8 +218,12 @@ define(function (require, exports, module) {
         initialize: function (schema) {
             this.schema = schema;
         },
+        run: function (done, value, relations) {
+            var error, options;
+            done(error, options);
+        },
         relatedTo: function (attribute) {
-            return this.runner.currentTestRelatedTo(attribute);
+            return this.runner.relatedTo(attribute);
         }
     })
     Test.extend = Backbone.Model.extend;

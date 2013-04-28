@@ -50,8 +50,7 @@ define(function (require, exports, module) {
             else
                 passed = (value === this.schema);
             done(!passed);
-        },
-        deps: ["required"]
+        }
     });
 
     var NumberTest = validation.Test.extend({
@@ -75,8 +74,7 @@ define(function (require, exports, module) {
         },
         run: function (done, value) {
             done(this.toNumber(value) < this.schema);
-        },
-        deps: ["type"]
+        }
     });
 
     var MaxTest = NumberTest.extend({
@@ -87,8 +85,7 @@ define(function (require, exports, module) {
         },
         run: function (done, value) {
             done(this.toNumber(value) > this.schema);
-        },
-        deps: ["type"]
+        }
     });
 
     var RangeTest = NumberTest.extend({
@@ -112,15 +109,13 @@ define(function (require, exports, module) {
             else
                 err = false;
             done(err);
-        },
-        deps: ["type"]
+        }
     });
 
     var IdenticalTest = validation.Test.extend({
         run: function (done, value) {
             done(value !== this.schema);
-        },
-        deps: ["required"]
+        }
     });
 
     var EqualTest = validation.Test.extend({
@@ -131,8 +126,7 @@ define(function (require, exports, module) {
             else
                 valid = value === this.schema;
             done(!valid);
-        },
-        deps: ["required"]
+        }
     });
 
     var MemberTest = validation.Test.extend({
@@ -143,8 +137,7 @@ define(function (require, exports, module) {
         },
         run: function (done, value) {
             done(this.schema.indexOf(value) == -1);
-        },
-        deps: ["required"]
+        }
     });
 
     var MatchTest = validation.Test.extend({
@@ -186,8 +179,7 @@ define(function (require, exports, module) {
             if (this.schema.any && !_.any(this.schema.any, match))
                 valid = false;
             done(!valid);
-        },
-        deps: ["type"]
+        }
     });
 
     var DuplicateTest = validation.Test.extend({
@@ -199,8 +191,7 @@ define(function (require, exports, module) {
         },
         run: function (done, value, relations) {
             done(relations[this.schema] != value);
-        },
-        deps: ["required"]
+        }
     });
 
 
@@ -214,16 +205,45 @@ define(function (require, exports, module) {
             }
         },
         use: {
-            required: RequiredTest,
-            type: TypeTest,
-            min: MinTest,
-            max: MaxTest,
-            range: RangeTest,
-            identical: IdenticalTest,
-            equal: EqualTest,
-            member: MemberTest,
-            match: MatchTest,
-            duplicate: DuplicateTest
+            required: {
+                exports: RequiredTest
+            },
+            type: {
+                exports: TypeTest,
+                deps: ["required"]
+            },
+            min: {
+                exports: MinTest,
+                deps: ["type"]
+            },
+            max: {
+                exports: MaxTest,
+                deps: ["type"]
+            },
+            range: {
+                exports: RangeTest,
+                deps: ["type"]
+            },
+            identical: {
+                exports: IdenticalTest,
+                deps: ["required"]
+            },
+            equal: {
+                exports: EqualTest,
+                deps: ["required"]
+            },
+            member: {
+                exports: MemberTest,
+                deps: ["required"]
+            },
+            match: {
+                exports: MatchTest,
+                deps: ["type"]
+            },
+            duplicate: {
+                exports: DuplicateTest,
+                deps: ["required"]
+            }
         },
         override: false,
         noConflict: true
