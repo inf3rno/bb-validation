@@ -619,9 +619,7 @@ describe("tests", function () {
         it("should configure strings only", function () {
             expectInit("test", "test");
             expectInitThrow(123);
-            expectInitRelations("password", "verifier", [
-                ["password", "verifier"]
-            ]);
+            expectInitRelations("password", ["password"]);
         });
 
         it("should error if it's not duplication of the attribute", function () {
@@ -629,7 +627,7 @@ describe("tests", function () {
                 value: "test",
                 schema: "password",
                 err: true,
-                attributes: {}
+                relations: {}
             });
         });
 
@@ -638,7 +636,7 @@ describe("tests", function () {
                 value: "test",
                 schema: "password",
                 err: false,
-                attributes: {
+                relations: {
                     password: "test"
                 }
             });
@@ -655,17 +653,16 @@ describe("tests", function () {
         expect(mockTest.schema).toEqual(expected);
     };
 
-    var expectInitRelations = function (value, attribute, relations) {
+    var expectInitRelations = function (value, relations) {
         var mockTest = jasmine.createStub(Test, ["constructor", "related"]);
         mockTest.constructor.andCallThrough();
         mockTest.constructor({
             common: common,
             schema: value,
-            key: "",
-            attribute: attribute
+            key: ""
         });
         _.each(relations, function (relation) {
-            expect(mockTest.related).toHaveBeenCalledWith(relation[0], relation[1]);
+            expect(mockTest.related).toHaveBeenCalledWith(relation);
         });
     };
 
@@ -693,17 +690,16 @@ describe("tests", function () {
         var mockTest = jasmine.createStub(Test, ["constructor"]);
         _.extend(mockTest, {
             common: common,
-            schema: params.schema,
-            attributes: params.attributes
+            schema: params.schema
         });
         runs(function () {
-            mockTest.run(params.value, function (err, options) {
+            mockTest.run(function (err, options) {
                 actual = {
                     err: err,
                     options: options
                 };
                 isDone = true;
-            });
+            }, params.value, params.relations);
         });
         waitsFor(function () {
             return isDone == true;

@@ -10,7 +10,7 @@ define(function (require, exports, module) {
         initialize: function (required) {
             this.schema = (required === undefined || !!required);
         },
-        run: function (value, done) {
+        run: function (done, value) {
             var existence = value !== undefined;
             if (!existence && this.schema)
                 done(true);
@@ -41,7 +41,7 @@ define(function (require, exports, module) {
                 throw new Error("Invalid schema." + this.key + ": must be Function or type or null.");
             this.schema = type;
         },
-        run: function (value, done) {
+        run: function (done, value) {
             var passed;
             if (typeof(this.schema) == "string")
                 passed = (typeof(value) == this.schema);
@@ -73,7 +73,7 @@ define(function (require, exports, module) {
                 throw new Error("Invalid schema." + this.key + ": must be number.");
             this.schema = min;
         },
-        run: function (value, done) {
+        run: function (done, value) {
             done(this.toNumber(value) < this.schema);
         },
         deps: ["type"]
@@ -85,7 +85,7 @@ define(function (require, exports, module) {
                 throw new Error("Invalid schema." + this.key + ": must be number.");
             this.schema = max;
         },
-        run: function (value, done) {
+        run: function (done, value) {
             done(this.toNumber(value) > this.schema);
         },
         deps: ["type"]
@@ -102,7 +102,7 @@ define(function (require, exports, module) {
                 throw new Error("Invalid schema." + this.key + ": must be range.");
             this.schema = range;
         },
-        run: function (value, done) {
+        run: function (done, value) {
             var num = this.toNumber(value);
             var err;
             if (num < this.schema.min)
@@ -117,14 +117,14 @@ define(function (require, exports, module) {
     });
 
     var IdenticalTest = validation.Test.extend({
-        run: function (value, done) {
+        run: function (done, value) {
             done(value !== this.schema);
         },
         deps: ["required"]
     });
 
     var EqualTest = validation.Test.extend({
-        run: function (value, done) {
+        run: function (done, value) {
             var valid;
             if (typeof(this.schema) == "object")
                 valid = _.isEqual(value, this.schema);
@@ -141,7 +141,7 @@ define(function (require, exports, module) {
                 throw new Error("Invalid schema." + this.key + ": must be array.");
             this.schema = list;
         },
-        run: function (value, done) {
+        run: function (done, value) {
             done(this.schema.indexOf(value) == -1);
         },
         deps: ["required"]
@@ -176,7 +176,7 @@ define(function (require, exports, module) {
                 throw new SyntaxError("Invalid expression given.");
             return regexp;
         },
-        run: function (value, done) {
+        run: function (done, value) {
             var match = function (expression) {
                 return expression.test(value);
             };
@@ -194,11 +194,11 @@ define(function (require, exports, module) {
         initialize: function (duplicationOf) {
             if (typeof(duplicationOf) != "string")
                 throw  new Error("Invalid schema. " + this.key + ": invalid attribute name given.");
-            this.related(duplicationOf, this.attribute);
+            this.related(duplicationOf);
             this.schema = duplicationOf;
         },
-        run: function (value, done) {
-            done(this.attributes[this.schema] != value);
+        run: function (done, value, relations) {
+            done(relations[this.schema] != value);
         },
         deps: ["required"]
     });

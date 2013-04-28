@@ -210,9 +210,7 @@ define(function (require, exports, module) {
         _.extend(this, _.pick(options,
             "common",
             "runner",
-            "key",
-            "attributes",
-            "attribute"
+            "key"
         ));
         this.initialize.call(this, options.schema);
     };
@@ -220,8 +218,8 @@ define(function (require, exports, module) {
         initialize: function (schema) {
             this.schema = schema;
         },
-        related: function (attribute, relations) {
-            return this.runner.relatedTo(relations);
+        related: function (attribute) {
+            return this.runner.relatedTo(attribute);
         }
     })
     Test.extend = Backbone.Model.extend;
