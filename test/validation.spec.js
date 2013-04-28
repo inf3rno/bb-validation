@@ -247,7 +247,7 @@ describe("validation.Runner", function () {
         var called = {};
         var register = function (done) {
             called[this.name] = {
-                config: this.config,
+                schema: this.schema,
                 value: this.value,
                 attributes: this.attributes
             };
@@ -257,11 +257,11 @@ describe("validation.Runner", function () {
             a: register,
             b: register
         };
-        var settings = {
+        var schema = {
             a: 1,
             b: 2
         };
-        var runner = new Runner(testMap, settings);
+        var runner = new Runner(testMap, schema);
         var attributes = {
             attr1: "value1",
             attr2: "value2"
@@ -269,12 +269,12 @@ describe("validation.Runner", function () {
         runner.run(attributes, attributes.attr1);
         expect(called).toEqual({
             a: {
-                config: settings.a,
+                schema: schema.a,
                 value: attributes.attr1,
                 attributes: attributes
             },
             b: {
-                config: settings.b,
+                schema: schema.b,
                 value: attributes.attr1,
                 attributes: attributes
             }
@@ -438,14 +438,14 @@ describe("validation.Runner", function () {
 describe("validation.DependencyResolver", function () {
 
     describe("createTestMap", function () {
-        it("returns empty tests by empty config", function () {
+        it("returns empty tests by empty schema", function () {
             expectTestOrder(
                 [],
                 []
             );
         });
 
-        it("returns tests in config key order if no dependency", function () {
+        it("returns tests in schema key order if no dependency", function () {
             expectTestOrder(
                 ["a"],
                 ["a"]
@@ -468,7 +468,7 @@ describe("validation.DependencyResolver", function () {
             );
         });
 
-        it("returns tests in dependency and config key order by one level depth dependencies", function () {
+        it("returns tests in dependency and schema key order by one level depth dependencies", function () {
             expectTestOrder(
                 ["a", "b"],
                 ["a", "b_a"]
@@ -494,7 +494,7 @@ describe("validation.DependencyResolver", function () {
                 ["d_a", "c_a_b"]
             );
         });
-        it("returns tests in dependency and config key order by multi level depth dependencies", function () {
+        it("returns tests in dependency and schema key order by multi level depth dependencies", function () {
             expectTestOrder(
                 ["a", "b", "c"],
                 ["a", "b_a", "c_ab"]

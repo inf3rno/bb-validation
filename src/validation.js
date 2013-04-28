@@ -140,7 +140,7 @@ define(function (require, exports, module) {
         next: function () {
             if (!this.error && this.pointer < this.names.length) {
                 this.name = this.names[this.pointer];
-                this.config = this.settings[this.name];
+                this.schema = this.settings[this.name];
                 this.testMap[this.name].call(this, this.done.bind(this, this.id));
             }
             else
@@ -159,7 +159,7 @@ define(function (require, exports, module) {
         },
         end: function () {
             delete(this.name);
-            delete(this.config);
+            delete(this.schema);
             delete(this.value);
             this.pending = false;
             this.trigger("end", this.result);
@@ -208,10 +208,20 @@ define(function (require, exports, module) {
     Validator.prototype.DependencyResolver = DependencyResolver;
 
     var Test = function (options) {
-        this.initialize.call(this, options);
+        _.extend(this, _.pick(options,
+            "validator",
+            "key",
+            "attributes",
+            "attribute"
+        ));
+        this.initialize.call(this, options.schema);
     };
     _.extend(Test.prototype, {
-        initialize: function (options) {
+        initialize: function (schema) {
+            this.schema = schema;
+        },
+        related: function (attribute, relations) {
+            return this.validator.related(attribute, relations);
         }
     })
     Test.extend = Backbone.Model.extend;

@@ -128,43 +128,43 @@ describe("tests", function () {
         });
 
         it("should configure true if not given or convert to boolean anyway", function () {
-            expectCheck(undefined, true);
-            expectCheck(0, false);
-            expectCheck(1, true);
-            expectCheck("", false);
-            expectCheck("a", true);
-            expectCheck(true, true);
-            expectCheck(false, false);
+            expectInit(undefined, true);
+            expectInit(0, false);
+            expectInit(1, true);
+            expectInit("", false);
+            expectInit("a", true);
+            expectInit(true, true);
+            expectInit(false, false);
         });
 
         it("should pass if required and value is not undefined", function () {
             _.each([null, "", 0, 1, "a", {}, []], function (value) {
-                expectTest({
+                expectTestResult({
                     value: value,
-                    config: true,
+                    schema: true,
                     err: false
                 });
             });
         });
 
         it("should fail and break if required but value is undefined", function () {
-            expectTest({
-                config: true,
+            expectTestResult({
+                schema: true,
                 err: true
             });
         });
 
         it("should pass if not required and given", function () {
-            expectTest({
+            expectTestResult({
                 value: 0,
-                config: false,
+                schema: false,
                 err: false
             });
         });
 
         it("should pass and break if not required and not given", function () {
-            expectTest({
-                config: false,
+            expectTestResult({
+                schema: false,
                 err: false,
                 options: {abort: true}
             });
@@ -179,23 +179,23 @@ describe("tests", function () {
 
         it("should configure type strings, functions, null but throw exception by another variable", function () {
             _.each(["", 0, true, 1, "test", [], {}], function (value) {
-                expectCheckThrow(value);
+                expectInitThrow(value);
             });
             _.each(["boolean", "number", "string", "function", "object", "undefined"], function (value) {
-                expectCheck(value, value);
+                expectInit(value, value);
             });
-            expectCheck("null", null);
-            expectCheck(null, null);
-            expectCheck(undefined, "undefined");
-            expectCheck(Boolean, "boolean");
-            expectCheck(Number, "number");
-            expectCheck(String, "string");
-            expectCheck(Array, Array);
-            expectCheck(Function, Function);
-            expectCheck(RegExp, RegExp);
+            expectInit("null", null);
+            expectInit(null, null);
+            expectInit(undefined, "undefined");
+            expectInit(Boolean, "boolean");
+            expectInit(Number, "number");
+            expectInit(String, "string");
+            expectInit(Array, Array);
+            expectInit(Function, Function);
+            expectInit(RegExp, RegExp);
             var f = function () {
             };
-            expectCheck(f, f);
+            expectInit(f, f);
         });
 
         it("should pass if type is good", function () {
@@ -215,9 +215,9 @@ describe("tests", function () {
                 ],
                 [/a/, RegExp]
             ], function (o) {
-                expectTest({
+                expectTestResult({
                     value: o[0],
-                    config: o[1],
+                    schema: o[1],
                     err: false
                 });
             })
@@ -243,9 +243,9 @@ describe("tests", function () {
                 [Math.NaN, "number"],
                 [null, "number"]
             ], function (o) {
-                expectTest({
+                expectTestResult({
                     value: o[0],
-                    config: o[1],
+                    schema: o[1],
                     err: true
                 });
             })
@@ -259,28 +259,28 @@ describe("tests", function () {
 
         it("should configure number but throw exception by any other variable", function () {
             _.each([undefined, null, "", Math.NaN, {}], function (value) {
-                expectCheckThrow(value);
+                expectInitThrow(value);
             });
             _.each([-1, 0, 1, 1.234, -123.142], function (value) {
-                expectCheck(value, value);
+                expectInit(value, value);
             });
         });
 
-        it("should pass if number is not smaller than config", function () {
+        it("should pass if number is not smaller than schema", function () {
             _.each([3.3333, 3.5, 4, 10, 100, 1000], function (value) {
-                expectTest({
+                expectTestResult({
                     value: value,
-                    config: 3.3333,
+                    schema: 3.3333,
                     err: false
                 });
             });
         });
 
-        it("should fail and break if number is bigger than config", function () {
+        it("should fail and break if number is bigger than schema", function () {
             _.each([3.3332, 3, 1, 0, -1, -4], function (value) {
-                expectTest({
+                expectTestResult({
                     value: value,
-                    config: 3.3333,
+                    schema: 3.3333,
                     err: true
                 });
             });
@@ -294,28 +294,28 @@ describe("tests", function () {
 
         it("should configure number but throw exception by any other variable", function () {
             _.each([undefined, null, "", Math.NaN, {}], function (value) {
-                expectCheckThrow(value);
+                expectInitThrow(value);
             });
             _.each([-1, 0, 1, 1.234, -123.142], function (value) {
-                expectCheck(value, value);
+                expectInit(value, value);
             });
         });
 
-        it("should fail and break if number is smaller than config", function () {
+        it("should fail and break if number is smaller than schema", function () {
             _.each([3.3334, 3.5, 4, 10, 100, 1000], function (value) {
-                expectTest({
+                expectTestResult({
                     value: value,
-                    config: 3.3333,
+                    schema: 3.3333,
                     err: true
                 });
             });
         });
 
-        it("should pass if number is not smaller than config", function () {
+        it("should pass if number is not smaller than schema", function () {
             _.each([3.3333, 3, 1, 0, -1, -4], function (value) {
-                expectTest({
+                expectTestResult({
                     value: value,
-                    config: 3.3333,
+                    schema: 3.3333,
                     err: false
                 });
             });
@@ -335,18 +335,18 @@ describe("tests", function () {
                 Math.NaN,
                 {}
             ], function (value) {
-                expectCheckThrow([value, 1]);
-                expectCheckThrow([1, value]);
-                expectCheckThrow([value, value]);
+                expectInitThrow([value, 1]);
+                expectInitThrow([1, value]);
+                expectInitThrow([value, value]);
             });
 
             _.each([-1, 0, 1, 1.234, -123.142], function (value) {
-                expectCheck([100, value], {min: value, max: 100});
-                expectCheck([value, 100], {min: value, max: 100});
-                expectCheck([value, value], {min: value, max: value});
-                expectCheck({min: value, max: 100}, {min: value, max: 100});
-                expectCheck({min: value, max: value}, {min: value, max: value});
-                expectCheckThrow({min: 100, max: value});
+                expectInit([100, value], {min: value, max: 100});
+                expectInit([value, 100], {min: value, max: 100});
+                expectInit([value, value], {min: value, max: value});
+                expectInit({min: value, max: 100}, {min: value, max: 100});
+                expectInit({min: value, max: value}, {min: value, max: value});
+                expectInitThrow({min: 100, max: value});
             });
 
         });
@@ -362,9 +362,9 @@ describe("tests", function () {
                 [-1, -1, 1],
                 [-0.5, -1, 0]
             ], function (o) {
-                expectTest({
+                expectTestResult({
                     value: o[0],
-                    config: {min: o[1], max: o[2]},
+                    schema: {min: o[1], max: o[2]},
                     err: false
                 });
             });
@@ -383,9 +383,9 @@ describe("tests", function () {
                 [0, -100, -1, "max"],
                 [1, -100, -1, "max"]
             ], function (o) {
-                expectTest({
+                expectTestResult({
                     value: o[0],
-                    config: {min: o[1], max: o[2]},
+                    schema: {min: o[1], max: o[2]},
                     err: o[3]
                 });
             });
@@ -397,7 +397,7 @@ describe("tests", function () {
             Test = basic.same;
         });
 
-        it("should pass if value and config are the same", function () {
+        it("should pass if value and schema are the same", function () {
             _.each([
                 undefined,
                 null,
@@ -408,15 +408,15 @@ describe("tests", function () {
                 function () {
                 }
             ], function (value) {
-                expectTest({
+                expectTestResult({
                     value: value,
-                    config: value,
+                    schema: value,
                     err: false
                 });
             });
         });
 
-        it("should fail and break if value and config are not the same", function () {
+        it("should fail and break if value and schema are not the same", function () {
             _.each([
                 [undefined, null],
                 ["undefined", undefined],
@@ -432,9 +432,9 @@ describe("tests", function () {
                 }],
                 [/a/, /a/]
             ], function (o) {
-                expectTest({
+                expectTestResult({
                     value: o[0],
-                    config: o[1],
+                    schema: o[1],
                     err: true
                 });
             });
@@ -446,7 +446,7 @@ describe("tests", function () {
             Test = basic.equal;
         });
 
-        it("should pass if value and config are equal", function () {
+        it("should pass if value and schema are equal", function () {
             _.each([
                 [undefined, undefined],
                 [
@@ -467,15 +467,15 @@ describe("tests", function () {
                     {a: 1, b: [2, null]}
                 ]
             ], function (o) {
-                expectTest({
+                expectTestResult({
                     value: o[0],
-                    config: o[1],
+                    schema: o[1],
                     err: false
                 });
             });
         });
 
-        it("should fail and break if value and config are not equal", function () {
+        it("should fail and break if value and schema are not equal", function () {
             _.each([
                 [undefined, null],
                 ["undefined", undefined],
@@ -486,9 +486,9 @@ describe("tests", function () {
                 }, function () {
                 }]
             ], function (o) {
-                expectTest({
+                expectTestResult({
                     value: o[0],
-                    config: o[1],
+                    schema: o[1],
                     err: true
                 });
             });
@@ -506,7 +506,7 @@ describe("tests", function () {
                 [0],
                 ["1", 2, 3]
             ], function (value) {
-                expectCheck(value, value);
+                expectInit(value, value);
             });
             _.each([
                 undefined,
@@ -516,34 +516,34 @@ describe("tests", function () {
                 "a",
                 new Date()
             ], function (value) {
-                expectCheckThrow(value);
+                expectInitThrow(value);
             });
         });
 
-        it("should pass if config list contains the item", function () {
+        it("should pass if schema list contains the item", function () {
             _.each([
                 0,
                 1,
                 "a"
             ], function (value) {
-                expectTest({
+                expectTestResult({
                     value: value,
-                    config: [0, 1, "a"],
+                    schema: [0, 1, "a"],
                     err: false
                 });
             });
         });
 
-        it("should fail and break if config list does not contain the item", function () {
+        it("should fail and break if schema list does not contain the item", function () {
             _.each([
                 null,
                 undefined,
                 "b",
                 ""
             ], function (value) {
-                expectTest({
+                expectTestResult({
                     value: value,
-                    config: [0, 1, "a"],
+                    schema: [0, 1, "a"],
                     err: true
                 });
             });
@@ -556,24 +556,24 @@ describe("tests", function () {
         });
 
         it("should configure pattern if it's a name of common pattern or a regex pattern", function () {
-            expectCheck("digits", {all: [basic.patterns.digits]});
-            expectCheck("email", {all: [basic.patterns.email]});
-            expectCheckThrow("test");
-            expectCheck(/a/, {all: [/a/]});
-            expectCheck(["email"], {all: [basic.patterns.email]});
-            expectCheck(["email", /a/], {all: [basic.patterns.email, /a/]});
-            expectCheckThrow([]);
-            expectCheckThrow({all: []});
-            expectCheckThrow({any: []});
-            expectCheck({all: ["email"]}, {all: [basic.patterns.email]});
-            expectCheck({any: ["email"]}, {any: [basic.patterns.email]});
-            expectCheck({any: "email"}, {any: [basic.patterns.email]});
-            expectCheckThrow({test: ["email"]});
-            expectCheck({any: "email", all: "email"}, {any: [basic.patterns.email], all: [basic.patterns.email]});
-            expectCheckThrow(undefined);
-            expectCheckThrow(0);
-            expectCheckThrow(null);
-            expectCheckThrow({});
+            expectInit("digits", {all: [basic.patterns.digits]});
+            expectInit("email", {all: [basic.patterns.email]});
+            expectInitThrow("test");
+            expectInit(/a/, {all: [/a/]});
+            expectInit(["email"], {all: [basic.patterns.email]});
+            expectInit(["email", /a/], {all: [basic.patterns.email, /a/]});
+            expectInitThrow([]);
+            expectInitThrow({all: []});
+            expectInitThrow({any: []});
+            expectInit({all: ["email"]}, {all: [basic.patterns.email]});
+            expectInit({any: ["email"]}, {any: [basic.patterns.email]});
+            expectInit({any: "email"}, {any: [basic.patterns.email]});
+            expectInitThrow({test: ["email"]});
+            expectInit({any: "email", all: "email"}, {any: [basic.patterns.email], all: [basic.patterns.email]});
+            expectInitThrow(undefined);
+            expectInitThrow(0);
+            expectInitThrow(null);
+            expectInitThrow({});
         });
 
         it("should pass if patterns match", function () {
@@ -584,9 +584,9 @@ describe("tests", function () {
                 ["123", {any: [basic.patterns.digits, basic.patterns.number]} ],
                 ["123", {all: [basic.patterns.digits, /123/], any: [basic.patterns.number, basic.patterns.email]} ]
             ], function (o) {
-                expectTest({
+                expectTestResult({
                     value: o[0],
-                    config: o[1],
+                    schema: o[1],
                     err: false
                 });
             });
@@ -599,9 +599,9 @@ describe("tests", function () {
                 ["abc", {any: [basic.patterns.digits, basic.patterns.number]} ],
                 ["123", {all: [basic.patterns.digits, /123/], any: [basic.patterns.email]} ]
             ], function (o) {
-                expectTest({
+                expectTestResult({
                     value: o[0],
-                    config: o[1],
+                    schema: o[1],
                     err: true
                 });
             });
@@ -615,26 +615,26 @@ describe("tests", function () {
         });
 
         it("should configure strings only", function () {
-            expectCheck("test", "test");
-            expectCheckThrow(123);
-            expectRelations("password", "verifier", [
+            expectInit("test", "test");
+            expectInitThrow(123);
+            expectInitRelations("password", "verifier", [
                 ["password", "verifier"]
             ]);
         });
 
         it("should error if it's not duplication of the attribute", function () {
-            expectTest({
+            expectTestResult({
                 value: "test",
-                config: "password",
+                schema: "password",
                 err: true,
                 attributes: {}
             });
         });
 
         it("should pass if it's duplication of the attribute", function () {
-            expectTest({
+            expectTestResult({
                 value: "test",
-                config: "password",
+                schema: "password",
                 err: false,
                 attributes: {
                     password: "test"
@@ -643,34 +643,29 @@ describe("tests", function () {
         });
     });
 
-    var expectCheck = function (value, expected) {
-        var t = new Test({
-            validator: {
-                related: function () {
-                }
-            },
-            schema: value,
-            key: ""
+    var expectInit = function (value, expected) {
+        var mockTest = jasmine.createStub(Test, ["constructor", "related"]);
+        mockTest.constructor.andCallThrough();
+        mockTest.constructor({
+            schema: value
         });
-        expect(t.config).toEqual(expected);
+        expect(mockTest.schema).toEqual(expected);
     };
 
-    var expectRelations = function (value, attribute, relations) {
-        var related = jasmine.createSpy("related");
-        var t = new Test({
-            validator: {
-                related: related
-            },
+    var expectInitRelations = function (value, attribute, relations) {
+        var mockTest = jasmine.createStub(Test, ["constructor", "related"]);
+        mockTest.constructor.andCallThrough();
+        mockTest.constructor({
             schema: value,
             key: "",
             attribute: attribute
         });
         _.each(relations, function (relation) {
-            expect(related).toHaveBeenCalledWith(relation[0], relation[1]);
+            expect(mockTest.related).toHaveBeenCalledWith(relation[0], relation[1]);
         });
     };
 
-    var expectCheckThrow = function (value, exception) {
+    var expectInitThrow = function (value, exception) {
         var mockTest = jasmine.createStub(Test, ["constructor"]);
         mockTest.constructor.andCallThrough();
         expect(function () {
@@ -686,48 +681,32 @@ describe("tests", function () {
 
     };
 
-    var expectTest = function (expected) {
-        /*
-         * value - ez az ellenőrzött érték
-         * config - ez a schema
-         * err > helyi
-         * attributes  - ez a model attribútum listája, ebből kéri le a duplicate az értéket
-         * options > helyi
-         *
-         * check(type, key, attribute)
-         * -> itt a key felesleges, csak hibaüzinek van
-         * -> az attribute is felesleges, nem szabad tudnia magáról, hogy kicsoda
-         * -> helyette a validator-nak kell id-t adnia neki
-         * -> és az id alapján azonosítani
-         * -> az attributes helyett automatikusan kapnia kell egy csak az ő részére szóló json-t az értékekről
-         * -> sőt jobb lenne, ha nem is json lenne, hanem több, vagy sima érték
-         * -> ha json, akkor a teszt belső kulcsait kell tartalmaznia, és nem a külsőket
-         *
-         * az összes check-nek schema-t kell beállítania
-         *
-         * ezek a tesztek csak a basic-re vonatoznak, szóval szerintem nyugodtan lehet
-         * belsó paramétert használni teszteléskor
-         * ha valaki az itteni toolokat akarja felhasználni, akkor max igazodik...
-         * a cucc mondjuk ettől még korántsem profi...
-         * kell egy normális interface a teszteknek
-         * */
-
+    var expectTestResult = function (params) {
         var isDone = false;
-        var actual = {};
+        var actual;
+        var expected = {
+            err: params.err,
+            options: params.options
+        };
+        var mockTest = jasmine.createStub(Test, ["constructor"]);
+        _.extend(mockTest, {
+            schema: params.schema,
+            attributes: params.attributes
+        });
         runs(function () {
-            expected.done = function (err, options) {
-                actual.err = err;
-                actual.options = options;
+            mockTest.run(params.value, function (err, options) {
+                actual = {
+                    err: err,
+                    options: options
+                };
                 isDone = true;
-            };
-            Test.prototype.test.call(expected, expected.done);
+            });
         });
         waitsFor(function () {
             return isDone == true;
         });
         runs(function () {
-            expect(actual.err).toEqual(expected.err);
-            expect(actual.options).toEqual(expected.options);
+            expect(actual).toEqual(expected);
         });
     }
 

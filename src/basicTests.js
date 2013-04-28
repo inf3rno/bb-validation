@@ -36,27 +36,23 @@ define(function (require, exports, module) {
     };
 
     var AbstractTest = validation.Test.extend({
+        patterns: patterns,
         initialize: function (options) {
-            this.validator = options.validator;
-            this.config = this.check(options.schema, options.key, options.attribute);
+            this.schema = this.check(options.schema, this.key, this.attribute);
         },
         run: function (value, done) {
             this.value = value;
             this.test(done);
-        },
-        patterns: patterns,
-        related: function (attribute, relations) {
-            return this.validator.related(attribute, relations);
         }
     });
 
     var RequiredTest = AbstractTest.extend({
-        check: function (required) {
-            return required === undefined || !!required;
+        initialize: function (required) {
+            this.schema = (required === undefined || !!required);
         },
         test: function (done) {
             var existence = this.value !== undefined;
-            if (!existence && this.config)
+            if (!existence && this.schema)
                 done(true);
             else if (!existence)
                 done(false, {abort: true});
@@ -66,7 +62,7 @@ define(function (require, exports, module) {
     });
 
     var TypeTest = AbstractTest.extend({
-        check: function (type, key) {
+        initialize: function (type) {
             if (type == "null")
                 type = null;
             else if (type === undefined)
@@ -82,65 +78,65 @@ define(function (require, exports, module) {
                     type = "object";
             }
             if (type !== null && (typeof(type) != "string" || ["undefined", "boolean", "number", "string", "object", "function"].indexOf(type) == -1) && !(type instanceof Function))
-                throw new Error("Invalid config." + key + ": must be Function or type or null.");
-            return type;
+                throw new Error("Invalid schema." + this.key + ": must be Function or type or null.");
+            this.schema = type;
         },
         test: function (done) {
             var passed;
-            if (typeof(this.config) == "string")
-                passed = (typeof(this.value) == this.config);
-            else if (typeof(this.config) == "function")
-                passed = (this.value instanceof this.config);
+            if (typeof(this.schema) == "string")
+                passed = (typeof(this.value) == this.schema);
+            else if (typeof(this.schema) == "function")
+                passed = (this.value instanceof this.schema);
             else
-                passed = (this.value === this.config);
+                passed = (this.value === this.schema);
             done(!passed);
         },
         deps: ["required"]
     });
 
     var MinTest = AbstractTest.extend({
-        check: function (min, key) {
+        initialize: function (min) {
             if (typeof(min) != "number" || isNaN(min))
-                throw new Error("Invalid config." + key + ": must be number.");
-            return min;
+                throw new Error("Invalid schema." + this.key + ": must be number.");
+            this.schema = min;
         },
         test: function (done) {
             var num = toNumber(this.value);
-            done(num < this.config);
+            done(num < this.schema);
         },
         deps: ["type"]
     });
 
     var MaxTest = AbstractTest.extend({
-        check: function (max, key) {
+        initialize: function (max) {
             if (typeof(max) != "number" || isNaN(max))
-                throw new Error("Invalid config." + key + ": must be number.");
-            return max;
+                throw new Error("Invalid schema." + this.key + ": must be number.");
+            this.schema = max;
         },
         test: function (done) {
             var num = toNumber(this.value);
-            done(num > this.config);
+            done(num > this.schema);
         },
         deps: ["type"]
     });
 
     var RangeTest = AbstractTest.extend({
-        check: function (range, key) {
+        initialize: function (range) {
             if ((range instanceof Array) && range.length == 2 && typeof(range[0]) == "number" && !isNaN(range[0]) && typeof(range[1]) == "number" && !isNaN(range[1]))
                 range = {
                     min: Math.min(range[0], range[1]),
                     max: Math.max(range[0], range[1])
                 };
             if (typeof(range) != "object" || typeof(range.min) != "number" || isNaN(range.min) || typeof(range.max) != "number" || isNaN(range.max) || range.max < range.min)
-                throw new Error("Invalid config." + key + ": must be range.");
-            return range;
+                throw new Error("Invalid schema." + this.key + ": must be range.");
+            this.schema = range;
         },
         test: function (done) {
             var num = toNumber(this.value);
             var err;
-            if (num < this.config.min)
+            if (num < this.schema.min)
                 err = "min";
-            else if (num > this.config.max)
+            else if (num > this.schema.max)
                 err = "max";
             else
                 err = false;
@@ -150,56 +146,54 @@ define(function (require, exports, module) {
     });
 
     var IdenticalTest = AbstractTest.extend({
-        check: null,
         test: function (done) {
-            done(this.value !== this.config);
+            done(this.value !== this.schema);
         },
         deps: ["required"]
     });
 
     var EqualTest = AbstractTest.extend({
-        check: null,
         test: function (done) {
             var valid;
-            if (typeof(this.config) == "object")
-                valid = _.isEqual(this.value, this.config);
+            if (typeof(this.schema) == "object")
+                valid = _.isEqual(this.value, this.schema);
             else
-                valid = this.value === this.config;
+                valid = this.value === this.schema;
             done(!valid);
         },
         deps: ["required"]
     });
 
     var ContainedTest = AbstractTest.extend({
-        check: function (list, key) {
+        initialize: function (list) {
             if (!(list instanceof Array))
-                throw new Error("Invalid config." + key + ": must be array.");
-            return list;
+                throw new Error("Invalid schema." + this.key + ": must be array.");
+            this.schema = list;
         },
         test: function (done) {
-            done(this.config.indexOf(this.value) == -1);
+            done(this.schema.indexOf(this.value) == -1);
         },
         deps: ["required"]
     });
 
     var MatchTest = AbstractTest.extend({
-        check: function (expressions, key) {
+        initialize: function (expressions) {
             if (typeof(expressions) == "string" || (expressions instanceof RegExp) || (expressions instanceof Array))
                 expressions = {all: expressions};
             if (!_.size(expressions))
-                throw new Error("Invalid config." + key + ": empty config given.");
+                throw new Error("Invalid schema." + this.key + ": empty schema given.");
             _.each(expressions, function (patterns, operator) {
                 if (operator != "any" && operator != "all")
-                    throw new Error("Invalid config." + key + ": invalid operator[" + operator + "] given.");
+                    throw new Error("Invalid schema." + this.key + ": invalid operator[" + operator + "] given.");
                 if (!(patterns instanceof Array))
                     expressions[operator] = patterns = [patterns];
                 if (!_.size(patterns))
-                    throw new Error("Invalid config." + key + ": empty operator." + operator + " given.");
+                    throw new Error("Invalid schema." + this.key + ": empty operator." + operator + " given.");
                 _.each(patterns, function (pattern, index) {
                     patterns[index] = toRegExp.call(this, pattern);
                 }, this);
             }, this);
-            return expressions;
+            this.schema = expressions;
         },
         test: function (done) {
             var value = this.value;
@@ -207,9 +201,9 @@ define(function (require, exports, module) {
                 return expression.test(value);
             };
             var valid = true;
-            if (this.config.all && !_.all(this.config.all, match))
+            if (this.schema.all && !_.all(this.schema.all, match))
                 valid = false;
-            if (this.config.any && !_.any(this.config.any, match))
+            if (this.schema.any && !_.any(this.schema.any, match))
                 valid = false;
             done(!valid);
         },
@@ -217,14 +211,14 @@ define(function (require, exports, module) {
     });
 
     var DuplicateTest = AbstractTest.extend({
-        check: function (duplicate, key, attribute) {
+        initialize: function (duplicate) {
             if (typeof(duplicate) != "string")
-                throw  new Error("Invalid config. " + key + ": invalid attribute name given.");
-            this.related(duplicate, attribute);
-            return duplicate;
+                throw  new Error("Invalid schema. " + this.key + ": invalid attribute name given.");
+            this.related(duplicate, this.attribute);
+            this.schema = duplicate;
         },
         test: function (done) {
-            done(this.attributes[this.config] != this.value);
+            done(this.attributes[this.schema] != this.value);
         },
         deps: ["required"]
     });
