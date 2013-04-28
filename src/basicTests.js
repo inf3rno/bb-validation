@@ -4,7 +4,7 @@ if (typeof define !== 'function')
 define(function (require, exports, module) {
 
     var _ = require("underscore"),
-        validation = require("./validation")
+        validation = require("./deprecated-validation")
 
     var RequiredTest = validation.Test.extend({
         initialize: function (required) {
