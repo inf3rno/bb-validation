@@ -194,7 +194,7 @@ define(function (require, exports, module) {
         initialize: function (duplicationOf) {
             if (typeof(duplicationOf) != "string")
                 throw  new Error("Invalid schema. " + this.key + ": invalid attribute name given.");
-            this.related(duplicationOf);
+            this.relatedTo(duplicationOf);
             this.schema = duplicationOf;
         },
         run: function (done, value, relations) {

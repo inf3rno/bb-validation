@@ -644,7 +644,7 @@ describe("tests", function () {
     });
 
     var expectInit = function (value, expected) {
-        var mockTest = jasmine.createStub(Test, ["constructor", "related"]);
+        var mockTest = jasmine.createStub(Test, ["constructor", "relatedTo"]);
         mockTest.constructor.andCallThrough();
         mockTest.constructor({
             common: common,
@@ -654,7 +654,7 @@ describe("tests", function () {
     };
 
     var expectInitRelations = function (value, relations) {
-        var mockTest = jasmine.createStub(Test, ["constructor", "related"]);
+        var mockTest = jasmine.createStub(Test, ["constructor", "relatedTo"]);
         mockTest.constructor.andCallThrough();
         mockTest.constructor({
             common: common,
@@ -662,7 +662,7 @@ describe("tests", function () {
             key: ""
         });
         _.each(relations, function (relation) {
-            expect(mockTest.related).toHaveBeenCalledWith(relation);
+            expect(mockTest.relatedTo).toHaveBeenCalledWith(relation);
         });
     };
 
