@@ -4,12 +4,16 @@ if (typeof define !== 'function')
 define(function (require, exports, module) {
 
     var _ = require("underscore"),
-        Backbone = require("backbone"),
-        validation = require("./backbone-validator");
+        Backbone = require("backbone");
 
-    var RequiredTest = validation.Test.extend({
+    if (!Backbone.Validator)
+        throw new Error("Validator module not loaded yet.");
+
+    var Test = Backbone.Validator.Test;
+
+    var RequiredTest = Test.extend({
         initialize: function (required) {
-            this.schema = (required === undefined || !!required);
+            this.schema = (_.isUndefined(required) || !!required);
         },
         evaluate: function (done, value) {
             var existence = value !== undefined;
@@ -22,7 +26,8 @@ define(function (require, exports, module) {
         }
     });
 
-    var TypeTest = validation.Test.extend({
+    var TypeTest = Test.extend({
+        types: ["undefined", "boolean", "number", "string", "object", "function"],
         initialize: function (type) {
             if (type == "null")
                 type = null;
@@ -38,15 +43,17 @@ define(function (require, exports, module) {
                 else if (type == Object)
                     type = "object";
             }
-            if (type !== null && (typeof(type) != "string" || ["undefined", "boolean", "number", "string", "object", "function"].indexOf(type) == -1) && !(type instanceof Function))
+            if (!_.isNull(type) && !_.isNaN(type) && !_.contains(this.types, type) && !_.isFunction(type))
                 throw new TypeError("Attribute schema must be Function or type or null.");
             this.schema = type;
         },
         evaluate: function (done, value) {
             var passed;
-            if (typeof(this.schema) == "string")
+            if (_.isNaN(value))
+                passed = _.isNaN(this.schema);
+            else if (_.isString(this.schema))
                 passed = (typeof(value) == this.schema);
-            else if (typeof(this.schema) == "function")
+            else if (_.isFunction(this.schema))
                 passed = (value instanceof this.schema);
             else
                 passed = (value === this.schema);
@@ -54,7 +61,7 @@ define(function (require, exports, module) {
         }
     });
 
-    var NumberTest = validation.Test.extend({
+    var NumberTest = Test.extend({
         toNumber: function (value) {
             if (typeof (value) == "string")
                 return value.length;
@@ -69,7 +76,7 @@ define(function (require, exports, module) {
 
     var MinTest = NumberTest.extend({
         initialize: function (min) {
-            if (typeof(min) != "number" || isNaN(min))
+            if (!_.isNumber(min) || _.isNaN(min))
                 throw new TypeError("Attribute schema must be number.");
             this.schema = min;
         },
@@ -80,7 +87,7 @@ define(function (require, exports, module) {
 
     var MaxTest = NumberTest.extend({
         initialize: function (max) {
-            if (typeof(max) != "number" || isNaN(max))
+            if (!_.isNumber(max) || _.isNaN(max))
                 throw new TypeError("Attribute schema must be number.");
             this.schema = max;
         },
@@ -91,12 +98,12 @@ define(function (require, exports, module) {
 
     var RangeTest = NumberTest.extend({
         initialize: function (range) {
-            if ((range instanceof Array) && range.length == 2 && typeof(range[0]) == "number" && !isNaN(range[0]) && typeof(range[1]) == "number" && !isNaN(range[1]))
+            if (_.isArray(range) && range.length == 2 && _.isNumber(range[0]) && !_.isNaN(range[0]) && _.isNumber(range[1]) && !_.isNaN(range[1]))
                 range = {
                     min: Math.min(range[0], range[1]),
                     max: Math.max(range[0], range[1])
                 };
-            if (typeof(range) != "object" || typeof(range.min) != "number" || isNaN(range.min) || typeof(range.max) != "number" || isNaN(range.max) || range.max < range.min)
+            if (!_.isObject(range) || !_.isNumber(range.min) || _.isNaN(range.min) || !_.isNumber(range.max) || _.isNaN(range.max) || range.max < range.min)
                 throw new TypeError("Attribute schema must be range.");
             this.schema = range;
         },
@@ -113,16 +120,16 @@ define(function (require, exports, module) {
         }
     });
 
-    var IdenticalTest = validation.Test.extend({
+    var IdenticalTest = Test.extend({
         evaluate: function (done, value) {
             done(value !== this.schema);
         }
     });
 
-    var EqualTest = validation.Test.extend({
+    var EqualTest = Test.extend({
         evaluate: function (done, value) {
             var valid;
-            if (typeof(this.schema) == "object")
+            if (_.isObject(this.schema))
                 valid = _.isEqual(value, this.schema);
             else
                 valid = value === this.schema;
@@ -130,27 +137,27 @@ define(function (require, exports, module) {
         }
     });
 
-    var MemberTest = validation.Test.extend({
+    var MemberTest = Test.extend({
         initialize: function (list) {
-            if (!(list instanceof Array))
+            if (!_.isArray(list))
                 throw new TypeError("Attribute schema must be array.");
             this.schema = list;
         },
         evaluate: function (done, value) {
-            done(this.schema.indexOf(value) == -1);
+            done(!_.contains(this.schema, value));
         }
     });
 
-    var MatchTest = validation.Test.extend({
+    var MatchTest = Test.extend({
         initialize: function (expressions) {
-            if (typeof(expressions) == "string" || (expressions instanceof RegExp) || (expressions instanceof Array))
+            if (_.isString(expressions) || _.isRegExp(expressions) || _.isArray(expressions))
                 expressions = {all: expressions};
             if (!_.size(expressions))
                 throw new TypeError("Empty attribute schema given.");
             _.each(expressions, function (patterns, operator) {
                 if (operator != "any" && operator != "all")
                     throw new TypeError("Invalid operator[" + operator + "] given.");
-                if (!(patterns instanceof Array))
+                if (!_.isArray(patterns))
                     expressions[operator] = patterns = [patterns];
                 if (!_.size(patterns))
                     throw new TypeError("Empty operator." + operator + " given.");
@@ -162,11 +169,11 @@ define(function (require, exports, module) {
         },
         toRegExp: function (value) {
             var regexp;
-            if (typeof(value) == "string")
+            if (_.isString(value))
                 regexp = this.common.patterns[value];
             else
                 regexp = value;
-            if (!(regexp instanceof RegExp))
+            if (!_.isRegExp(regexp))
                 throw new SyntaxError("Invalid expression given.");
             return regexp;
         },
@@ -183,15 +190,15 @@ define(function (require, exports, module) {
         }
     });
 
-    var DuplicateTest = validation.Test.extend({
+    var DuplicateTest = Test.extend({
         initialize: function (duplicationOf) {
-            if (typeof(duplicationOf) != "string")
+            if (!_.isString(duplicationOf))
                 throw new TypeError("Invalid attribute name given.");
-            this.relatedTo(duplicationOf);
             this.schema = duplicationOf;
+            this.relations[this.schema] = true;
         },
-        evaluate: function (done, value, relations) {
-            done(relations[this.schema] != value);
+        evaluate: function (done, value, attributes) {
+            done(attributes[this.schema] != value);
         }
     });
 
@@ -245,9 +252,7 @@ define(function (require, exports, module) {
                 exports: DuplicateTest,
                 deps: ["required"]
             }
-        },
-        override: false,
-        noConflict: true
+        }
     };
 
 });

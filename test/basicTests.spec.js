@@ -242,7 +242,7 @@ describe("tests", function () {
                     Array
                 ],
                 ["a", RegExp],
-                [Math.NaN, "number"],
+                [Number.NaN, "number"],
                 [null, "number"]
             ], function (o) {
                 expectTestResult({
@@ -260,7 +260,7 @@ describe("tests", function () {
         });
 
         it("should configure number but throw exception by any other variable", function () {
-            _.each([undefined, null, "", Math.NaN, {}], function (value) {
+            _.each([undefined, null, "", Number.NaN, {}], function (value) {
                 expectInitThrow(value);
             });
             _.each([-1, 0, 1, 1.234, -123.142], function (value) {
@@ -295,7 +295,7 @@ describe("tests", function () {
         });
 
         it("should configure number but throw exception by any other variable", function () {
-            _.each([undefined, null, "", Math.NaN, {}], function (value) {
+            _.each([undefined, null, "", Number.NaN, {}], function (value) {
                 expectInitThrow(value);
             });
             _.each([-1, 0, 1, 1.234, -123.142], function (value) {
@@ -334,7 +334,7 @@ describe("tests", function () {
                 undefined,
                 null,
                 "",
-                Math.NaN,
+                Number.NaN,
                 {}
             ], function (value) {
                 expectInitThrow([value, 1]);
@@ -644,7 +644,7 @@ describe("tests", function () {
     });
 
     var expectInit = function (value, expected) {
-        var mockTest = jasmine.createStub(Test, ["constructor", "relatedTo"]);
+        var mockTest = jasmine.createStub(Test, ["constructor"]);
         mockTest.constructor.andCallThrough();
         mockTest.constructor({
             common: common,
@@ -654,15 +654,13 @@ describe("tests", function () {
     };
 
     var expectInitRelations = function (value, relations) {
-        var mockTest = jasmine.createStub(Test, ["constructor", "relatedTo"]);
+        var mockTest = jasmine.createStub(Test, ["constructor"]);
         mockTest.constructor.andCallThrough();
         mockTest.constructor({
             common: common,
             schema: value
         });
-        _.each(relations, function (relation) {
-            expect(mockTest.relatedTo).toHaveBeenCalledWith(relation);
-        });
+        expect(_.keys(mockTest.relatedTo())).toEqual(relations);
     };
 
     var expectInitThrow = function (value, exception) {
