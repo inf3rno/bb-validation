@@ -17,6 +17,14 @@ define(function (require, exports, module) {
             return instance;
         };
 
+    var Validator = Backbone.Model.extend({
+
+    }, {
+        plugin: function (plugin) {
+
+        }
+    });
+
     var TestProvider = function () {
         this.use = {};
         this.common = {};
@@ -25,12 +33,12 @@ define(function (require, exports, module) {
         plugin: function (plugin) {
             if (!_.isObject(plugin) || !_.isUndefined(plugin.use) && !_.isObject(plugin.use) || !_.isUndefined(plugin.common) && !_.isObject(plugin.common))
                 throw new TypeError("Invalid plugin format.");
-            _.each(plugin.use, function (testInfo, key) {
-                if (!_.isObject(testInfo) || !_.isFunction(testInfo.exports) || !_.isUndefined(testInfo.deps) && !_.isArray(testInfo.deps))
+            _.each(plugin.use, function (record, key) {
+                if (!_.isObject(record) || !_.isFunction(record.exports) || !_.isUndefined(record.deps) && !_.isArray(record.deps))
                     throw new TypeError("Invalid config param use." + key + " given.");
                 if (_.has(this.use, key))
                     throw new Error("Store use." + key + " already set.");
-                this.use[key] = testInfo;
+                this.use[key] = record;
             }, this);
             _.each(plugin.common, function (value, key) {
                 if (_.has(this.common, key)) {
@@ -50,37 +58,98 @@ define(function (require, exports, module) {
                     this.common[key] = value;
             }, this);
         },
-        queue: function (schema) {
-
-        },
-        createTestQueue: function (keys) {
-            var keySet = {};
-            var queue = [];
-            _.each(keys, function (key) {
-                this.add(keySet, queue, key);
-            }, this);
-            return queue;
-        },
-        add: function (keySet, queue, key) {
-            if (_.has(keySet, key))
-                return;
-            if (!_.has(this.use, key))
-                throw new SyntaxError("Test " + key + " is not registered.");
-            _.each(this.use[key].deps, function (dependency) {
-                this.add(keySet, queue, dependency);
-            }, this);
-            keySet[key] = true;
-            queue.push(key);
+        series: function (schema) {
+            var visited = {};
+            var queueSchema = {};
+            var add = function (key) {
+                if (_.has(queueSchema, key))
+                    return;
+                if (!_.has(this.use, key))
+                    throw new SyntaxError("Test " + key + " is not registered.");
+                if (_.has(visited, key))
+                    throw new SyntaxError("Circular dependency by test " + key + ".");
+                visited[key] = true;
+                _.each(this.use[key].deps, add, this);
+                var Test = this.use[key].exports;
+                var testSchema = schema[key];
+                queueSchema[key] = new Test({
+                    schema: testSchema,
+                    common: this.common
+                });
+            };
+            _.each(_.keys(schema), add, this);
+            return new SeriesQueue({
+                schema: queueSchema,
+                common: this.common
+            });
         }
     });
-    TestProvider.extend = Backbone.Model.extend;
 
+    var ParallelQueue = function () {
+    };
 
-    var Validator = Backbone.Model.extend({
-
-    }, {
-        plugin: function (plugin) {
-
+    var SeriesQueue = function (options) {
+        this.schema = options.schema;
+        this.keys = _.keys(this.schema);
+        this.relations = {};
+        _.each(this.schema, function (test) {
+            _.each(test.relatedTo(), function (key) {
+                this.relations[key] = true;
+            }, this);
+        }, this);
+    };
+    _.extend(SeriesQueue.prototype, Backbone.Events, {
+        pending: false,
+        error: false,
+        run: function (callback, value, attributes) {
+            if (this.pending)
+                this.stop();
+            this.error = false;
+            this.pending = true;
+            this.vector = 0;
+            this.value = value;
+            this.attributes = attributes;
+            this.callback = callback;
+            this.next();
+        },
+        next: function () {
+            this.key = this.keys[this.vector];
+            ++this.vector;
+            this.current = this.schema[this.key];
+            var attr = {};
+            _.each(this.current.relatedTo(), function (relation) {
+                attr[relation] = this.attributes[relation];
+            }, this);
+            this.current.run(this.done.bind(this), this.value, attr);
+        },
+        done: function (error, options) {
+            if (error || options && options.end || this.vector >= this.keys.length) {
+                if (error) {
+                    this.error = {};
+                    this.error[this.key] = error;
+                }
+                this.end();
+            }
+            else
+                this.next();
+        },
+        end: function () {
+            var callback = this.callback;
+            var error = this.error;
+            this.pending = false;
+            this.error = false;
+            this.vector = 0;
+            delete(this.value);
+            delete(this.attributes);
+            delete(this.callback);
+            callback(error);
+        },
+        stop: function () {
+            this.current.stop();
+            this.pending = false;
+        },
+        relatedTo: function () {
+            return _.keys(this.relations);
         }
     });
 
@@ -97,36 +166,49 @@ define(function (require, exports, module) {
         initialize: function (schema) {
             this.schema = schema;
         },
-        run: function (callback, value, relations) {
+        run: function (callback, value, attributes) {
             if (!_.isFunction(callback))
                 throw new TypeError("No callback given.");
             if (this.pending)
                 this.stop();
             this.pending = true;
-            this.evaluate(this.end.bind(this, this.id, callback), value, relations);
+            this.value = value;
+            this.attributes = attributes;
+            this.callback = callback;
+            this.evaluate(this.end.bind(this, this.id));
         },
-        evaluate: function (done, value, relations) {
-            done(value, relations);
+        evaluate: function (done) {
+            var error, options;
+            done(error, options);
         },
-        end: function (id, done, error, options) {
+        end: function (id, error, options) {
             if (this.id == id) {
-                done(error, options);
+                var callback = this.callback;
                 this.stop();
+                callback(error, options);
             }
         },
         stop: function () {
             this.id++;
             this.pending = false;
+            delete(this.value);
+            delete(this.attributes);
+            delete(this.callback);
+            this.abort();
+        },
+        abort: function () {
         },
         relatedTo: function () {
-            return this.relations;
+            return _.keys(this.relations);
         }
     });
-    Test.extend = Backbone.Model.extend;
+
+    TestProvider.extend = SeriesQueue.extend = Test.extend = Backbone.Model.extend;
 
     module.exports = {
         Validator: Validator,
         TestProvider: TestProvider,
+        SeriesQueue: SeriesQueue,
         Test: Test
     };
 

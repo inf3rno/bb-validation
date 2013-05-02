@@ -45,7 +45,7 @@ describe("validation.Validator", function () {
     it("creates dependency resolver with tests", function () {
         var mockModel = {
         };
-        var mockResolver = jasmine.createSpyObj("resolver", ["initialize", "createTestQueue"]);
+        var mockResolver = jasmine.createSpyObj("resolver", ["initialize", "createTestOrder"]);
         var mockRunner = jasmine.createSpyObj("runner", ["initialize", "on"]);
         var Validator2 = Validator.extend({
             DependencyResolver: function () {
@@ -70,7 +70,7 @@ describe("validation.Validator", function () {
         });
         expect(mockResolver.initialize.callCount).toEqual(1);
         expect(mockResolver.initialize).toHaveBeenCalledWith(Validator2.prototype.tests);
-        expect(mockResolver.createTestQueue.callCount).toEqual(2);
+        expect(mockResolver.createTestOrder.callCount).toEqual(2);
     });
 
     it("creates runners with dependency resolver outputs", function () {
@@ -82,8 +82,8 @@ describe("validation.Validator", function () {
         }};
         var testMap2 = {test1: function () {
         }};
-        var mockResolver = jasmine.createSpyObj("resolver", ["initialize", "createTestQueue"]);
-        mockResolver.createTestQueue.andCallFake(function (names) {
+        var mockResolver = jasmine.createSpyObj("resolver", ["initialize", "createTestOrder"]);
+        mockResolver.createTestOrder.andCallFake(function (names) {
             if (names.length == 2)
                 return testMap1;
             else if (names.length == 1)
@@ -160,7 +160,7 @@ describe("validation.Validator", function () {
     it("calls the runners by run", function () {
         var mockModel = {
         };
-        var mockResolver = jasmine.createSpyObj("resolver", ["createTestQueue"]);
+        var mockResolver = jasmine.createSpyObj("resolver", ["createTestOrder"]);
         var mockRunner = jasmine.createSpyObj("runner", ["on", "run"]);
         var Validator2 = Validator.extend({
             DependencyResolver: function () {
@@ -437,7 +437,7 @@ describe("validation.Runner", function () {
 
 describe("validation.DependencyResolver", function () {
 
-    describe("createTestQueue", function () {
+    describe("createTestOrder", function () {
         it("returns empty tests by empty schema", function () {
             expectTestOrder(
                 [],
@@ -580,7 +580,7 @@ describe("validation.DependencyResolver", function () {
             expectedKeys.push(level1Key);
             expectedTests.push(use[level1Key].exports);
         });
-        var actualLevel1Queue = resolver.createTestQueue(level3Keys);
+        var actualLevel1Queue = resolver.createTestOrder(level3Keys);
         var testMap = {};
         _.each(actualLevel1Queue, function (key) {
             testMap[key] = use[key].exports;

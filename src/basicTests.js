@@ -15,12 +15,12 @@ define(function (require, exports, module) {
         initialize: function (required) {
             this.schema = (_.isUndefined(required) || !!required);
         },
-        evaluate: function (done, value) {
-            var existence = value !== undefined;
+        evaluate: function (done) {
+            var existence = this.value !== undefined;
             if (!existence && this.schema)
                 done(true);
             else if (!existence)
-                done(false, {abort: true});
+                done(false, {end: true});
             else
                 done(false);
         }
@@ -47,16 +47,16 @@ define(function (require, exports, module) {
                 throw new TypeError("Attribute schema must be Function or type or null.");
             this.schema = type;
         },
-        evaluate: function (done, value) {
+        evaluate: function (done) {
             var passed;
-            if (_.isNaN(value))
+            if (_.isNaN(this.value))
                 passed = _.isNaN(this.schema);
             else if (_.isString(this.schema))
-                passed = (typeof(value) == this.schema);
+                passed = (typeof(this.value) == this.schema);
             else if (_.isFunction(this.schema))
-                passed = (value instanceof this.schema);
+                passed = (this.value instanceof this.schema);
             else
-                passed = (value === this.schema);
+                passed = (this.value === this.schema);
             done(!passed);
         }
     });
@@ -80,8 +80,8 @@ define(function (require, exports, module) {
                 throw new TypeError("Attribute schema must be number.");
             this.schema = min;
         },
-        evaluate: function (done, value) {
-            done(this.toNumber(value) < this.schema);
+        evaluate: function (done) {
+            done(this.toNumber(this.value) < this.schema);
         }
     });
 
@@ -91,8 +91,8 @@ define(function (require, exports, module) {
                 throw new TypeError("Attribute schema must be number.");
             this.schema = max;
         },
-        evaluate: function (done, value) {
-            done(this.toNumber(value) > this.schema);
+        evaluate: function (done) {
+            done(this.toNumber(this.value) > this.schema);
         }
     });
 
@@ -107,8 +107,8 @@ define(function (require, exports, module) {
                 throw new TypeError("Attribute schema must be range.");
             this.schema = range;
         },
-        evaluate: function (done, value) {
-            var num = this.toNumber(value);
+        evaluate: function (done) {
+            var num = this.toNumber(this.value);
             var err;
             if (num < this.schema.min)
                 err = "min";
@@ -121,18 +121,18 @@ define(function (require, exports, module) {
     });
 
     var IdenticalTest = Test.extend({
-        evaluate: function (done, value) {
-            done(value !== this.schema);
+        evaluate: function (done) {
+            done(this.value !== this.schema);
         }
     });
 
     var EqualTest = Test.extend({
-        evaluate: function (done, value) {
+        evaluate: function (done) {
             var valid;
             if (_.isObject(this.schema))
-                valid = _.isEqual(value, this.schema);
+                valid = _.isEqual(this.value, this.schema);
             else
-                valid = value === this.schema;
+                valid = this.value === this.schema;
             done(!valid);
         }
     });
@@ -143,8 +143,8 @@ define(function (require, exports, module) {
                 throw new TypeError("Attribute schema must be array.");
             this.schema = list;
         },
-        evaluate: function (done, value) {
-            done(!_.contains(this.schema, value));
+        evaluate: function (done) {
+            done(!_.contains(this.schema, this.value));
         }
     });
 
@@ -167,24 +167,24 @@ define(function (require, exports, module) {
             }, this);
             this.schema = expressions;
         },
-        toRegExp: function (value) {
+        toRegExp: function (pattern) {
             var regexp;
-            if (_.isString(value))
-                regexp = this.common.patterns[value];
+            if (_.isString(pattern))
+                regexp = this.common.patterns[pattern];
             else
-                regexp = value;
+                regexp = pattern;
             if (!_.isRegExp(regexp))
                 throw new SyntaxError("Invalid expression given.");
             return regexp;
         },
-        evaluate: function (done, value) {
+        evaluate: function (done) {
             var match = function (expression) {
-                return expression.test(value);
+                return expression.test(this.value);
             };
             var valid = true;
-            if (this.schema.all && !_.all(this.schema.all, match))
+            if (this.schema.all && !_.all(this.schema.all, match, this))
                 valid = false;
-            if (this.schema.any && !_.any(this.schema.any, match))
+            if (this.schema.any && !_.any(this.schema.any, match, this))
                 valid = false;
             done(!valid);
         }
@@ -197,8 +197,8 @@ define(function (require, exports, module) {
             this.schema = duplicationOf;
             this.relations[this.schema] = true;
         },
-        evaluate: function (done, value, attributes) {
-            done(attributes[this.schema] != value);
+        evaluate: function (done) {
+            done(this.attributes[this.schema] != this.value);
         }
     });
 

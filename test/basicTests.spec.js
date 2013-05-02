@@ -168,7 +168,7 @@ describe("tests", function () {
             expectTestResult({
                 schema: false,
                 err: false,
-                options: {abort: true}
+                options: {end: true}
             });
         });
 
@@ -660,7 +660,7 @@ describe("tests", function () {
             common: common,
             schema: value
         });
-        expect(_.keys(mockTest.relatedTo())).toEqual(relations);
+        expect(mockTest.relatedTo()).toEqual(relations);
     };
 
     var expectInitThrow = function (value, exception) {

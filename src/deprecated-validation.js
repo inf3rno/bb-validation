@@ -31,7 +31,7 @@ define(function (require, exports, module) {
             this.dependencyResolver = new this.DependencyResolver(this.tests);
             this.runners = {};
             _.each(this.schema, function (settings, attribute) {
-                var tests = this.dependencyResolver.createTestQueue(_.keys(settings));
+                var tests = this.dependencyResolver.createTestOrder(_.keys(settings));
                 _.each(settings, function (config, name) {
                     var check = this.checks[name];
                     if (check)
@@ -121,7 +121,7 @@ define(function (require, exports, module) {
         this.use = use;
     };
     _.extend(DependencyResolver.prototype, {
-        createTestQueue: function (keys) {
+        queue: function (keys) {
             var registry = {};
             var queue = [];
             _.each(keys, function (key) {

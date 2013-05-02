@@ -22,6 +22,7 @@ describe("Validator", function () {
 describe("TestProvider", function () {
 
     var TestProvider = Backbone.Validator.TestProvider;
+    var Test = Backbone.Validator.Test;
 
     it("extends the Backbone lib", function () {
         expect(TestProvider instanceof Function).toBeTruthy();
@@ -128,169 +129,506 @@ describe("TestProvider", function () {
     });
 
 
-    describe("createTestQueue", function () {
+    describe("queue", function () {
         it("returns empty tests by empty schema", function () {
-            expectTestOrder(
-                [],
-                []
-            );
+            expectDependency({}, [], {});
         });
 
         it("returns tests in schema key order if no dependency", function () {
-            expectTestOrder(
-                ["a"],
-                ["a"]
-            );
-            expectTestOrder(
-                ["a", "b"],
-                ["a", "b"]
-            );
-            expectTestOrder(
-                ["b", "a"],
-                ["b", "a"]
-            );
-            expectTestOrder(
-                ["b", "c", "a"],
-                ["b", "c", "a"]
-            );
-            expectTestOrder(
-                ["a", "b", "c"],
-                ["a", "b", "c"]
-            );
+            var use = {
+                a: {},
+                b: {}
+            };
+            expectDependency(use, ["a"], ["a"]);
+            expectDependency(use, ["a", "b"], ["a", "b"]);
         });
 
         it("returns tests in dependency and schema key order by one level depth dependencies", function () {
-            expectTestOrder(
-                ["a", "b"],
-                ["a", "b_a"]
-            );
-            expectTestOrder(
-                ["a", "b"],
-                ["b_a", "a"]
-            );
-            expectTestOrder(
-                ["a", "b"],
-                ["b_a"]
-            );
-            expectTestOrder(
-                ["a", "b", "c"],
-                ["b_a", "c_a"]
-            );
-            expectTestOrder(
-                ["a", "c", "b"],
-                ["c_a", "b_a"]
-            );
-            expectTestOrder(
-                ["a", "d", "b", "c"],
-                ["d_a", "c_a_b"]
-            );
+            var use = {
+                a: {},
+                b: {
+                    deps: ["a"]
+                }
+            };
+            expectDependency(use, ["a", "b"], ["a", "b"]);
+            expectDependency(use, ["b", "a"], ["a", "b"]);
+            expectDependency(use, ["b"], ["a", "b"]);
         });
         it("returns tests in dependency and schema key order by multi level depth dependencies", function () {
-            expectTestOrder(
-                ["a", "b", "c"],
-                ["a", "b_a", "c_ba"]
-            );
-            expectTestOrder(
-                ["a", "b", "c"],
-                ["a", "c_ba", "b_a"]
-            );
-            expectTestOrder(
-                ["a", "b", "c"],
-                ["c_ba", "b_a"]
-            );
-            expectTestOrder(
-                ["a", "b", "c"],
-                ["b_a", "c_ba"]
-            );
-            expectTestOrder(
-                ["a", "b", "c"],
-                ["c_ba"]
-            );
-            expectTestOrder(
-                ["a", "d", "b", "c"],
-                ["d_a", "c_ba"]
-            );
-            expectTestOrder(
-                ["a", "b", "c", "d"],
-                ["c_ba", "d_a"]
-            );
-            expectTestOrder(
-                ["a", "d", "b", "e", "c"],
-                ["d_a", "e_ba", "c_ba"]
-            );
+            var use = {
+                a: {},
+                b: {
+                    deps: ["a"]
+                },
+                c: {
+                    deps: ["b"]
+                }
+            };
+            expectDependency(use, ["a", "b", "c"], ["a", "b", "c"]);
+            expectDependency(use, ["b", "c", "a"], ["a", "b", "c"]);
+            expectDependency(use, ["c", "b", "a"], ["a", "b", "c"]);
+            expectDependency(use, ["a", "c"], ["a", "b", "c"]);
+            expectDependency(use, ["c", "a"], ["a", "b", "c"]);
+            expectDependency(use, ["b", "c"], ["a", "b", "c"]);
+            expectDependency(use, ["c", "b"], ["a", "b", "c"]);
+            expectDependency(use, ["c"], ["a", "b", "c"]);
+
+            var use = {
+                a: {
+                    deps: ["b", "c"]
+                },
+                b: {
+                    deps: ["d"]
+                },
+                c: {
+                    deps: ["d"]
+                },
+                d: {}
+            };
+
+            expectDependency(use, ["a"], ["d", "b", "c", "a"]);
+        });
+
+        it("prevents circular dependency", function () {
+            var aa = {
+                a: {
+                    deps: ["a"]
+                }
+            };
+            expectCircularDependency(aa, ["a"], "a");
+
+            var aba = {
+                a: {
+                    deps: ["b"]
+                },
+                b: {
+                    deps: ["a"]
+                }
+            };
+            expectCircularDependency(aba, ["a"], "a");
+            expectCircularDependency(aba, ["b"], "b");
+            expectCircularDependency(aba, ["a", "b"], "a");
+            expectCircularDependency(aba, ["b", "a"], "b");
+
+        });
+
+        it("instantiates the tests in proper order", function () {
+            var Tests = {
+                a: Test.extend(),
+                b: Test.extend(),
+                c: Test.extend(),
+                d: Test.extend()
+            };
+            var use = {
+                a: {
+                    deps: ["b", "c"],
+                    exports: Tests.a
+                },
+                b: {
+                    deps: ["d"],
+                    exports: Tests.b
+                },
+                c: {
+                    deps: ["d"],
+                    exports: Tests.c
+                },
+                d: {
+                    exports: Tests.d
+                }
+            };
+
+            expectTestClasses(use, ["a"], [Tests.d, Tests.b, Tests.c, Tests.a]);
+        });
+
+        it("adds common & schema to every test instance", function () {
+            var use = {
+                a: {
+                    deps: ["b", "c"]
+                },
+                b: {
+                    deps: ["d"]
+                },
+                c: {
+                    deps: ["d"]
+                },
+                d: {
+                }
+            };
+            expectTestParams(use, {
+                a: 1
+            }, {
+                a: 1,
+                b: undefined,
+                c: undefined,
+                d: undefined
+            })
+            expectTestParams(use, {
+                a: 1,
+                d: 4
+            }, {
+                a: 1,
+                b: undefined,
+                c: undefined,
+                d: 4
+            });
+            expectTestParams(use, {
+                a: 1,
+                b: 2,
+                c: 3,
+                d: 4
+            }, {
+                a: 1,
+                b: 2,
+                c: 3,
+                d: 4
+            });
+            expectTestParams(use, {
+                a: 1,
+                c: 3,
+                b: 2,
+                d: 4
+            }, {
+                a: 1,
+                b: 2,
+                c: 3,
+                d: 4
+            });
+
+        })
+    });
+
+    var expectCircularDependency = function (use, keys, circularKey) {
+        var mockProvider = jasmine.createStub(TestProvider, ["constructor"]);
+        mockProvider.use = use;
+        expect(function () {
+            mockProvider.series(_.object(keys));
+        }).toThrow("Circular dependency by test " + circularKey + ".");
+    };
+
+    var expectDependency = function (use, keys, expectedOrder) {
+        var mockProvider = jasmine.createStub(TestProvider, ["constructor"]);
+        mockProvider.use = use;
+        _.each(use, function (record, key) {
+            record.exports = Test
+        });
+        mockProvider.common = {};
+        var queue = mockProvider.series(_.object(keys));
+        var actualOrder = _.keys(queue.schema);
+        expect(actualOrder).toEqual(expectedOrder);
+    };
+
+    var expectTestClasses = function (use, keys, expectedClasses) {
+        var mockProvider = jasmine.createStub(TestProvider, ["constructor"]);
+        mockProvider.use = use;
+        mockProvider.common = {};
+        var queue = mockProvider.series(_.object(keys));
+        var actualClasses = [];
+        _.each(queue.schema, function (test) {
+            actualClasses.push(test.constructor);
+        });
+        expect(actualClasses).toEqual(expectedClasses);
+    }
+
+    var expectTestParams = function (use, schema, expectedSchema) {
+        var Tests = {};
+        _.each(use, function (record, key) {
+            Tests[key] = Test.extend({
+                constructor: jasmine.createSpy(),
+                relatedTo: function () {
+                }
+            });
+            record.exports = Tests[key];
+        });
+
+        var mockProvider = jasmine.createStub(TestProvider, ["constructor"]);
+        mockProvider.use = use;
+        mockProvider.common = {x: 1};
+        mockProvider.series(schema);
+
+        _.each(expectedSchema, function (expectedParam, key) {
+            expect(Tests[key].callCount).toEqual(1);
+            expect(Tests[key]).toHaveBeenCalledWith({schema: expectedParam, common: mockProvider.common});
+        });
+
+    };
+
+
+});
+
+
+describe("SeriesQueue", function () {
+    var SeriesQueue = Backbone.Validator.SeriesQueue;
+    var Test = Backbone.Validator.Test;
+
+    describe("constructor", function () {
+        it("aggregates tests relations", function () {
+            var mockQueue = jasmine.createStub(SeriesQueue, "*");
+            mockQueue.constructor.andCallThrough();
+            mockQueue.relatedTo.andCallThrough();
+            mockQueue.constructor({
+                schema: {
+                    a: {relatedTo: function () {
+                        return ["x", "y"]
+                    }},
+                    b: {relatedTo: function () {
+                        return ["x", "z"]
+                    }}
+                }
+            });
+            expect(mockQueue.relatedTo()).toEqual(["x", "y", "z"]);
         });
     });
 
-    var expectTestOrder = function (expectedLevel1ListQueue, level3Keys) {
-        var testGenerator = 0;
-        var use = {};
-        var registerTestForKey = function (level123Key) {
-            var isRegistered = !!use[level123Key];
-            if (isRegistered)
-                return;
-            use[level123Key] = {};
-            var isLevel1 = level123Key.length == 1;
-            if (isLevel1)
-                use[level123Key].exports = ++testGenerator;
-            else {
-                var level23Key = level123Key;
-                var level23Deps = [];
+    describe("run", function () {
+        it("calls tests run in proper order", function () {
+            var order = [];
+            var next = function (callback) {
+                order.push(queue.key);
+                callback();
+            };
+            var queue = new SeriesQueue({
+                schema: mockTests({
+                    a: next,
+                    b: next,
+                    c: next
+                })
+            });
+            queue.run(function (e) {
+            });
+            expect(order).toEqual(["a", "b", "c"]);
+        });
 
-                var level23KeyParts = level123Key.split("_");
+        it("ends by error", function () {
+            var order = [];
+            var next = function (callback) {
+                order.push(queue.key);
+                callback();
+            };
+            var fail = function (callback) {
+                order.push(queue.key);
+                callback("fail");
+            };
+            var queue = new SeriesQueue({
+                schema: mockTests({
+                    a: next,
+                    b: fail,
+                    c: next
+                })
+            });
+            var error;
+            queue.run(function (e) {
+                error = e;
+            });
+            expect(order).toEqual(["a", "b"]);
+            expect(error).toEqual({b: "fail"});
+        });
 
-                var level1TestSourceKey = level23KeyParts[0];
-                registerTestForKey(level1TestSourceKey);
-                level23KeyParts.shift();
-                var flatLevel12Keys = level23KeyParts;
+        it("ends by options.end", function () {
+            var order = [];
+            var next = function (callback) {
+                order.push(queue.key);
+                callback();
+            };
+            var end = function (callback) {
+                order.push(queue.key);
+                callback(false, {end: true});
+            };
+            var queue = new SeriesQueue({
+                schema: mockTests({
+                    a: next,
+                    b: end,
+                    c: next
+                })
+            });
+            var error;
+            queue.run(function (e) {
+                error = e;
+            });
+            expect(order).toEqual(["a", "b"]);
+            expect(error).toEqual(false);
+        });
 
-                _.each(flatLevel12Keys, function (flatLevel12Key) {
-                    var isLevel2 = flatLevel12Key.length > 1;
-                    if (isLevel2) {
-                        var level2Key = flatLevel12Key.split("").join("_");
-                        registerTestForKey(level2Key);
-                        level23Deps.push(level2Key);
-                    }
-                    else {
-                        var level1Key = flatLevel12Key;
-                        registerTestForKey(level1Key);
-                        level23Deps.push(level1Key);
-                    }
+        it("is pending until the end", function () {
+            var pending = [];
+            var next = function (callback) {
+                pending.push(queue.pending);
+                callback();
+            };
+            var queue = new SeriesQueue({
+                schema: mockTests({
+                    a: next,
+                    b: next,
+                    c: next
+                })
+            });
+            pending.push(queue.pending);
+            queue.run(function (e) {
+                pending.push(queue.pending);
+            });
+            pending.push(queue.pending);
+
+            expect(pending).toEqual([false, true, true, true, false, false]);
+        });
+
+        it("calls tests run with callback, value, relatedAttributes", function () {
+            var calls = {};
+            var next = function (callback, value, attributes) {
+                calls[queue.key] = [value, attributes];
+                callback();
+            };
+            var schema = mockTests({
+                a: next,
+                b: next,
+                c: next
+            });
+            schema.a.relatedTo.andCallFake(function () {
+                return ["x", "y"];
+            });
+            schema.c.relatedTo.andCallFake(function () {
+                return ["y", "z"];
+            });
+            var queue = new SeriesQueue({
+                schema: schema
+            });
+            queue.run(function (e) {
+            }, 123, {
+                w: 0,
+                x: 1,
+                y: 2,
+                z: 3
+            });
+
+            expect(calls.a).toEqual([123, {x: 1, y: 2}]);
+            expect(calls.b).toEqual([123, {}]);
+            expect(calls.c).toEqual([123, {y: 2, z: 3}]);
+        });
+
+    });
+
+    describe("stop", function () {
+        it("calls stop on current test by stop", function () {
+            var next = function (callback) {
+                callback();
+            };
+            var wait = function (callback) {
+                setTimeout(function () {
+                    callback();
+                }, 1);
+            };
+            var schema = mockTests({
+                a: next,
+                b: wait,
+                c: next
+            });
+            var queue = new SeriesQueue({
+                schema: schema
+            });
+            var done = false;
+            runs(function () {
+                queue.run(function (e) {
+                    done = true;
                 });
-
-                use[level23Key].exports = use[level1TestSourceKey].exports;
-                use[level23Key].deps = level23Deps;
-            }
-        };
-        _.each(level3Keys, registerTestForKey);
-
-        var provider = new TestProvider();
-        provider.use = use;
-
-        var expectedKeys = [];
-        var expectedTests = [];
-        _.each(expectedLevel1ListQueue, function (level1Key) {
-            expectedKeys.push(level1Key);
-            expectedTests.push(use[level1Key].exports);
+                queue.stop();
+            });
+            waitsFor(function () {
+                return done;
+            });
+            runs(function () {
+                expect(schema.a.stop).not.toHaveBeenCalled();
+                expect(schema.b.stop).toHaveBeenCalled();
+                expect(schema.c.stop).not.toHaveBeenCalled();
+            });
         });
-        var actualLevel1Queue = provider.createTestQueue(level3Keys);
-        var testMap = {};
-        _.each(actualLevel1Queue, function (key) {
-            testMap[key] = use[key].exports;
-        }, this);
-        var actualLevel1MapQueue = testMap;
 
-        var actualKeys = [];
-        var actualTests = [];
-        var level3ToLevel1TestSourceKey = function (level123Key) {
-            var parts = level123Key.split("_");
-            return parts[0];
-        };
-        _.each(actualLevel1MapQueue, function (test, level123Key) {
-            actualKeys.push(level3ToLevel1TestSourceKey(level123Key));
-            actualTests.push(test);
+        it("is not pending after stop", function () {
+            var pending = [];
+            var next = function (callback) {
+                pending.push(queue.pending);
+                callback();
+            };
+            var wait = function (callback) {
+                setTimeout(function () {
+                    pending.push(queue.pending);
+                    callback();
+                }, 1);
+            };
+            var queue = new SeriesQueue({
+                schema: mockTests({
+                    a: next,
+                    b: wait,
+                    c: next
+                })
+            });
+            var done = false;
+            runs(function () {
+                queue.run(function (e) {
+                    done = true;
+                });
+                queue.stop();
+            });
+            waitsFor(function () {
+                return done;
+            });
+            runs(function () {
+                expect(pending).toEqual([true, false, false]);
+            });
         });
-        expect(expectedKeys).toEqual(actualKeys);
-        expect(expectedTests).toEqual(actualTests);
+
+        it("stops by rerun", function () {
+            var next = function (callback) {
+                callback();
+            };
+            var wait = function (callback) {
+                setTimeout(function () {
+                    callback();
+                }, 1);
+            };
+            var mockWaitTest = jasmine.createStub(Test, ["constructor", "evaluate", "stop"]);
+            mockWaitTest.constructor.andCallThrough();
+            mockWaitTest.evaluate.andCallFake(function (done) {
+                setTimeout(function () {
+                    done();
+                }, 1);
+            });
+            mockWaitTest.stop.andCallThrough();
+            mockWaitTest.constructor({
+                common: null,
+                schema: null
+            });
+            var mockQueue = jasmine.createStub(SeriesQueue, ["constructor", "stop"]);
+            mockQueue.constructor.andCallThrough();
+            mockQueue.stop.andCallThrough();
+            mockQueue.constructor({
+                schema: {
+                    a: mockWaitTest
+                }
+            });
+
+            var done = false;
+            runs(function () {
+                mockQueue.run(function (e) {
+                });
+                mockQueue.run(function (e) {
+                    done = true;
+                });
+            });
+            waitsFor(function () {
+                return done;
+            });
+            runs(function () {
+                expect(mockWaitTest.stop).toHaveBeenCalled();
+                expect(mockQueue.stop).toHaveBeenCalled();
+            });
+        });
+    });
+
+    var mockTests = function (spies) {
+        var schema = {};
+        _.each(spies, function (spy, key) {
+            schema[key] = jasmine.createStub(Test, "*");
+            schema[key].run.andCallFake(spy);
+        });
+        return schema;
     };
 
 });
