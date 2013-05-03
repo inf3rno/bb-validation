@@ -58,35 +58,95 @@ define(function (require, exports, module) {
                     this.common[key] = value;
             }, this);
         },
+        parallel: function (schema) {
+            var queueSchema = {};
+            _.each(_.keys(schema), function (attribute) {
+                queueSchema[attribute] = this.series(schema[attribute]);
+            }, this);
+            return new ParallelQueue({
+                schema: queueSchema,
+                common: this.common
+            });
+        },
         series: function (schema) {
             var visited = {};
             var queueSchema = {};
             var add = function (key) {
                 if (_.has(queueSchema, key))
                     return;
-                if (!_.has(this.use, key))
-                    throw new SyntaxError("Test " + key + " is not registered.");
                 if (_.has(visited, key))
                     throw new SyntaxError("Circular dependency by test " + key + ".");
                 visited[key] = true;
                 _.each(this.use[key].deps, add, this);
-                var Test = this.use[key].exports;
-                var testSchema = schema[key];
-                queueSchema[key] = new Test({
-                    schema: testSchema,
-                    common: this.common
-                });
+                queueSchema[key] = this.test(key, schema[key]);
             };
             _.each(_.keys(schema), add, this);
             return new SeriesQueue({
                 schema: queueSchema,
                 common: this.common
             });
+        },
+        test: function (key, schema) {
+            if (!_.has(this.use, key))
+                throw new SyntaxError("Test " + key + " is not registered.");
+            var Test = this.use[key].exports;
+            return new Test({
+                schema: schema,
+                common: this.common
+            });
         }
     });
 
-    var ParallelQueue = function () {
+    var ParallelQueue = function (options) {
+        this.schema = options.schema;
+        this.relations = {};
+        _.each(this.schema, function (test) {
+            _.each(test.relatedTo(), function (key) {
+                this.relations[key] = true;
+            }, this);
+        }, this);
     };
+    _.extend(ParallelQueue.prototype, Backbone.Events, {
+        pending: 0,
+        error: false,
+        run: function (callback, value, attributes) {
+            this.callback = callback;
+            _.each(this.schema, function (test, attribute) {
+                var attr = {};
+                _.each(test.relatedTo(), function (relation) {
+                    attr[relation] = attributes[relation];
+                }, this);
+                ++this.pending;
+                test.run(this.done.bind(this, attribute), attributes[attribute], attr);
+            }, this);
+        },
+        done: function (attribute, error, options) {
+            --this.pending;
+            if (error) {
+                if (!this.error)
+                    this.error = {};
+                this.error[attribute] = error;
+            }
+            if (!this.pending)
+                this.end();
+        },
+        end: function () {
+            this.callback(this.error);
+        },
+        stop: function () {
+            if (!this.pending)
+                return;
+            _.each(this.schema, function (test) {
+                if (test.pending) {
+                    test.stop();
+                    --this.pending;
+                }
+            });
+        },
+        relatedTo: function () {
+            return _.keys(this.relations);
+        }
+    });
 
     var SeriesQueue = function (options) {
         this.schema = options.schema;
@@ -209,6 +269,7 @@ define(function (require, exports, module) {
         Validator: Validator,
         TestProvider: TestProvider,
         SeriesQueue: SeriesQueue,
+        ParallelQueue: ParallelQueue,
         Test: Test
     };
 

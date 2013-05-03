@@ -128,8 +128,7 @@ describe("TestProvider", function () {
 
     });
 
-
-    describe("queue", function () {
+    describe("series", function () {
         it("returns empty tests by empty schema", function () {
             expectDependency({}, [], {});
         });
@@ -355,6 +354,180 @@ describe("TestProvider", function () {
 
 });
 
+describe("ParallelQueue", function () {
+    var ParallelQueue = Backbone.Validator.ParallelQueue;
+    var Test = Backbone.Validator.Test;
+
+    describe("constructor", function () {
+        it("aggregates tests relations", function () {
+            var mockQueue = jasmine.createStub(ParallelQueue, "*");
+            mockQueue.constructor.andCallThrough();
+            mockQueue.relatedTo.andCallThrough();
+            mockQueue.constructor({
+                schema: {
+                    a: {relatedTo: function () {
+                        return ["x", "y"]
+                    }},
+                    b: {relatedTo: function () {
+                        return ["x", "z"]
+                    }}
+                }
+            });
+            expect(mockQueue.relatedTo()).toEqual(["x", "y", "z"]);
+        });
+    });
+
+    describe("run", function () {
+
+        it("calls tests parallel, and ends when every test is done", function () {
+            var callCount = 0;
+            var wait = function (callback) {
+                setTimeout(function () {
+                    ++callCount;
+                    callback();
+                }, 1);
+            };
+            var queue = new ParallelQueue({
+                schema: mockTests({
+                    a: wait,
+                    b: wait
+                })
+            });
+            var done = false;
+            runs(function () {
+                queue.run(function (e) {
+                    done = true;
+                }, null, {});
+            }, null, {});
+            waitsFor(function () {
+                return done;
+            });
+            runs(function () {
+                expect(callCount).toEqual(2);
+            });
+        });
+
+        it("continues by error", function () {
+            var order = [];
+            var error = function (callback) {
+                setTimeout(function () {
+                    order.push("e");
+                    callback(true);
+                }, 1);
+            };
+            var wait = function (callback) {
+                setTimeout(function () {
+                    order.push("w");
+                    callback();
+                }, 1);
+            };
+            var queue = new ParallelQueue({
+                schema: mockTests({
+                    a: error,
+                    b: wait
+                })
+            });
+            var done = false;
+            runs(function () {
+                queue.run(function (e) {
+                    done = true;
+                }, null, {});
+            });
+            waitsFor(function () {
+                return done;
+            });
+            runs(function () {
+                expect(order).toEqual(["e", "w"]);
+            });
+        });
+
+        it("aggregates errors", function () {
+            var error1 = function (callback) {
+                setTimeout(function () {
+                    callback("error 1");
+                }, 1);
+            };
+            var error2 = function (callback) {
+                setTimeout(function () {
+                    callback("error 2");
+                }, 1);
+            };
+            var wait = function (callback) {
+                setTimeout(function () {
+                    callback();
+                }, 1);
+            };
+            var queue = new ParallelQueue({
+                schema: mockTests({
+                    a: error1,
+                    b: wait,
+                    c: error2
+                })
+            });
+            var done = false;
+            var error = false;
+            runs(function () {
+                queue.run(function (e) {
+                    error = e;
+                    done = true;
+                }, null, {});
+            });
+            waitsFor(function () {
+                return done;
+            });
+            runs(function () {
+                expect(error).toEqual({a: "error 1", c: "error 2"});
+            });
+        });
+
+    });
+    describe("stop", function () {
+        it("stops every running test", function () {
+            var next = function (callback) {
+                callback();
+            };
+            var wait = function (callback) {
+                this.pending = true;
+                setTimeout(function () {
+                    this.pending = false;
+                    callback();
+                }, 1);
+            };
+            var tests = mockTests({
+                a: wait,
+                b: next,
+                c: wait
+            });
+            var queue = new ParallelQueue({
+                schema: tests
+            });
+            var done = false;
+            runs(function () {
+                queue.run(function (e) {
+                    done = true;
+                }, null, {});
+                queue.stop();
+            });
+            waitsFor(function () {
+                return done;
+            });
+            runs(function () {
+                expect(tests.a.stop).toHaveBeenCalled();
+                expect(tests.b.stop).not.toHaveBeenCalled();
+                expect(tests.c.stop).toHaveBeenCalled();
+            });
+        });
+    });
+
+    var mockTests = function (spies) {
+        var schema = {};
+        _.each(spies, function (spy, key) {
+            schema[key] = jasmine.createStub(Test, "*");
+            schema[key].run.andCallFake(spy);
+        });
+        return schema;
+    };
+});
 
 describe("SeriesQueue", function () {
     var SeriesQueue = Backbone.Validator.SeriesQueue;
