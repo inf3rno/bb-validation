@@ -18,10 +18,39 @@ define(function (require, exports, module) {
         };
 
     var Validator = Backbone.Model.extend({
+        provider: null,
+        constructor: function (options) {
+            if (options.provider)
+                this.provider = options.provider;
+            Backbone.Model.call(this);
+        },
+        run: function () {
 
-    }, {
+        },
         plugin: function (plugin) {
-
+            this.provider.plugin(plugin);
+        },
+        parallel: function (schema) {
+            var parallelSchema = {};
+            _.each(_.keys(schema), function (attribute) {
+                parallelSchema[attribute] = this.series(schema[attribute]);
+            }, this);
+            return this.provider.test("parallel", parallelSchema);
+        },
+        series: function (schema) {
+            var visited = {};
+            var seriesSchema = {};
+            var add = function (key) {
+                if (_.has(seriesSchema, key))
+                    return;
+                if (_.has(visited, key))
+                    throw new SyntaxError("Circular dependency by test " + key + ".");
+                visited[key] = true;
+                _.each(this.provider.deps(key), add, this);
+                seriesSchema[key] = this.provider.test(key, schema[key]);
+            };
+            _.each(_.keys(schema), add, this);
+            return this.provider.test("series", seriesSchema);
         }
     });
 
@@ -58,34 +87,6 @@ define(function (require, exports, module) {
                     this.common[key] = value;
             }, this);
         },
-        parallel: function (schema) {
-            var queueSchema = {};
-            _.each(_.keys(schema), function (attribute) {
-                queueSchema[attribute] = this.series(schema[attribute]);
-            }, this);
-            return new ParallelQueue({
-                schema: queueSchema,
-                common: this.common
-            });
-        },
-        series: function (schema) {
-            var visited = {};
-            var queueSchema = {};
-            var add = function (key) {
-                if (_.has(queueSchema, key))
-                    return;
-                if (_.has(visited, key))
-                    throw new SyntaxError("Circular dependency by test " + key + ".");
-                visited[key] = true;
-                _.each(this.use[key].deps, add, this);
-                queueSchema[key] = this.test(key, schema[key]);
-            };
-            _.each(_.keys(schema), add, this);
-            return new SeriesQueue({
-                schema: queueSchema,
-                common: this.common
-            });
-        },
         test: function (key, schema) {
             if (!_.has(this.use, key))
                 throw new SyntaxError("Test " + key + " is not registered.");
@@ -94,6 +95,11 @@ define(function (require, exports, module) {
                 schema: schema,
                 common: this.common
             });
+        },
+        deps: function (key) {
+            if (!_.has(this.use, key))
+                throw new SyntaxError("Test " + key + " is not registered.");
+            return this.use[key].deps;
         }
     });
 
@@ -265,14 +271,30 @@ define(function (require, exports, module) {
 
     TestProvider.extend = SeriesQueue.extend = Test.extend = Backbone.Model.extend;
 
-    module.exports = {
-        Validator: Validator,
+    var provider = new TestProvider();
+    provider.plugin({
+        use: {
+            parallel: {
+                exports: ParallelQueue
+            },
+            series: {
+                exports: SeriesQueue
+            },
+            test: {
+                exports: Test
+            }
+        }
+    });
+    Validator.prototype.provider = provider;
+
+
+    _.extend(Validator, {
         TestProvider: TestProvider,
         SeriesQueue: SeriesQueue,
         ParallelQueue: ParallelQueue,
         Test: Test
-    };
+    });
 
-    _.extend(Validator, _.omit(module.exports, "Validator"));
+    module.exports = Validator;
     Backbone.Validator = Validator;
 });

@@ -10,122 +10,12 @@ require("../src/backbone-validator");
 describe("Validator", function () {
 
     var Validator = Backbone.Validator;
-
-    it("extends the Backbone lib", function () {
-        expect(Validator instanceof Function).toBeTruthy();
-        expect(Validator.extend instanceof Function).toBeTruthy();
-    });
-
-});
-
-
-describe("TestProvider", function () {
-
     var TestProvider = Backbone.Validator.TestProvider;
     var Test = Backbone.Validator.Test;
 
     it("extends the Backbone lib", function () {
-        expect(TestProvider instanceof Function).toBeTruthy();
-        expect(TestProvider.extend instanceof Function).toBeTruthy();
-    });
-
-    describe("plugin", function () {
-        it("should throw exception by invalid format", function () {
-            var store = new TestProvider();
-            expect(function () {
-                store.plugin();
-            }).toThrow("Invalid plugin format.");
-        });
-
-        it("should accept empty object", function () {
-            var store = new TestProvider();
-            expect(function () {
-                store.plugin({})
-            }).not.toThrow();
-        });
-
-        it("should parse config", function () {
-            var store = new TestProvider();
-            store.plugin({
-                use: {
-                    test1: {
-                        exports: Backbone.Validator.Test
-                    }
-                }
-            });
-            expect(store.use.test1.exports).toEqual(Backbone.Validator.Test);
-        });
-
-        it("should prevent test conflicts", function () {
-            var store = new TestProvider();
-            var plugin = {
-                use: {
-                    test1: {
-                        exports: Backbone.Validator.Test
-                    }
-                }
-            };
-            store.plugin(plugin);
-            expect(function () {
-                store.plugin(plugin);
-            }).toThrow("Store use.test1 already set.");
-        });
-
-        it("should append common collections", function () {
-            var store = new TestProvider();
-            store.plugin({
-                common: {
-                    map: {
-                        a: 1
-                    },
-                    list: ["a"]
-                }
-            });
-            store.plugin({
-                common: {
-                    map: {
-                        b: 2
-                    },
-                    list: ["b"]
-                }
-            });
-            expect(store.common).toEqual({
-                map: {
-                    a: 1,
-                    b: 2
-                },
-                list: ["a", "b"]
-            });
-        });
-
-        it("should prevent common conflicts", function () {
-            var store = new TestProvider();
-            var plugin = {
-                common: {
-                    a: "a"
-                }
-            };
-            store.plugin(plugin);
-            expect(function () {
-                store.plugin(plugin);
-            }).toThrow("Store common.a already set.");
-        });
-
-        it("should prevent common map conflicts", function () {
-            var store = new TestProvider();
-            var plugin = {
-                common: {
-                    map: {
-                        a: "a"
-                    }
-                }
-            };
-            store.plugin(plugin);
-            expect(function () {
-                store.plugin(plugin);
-            }).toThrow("Store common.map.a already set.");
-        });
-
+        expect(Validator instanceof Function).toBeTruthy();
+        expect(Validator.extend instanceof Function).toBeTruthy();
     });
 
     describe("series", function () {
@@ -296,36 +186,54 @@ describe("TestProvider", function () {
         })
     });
 
+
     var expectCircularDependency = function (use, keys, circularKey) {
-        var mockProvider = jasmine.createStub(TestProvider, ["constructor"]);
-        mockProvider.use = use;
+        _.each(use, function (record) {
+            record.exports = Test;
+        });
+
+        var validator = new Validator({
+            provider: new TestProvider()
+        });
+        validator.plugin(Validator.prototype.provider);
+        validator.plugin({use: use});
+
         expect(function () {
-            mockProvider.series(_.object(keys));
+            validator.series(_.object(keys));
         }).toThrow("Circular dependency by test " + circularKey + ".");
     };
 
     var expectDependency = function (use, keys, expectedOrder) {
-        var mockProvider = jasmine.createStub(TestProvider, ["constructor"]);
-        mockProvider.use = use;
-        _.each(use, function (record, key) {
-            record.exports = Test
+        _.each(use, function (record) {
+            record.exports = Test;
         });
-        mockProvider.common = {};
-        var queue = mockProvider.series(_.object(keys));
+
+        var validator = new Validator({
+            provider: new TestProvider()
+        });
+        validator.plugin(Validator.prototype.provider);
+        validator.plugin({use: use});
+
+        var queue = validator.series(_.object(keys));
         var actualOrder = _.keys(queue.schema);
         expect(actualOrder).toEqual(expectedOrder);
+
     };
 
     var expectTestClasses = function (use, keys, expectedClasses) {
-        var mockProvider = jasmine.createStub(TestProvider, ["constructor"]);
-        mockProvider.use = use;
-        mockProvider.common = {};
-        var queue = mockProvider.series(_.object(keys));
+        var validator = new Validator({
+            provider: new TestProvider()
+        });
+        validator.plugin(Validator.prototype.provider);
+        validator.plugin({use: use});
+
+        var queue = validator.series(_.object(keys));
         var actualClasses = [];
         _.each(queue.schema, function (test) {
             actualClasses.push(test.constructor);
         });
         expect(actualClasses).toEqual(expectedClasses);
+
     }
 
     var expectTestParams = function (use, schema, expectedSchema) {
@@ -339,10 +247,14 @@ describe("TestProvider", function () {
             record.exports = Tests[key];
         });
 
-        var mockProvider = jasmine.createStub(TestProvider, ["constructor"]);
-        mockProvider.use = use;
-        mockProvider.common = {x: 1};
-        mockProvider.series(schema);
+        var mockProvider = new TestProvider();
+        var validator = new Validator({
+            provider: mockProvider
+        });
+        validator.plugin(Validator.prototype.provider);
+        validator.plugin({use: use, common: {x: 1}});
+
+        validator.series(schema);
 
         _.each(expectedSchema, function (expectedParam, key) {
             expect(Tests[key].callCount).toEqual(1);
@@ -350,7 +262,117 @@ describe("TestProvider", function () {
         });
 
     };
+});
 
+
+describe("TestProvider", function () {
+
+    var TestProvider = Backbone.Validator.TestProvider;
+    var Test = Backbone.Validator.Test;
+
+    it("extends the Backbone lib", function () {
+        expect(TestProvider instanceof Function).toBeTruthy();
+        expect(TestProvider.extend instanceof Function).toBeTruthy();
+    });
+
+    describe("plugin", function () {
+        it("should throw exception by invalid format", function () {
+            var store = new TestProvider();
+            expect(function () {
+                store.plugin();
+            }).toThrow("Invalid plugin format.");
+        });
+
+        it("should accept empty object", function () {
+            var store = new TestProvider();
+            expect(function () {
+                store.plugin({})
+            }).not.toThrow();
+        });
+
+        it("should parse config", function () {
+            var store = new TestProvider();
+            store.plugin({
+                use: {
+                    test1: {
+                        exports: Backbone.Validator.Test
+                    }
+                }
+            });
+            expect(store.use.test1.exports).toEqual(Backbone.Validator.Test);
+        });
+
+        it("should prevent test conflicts", function () {
+            var store = new TestProvider();
+            var plugin = {
+                use: {
+                    test1: {
+                        exports: Backbone.Validator.Test
+                    }
+                }
+            };
+            store.plugin(plugin);
+            expect(function () {
+                store.plugin(plugin);
+            }).toThrow("Store use.test1 already set.");
+        });
+
+        it("should append common collections", function () {
+            var store = new TestProvider();
+            store.plugin({
+                common: {
+                    map: {
+                        a: 1
+                    },
+                    list: ["a"]
+                }
+            });
+            store.plugin({
+                common: {
+                    map: {
+                        b: 2
+                    },
+                    list: ["b"]
+                }
+            });
+            expect(store.common).toEqual({
+                map: {
+                    a: 1,
+                    b: 2
+                },
+                list: ["a", "b"]
+            });
+        });
+
+        it("should prevent common conflicts", function () {
+            var store = new TestProvider();
+            var plugin = {
+                common: {
+                    a: "a"
+                }
+            };
+            store.plugin(plugin);
+            expect(function () {
+                store.plugin(plugin);
+            }).toThrow("Store common.a already set.");
+        });
+
+        it("should prevent common map conflicts", function () {
+            var store = new TestProvider();
+            var plugin = {
+                common: {
+                    map: {
+                        a: "a"
+                    }
+                }
+            };
+            store.plugin(plugin);
+            expect(function () {
+                store.plugin(plugin);
+            }).toThrow("Store common.map.a already set.");
+        });
+
+    });
 
 });
 
