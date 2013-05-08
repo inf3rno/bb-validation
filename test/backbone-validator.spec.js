@@ -317,31 +317,28 @@ describe("TestProvider", function () {
             }).toThrow("Store use.test1 already set.");
         });
 
-        it("should append common collections", function () {
+        it("should merge common maps", function () {
             var store = new TestProvider();
+            var base = {a: 1};
             store.plugin({
                 common: {
-                    map: {
-                        a: 1
-                    },
-                    list: ["a"]
+                    map: base
                 }
             });
             store.plugin({
                 common: {
                     map: {
                         b: 2
-                    },
-                    list: ["b"]
+                    }
                 }
             });
             expect(store.common).toEqual({
                 map: {
                     a: 1,
                     b: 2
-                },
-                list: ["a", "b"]
+                }
             });
+            expect(base).toEqual({a: 1});
         });
 
         it("should prevent common conflicts", function () {

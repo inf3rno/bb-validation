@@ -69,22 +69,24 @@ define(function (require, exports, module) {
                     throw new Error("Store use." + key + " already set.");
                 this.use[key] = record;
             }, this);
+            var isMap = function (o) {
+                return _.isObject(o) && o.constructor === Object;
+            };
             _.each(plugin.common, function (value, key) {
-                if (_.has(this.common, key)) {
-                    var stored = this.common[key];
-                    if (_.isArray(stored) && _.isArray(value))
-                        stored.push.apply(stored, value);
-                    else if (_.isObject(stored) && stored.constructor === Object && _.isObject(value) && value.constructor === Object)
-                        _.each(value, function (subValue, subKey) {
-                            if (_.has(stored, subKey))
-                                throw new Error("Store common." + key + "." + subKey + " already set.");
-                            stored[subKey] = subValue;
-                        });
-                    else
-                        throw new Error("Store common." + key + " already set.");
+                if (!_.has(this.common, key) && isMap(value))
+                    this.common[key] = {};
+                if (!_.has(this.common, key))
+                    this.common[key] = value;
+                else if (isMap(value) && isMap(this.common[key])) {
+                    var map = this.common[key];
+                    _.each(value, function (subValue, subKey) {
+                        if (_.has(map, subKey))
+                            throw new Error("Store common." + key + "." + subKey + " already set.");
+                        map[subKey] = subValue;
+                    }, this);
                 }
                 else
-                    this.common[key] = value;
+                    throw new Error("Store common." + key + " already set.");
             }, this);
         },
         test: function (key, schema) {
