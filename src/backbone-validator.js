@@ -48,8 +48,8 @@ define(function (require, exports, module) {
                 visited[key] = true;
                 _.each(this.provider.deps(key), add, this);
                 seriesSchema[key] = this.provider.test(key, schema[key]);
-            };
-            _.each(_.keys(schema), add, this);
+            }.bind(this);
+            _.each(_.keys(schema), add);
             return this.provider.test("series", seriesSchema);
         }
     });
