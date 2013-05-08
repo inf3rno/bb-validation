@@ -376,6 +376,21 @@ describe("TestProvider", function () {
 describe("ParallelQueue", function () {
     var ParallelQueue = Backbone.Validator.ParallelQueue;
     var Test = Backbone.Validator.Test;
+    var NextTest = Test.extend({
+        constructor: function () {
+            Test.call(this, {});
+        }
+    });
+    var WaitTest = Test.extend({
+        constructor: function () {
+            Test.call(this, {});
+        },
+        evaluate: function (callback) {
+            setTimeout(function () {
+                callback();
+            }.bind(this), 1);
+        }
+    });
 
     describe("constructor", function () {
         it("aggregates tests relations", function () {
@@ -502,39 +517,27 @@ describe("ParallelQueue", function () {
     });
     describe("stop", function () {
         it("stops every running test", function () {
-            var next = function (callback) {
-                callback();
+            var tests = {
+                a: jasmine.createStub(WaitTest, ["stop"]),
+                b: jasmine.createStub(NextTest, ["stop"]),
+                c: jasmine.createStub(WaitTest, ["stop"])
             };
-            var wait = function (callback) {
-                this.pending = true;
-                setTimeout(function () {
-                    this.pending = false;
-                    callback();
-                }, 1);
-            };
-            var tests = mockTests({
-                a: wait,
-                b: next,
-                c: wait
+            _.each(tests, function (test) {
+                test.stop.andCallThrough();
             });
+
             var queue = new ParallelQueue({
                 schema: tests
             });
-            var done = false;
-            runs(function () {
-                queue.run(function (e) {
-                    done = true;
-                }, null, {});
-                queue.stop();
-            });
-            waitsFor(function () {
-                return done;
-            });
-            runs(function () {
-                expect(tests.a.stop).toHaveBeenCalled();
-                expect(tests.b.stop).not.toHaveBeenCalled();
-                expect(tests.c.stop).toHaveBeenCalled();
-            });
+
+            queue.run(function () {
+            }, null, {});
+            queue.stop();
+
+            expect(tests.a.stop).toHaveBeenCalled();
+            expect(tests.b.stop).not.toHaveBeenCalled();
+            expect(tests.c.stop).toHaveBeenCalled();
+
         });
     });
 

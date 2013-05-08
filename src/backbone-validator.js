@@ -117,6 +117,9 @@ define(function (require, exports, module) {
     _.extend(ParallelQueue.prototype, Backbone.Events, {
         pending: 0,
         error: false,
+        relatedTo: function () {
+            return _.keys(this.relations);
+        },
         run: function (callback, value, attributes) {
             this.callback = callback;
             _.each(this.schema, function (test, attribute) {
@@ -149,10 +152,7 @@ define(function (require, exports, module) {
                     test.stop();
                     --this.pending;
                 }
-            });
-        },
-        relatedTo: function () {
-            return _.keys(this.relations);
+            }, this);
         }
     });
 
@@ -169,6 +169,9 @@ define(function (require, exports, module) {
     _.extend(SeriesQueue.prototype, Backbone.Events, {
         pending: false,
         error: false,
+        relatedTo: function () {
+            return _.keys(this.relations);
+        },
         run: function (callback, value, attributes) {
             if (this.pending)
                 this.stop();
@@ -204,20 +207,20 @@ define(function (require, exports, module) {
         end: function () {
             var callback = this.callback;
             var error = this.error;
-            this.pending = false;
-            this.error = false;
-            this.vector = 0;
-            delete(this.value);
-            delete(this.attributes);
-            delete(this.callback);
+            this.reset();
             callback(error);
         },
         stop: function () {
             this.current.stop();
             this.pending = false;
         },
-        relatedTo: function () {
-            return _.keys(this.relations);
+        reset: function () {
+            this.pending = false;
+            this.error = false;
+            this.vector = 0;
+            delete(this.value);
+            delete(this.attributes);
+            delete(this.callback);
         }
     });
 
@@ -233,6 +236,9 @@ define(function (require, exports, module) {
         id: 0,
         initialize: function (schema) {
             this.schema = schema;
+        },
+        relatedTo: function () {
+            return _.keys(this.relations);
         },
         run: function (callback, value, attributes) {
             if (!_.isFunction(callback))
@@ -252,22 +258,22 @@ define(function (require, exports, module) {
         end: function (id, error, options) {
             if (this.id == id) {
                 var callback = this.callback;
-                this.stop();
+                this.reset();
                 callback(error, options);
             }
         },
         stop: function () {
+            this.reset();
+            this.abort();
+        },
+        reset: function () {
             this.id++;
             this.pending = false;
             delete(this.value);
             delete(this.attributes);
             delete(this.callback);
-            this.abort();
         },
         abort: function () {
-        },
-        relatedTo: function () {
-            return _.keys(this.relations);
         }
     });
 
