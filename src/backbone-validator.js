@@ -116,11 +116,7 @@ define(function (require, exports, module) {
 
     var ParallelQueue = function (options) {
         this.schema = options.schema;
-        this.relations = {};
         _.each(this.schema, function (test, attribute) {
-            _.each(test.relatedTo(), function (key) {
-                this.relations[key] = true;
-            }, this);
             test.on("end", this.done.bind(this, attribute));
         }, this);
     };
@@ -172,11 +168,7 @@ define(function (require, exports, module) {
     var SeriesQueue = function (options) {
         this.schema = options.schema;
         this.keys = _.keys(this.schema);
-        this.relations = {};
         _.each(this.schema, function (test) {
-            _.each(test.relatedTo(), function (key) {
-                this.relations[key] = true;
-            }, this);
             test.on("end", this.done.bind(this));
         }, this);
     };
