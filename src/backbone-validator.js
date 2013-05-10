@@ -108,10 +108,11 @@ define(function (require, exports, module) {
     var ParallelQueue = function (options) {
         this.schema = options.schema;
         this.relations = {};
-        _.each(this.schema, function (test) {
+        _.each(this.schema, function (test, attribute) {
             _.each(test.relatedTo(), function (key) {
                 this.relations[key] = true;
             }, this);
+            test.on("end", this.done.bind(this, attribute));
         }, this);
     };
     _.extend(ParallelQueue.prototype, Backbone.Events, {
@@ -120,12 +121,11 @@ define(function (require, exports, module) {
         relatedTo: function () {
             return _.keys(this.relations);
         },
-        run: function (callback, value, attributes) {
+        run: function (value, attributes) {
             if (this.pending)
                 this.stop();
             else
                 this.reset();
-            this.callback = callback;
             this.trigger("run");
             _.each(this.schema, function (test, attribute) {
                 var attr = {};
@@ -133,7 +133,7 @@ define(function (require, exports, module) {
                     attr[relation] = attributes[relation];
                 }, this);
                 ++this.pending;
-                test.run(this.done.bind(this, attribute), attributes[attribute], attr);
+                test.run(attributes[attribute], attr);
             }, this);
         },
         done: function (attribute, error, options) {
@@ -147,8 +147,7 @@ define(function (require, exports, module) {
                 this.end();
         },
         end: function () {
-            this.trigger("end");
-            this.callback(this.error);
+            this.trigger("end", this.error);
         },
         stop: function () {
             if (!this.pending)
@@ -174,6 +173,7 @@ define(function (require, exports, module) {
             _.each(test.relatedTo(), function (key) {
                 this.relations[key] = true;
             }, this);
+            test.on("end", this.done.bind(this));
         }, this);
     };
     _.extend(SeriesQueue.prototype, Backbone.Events, {
@@ -182,7 +182,7 @@ define(function (require, exports, module) {
         relatedTo: function () {
             return _.keys(this.relations);
         },
-        run: function (callback, value, attributes) {
+        run: function (value, attributes) {
             if (this.pending)
                 this.stop();
             else
@@ -191,7 +191,6 @@ define(function (require, exports, module) {
             this.vector = 0;
             this.value = value;
             this.attributes = attributes;
-            this.callback = callback;
             this.trigger("run");
             this.next();
         },
@@ -203,7 +202,7 @@ define(function (require, exports, module) {
             _.each(this.current.relatedTo(), function (relation) {
                 attr[relation] = this.attributes[relation];
             }, this);
-            this.current.run(this.done.bind(this), this.value, attr);
+            this.current.run(this.value, attr);
         },
         done: function (error, options) {
             if (error || options && options.end || this.vector >= this.keys.length) {
@@ -217,11 +216,8 @@ define(function (require, exports, module) {
                 this.next();
         },
         end: function () {
-            var callback = this.callback;
-            var error = this.error;
-            this.reset();
-            this.trigger("end");
-            callback(error);
+            this.pending = false;
+            this.trigger("end", this.error);
         },
         stop: function () {
             this.current.stop();
@@ -234,7 +230,6 @@ define(function (require, exports, module) {
             this.vector = 0;
             delete(this.value);
             delete(this.attributes);
-            delete(this.callback);
         }
     });
 
@@ -254,15 +249,12 @@ define(function (require, exports, module) {
         relatedTo: function () {
             return _.keys(this.relations);
         },
-        run: function (callback, value, attributes) {
-            if (!_.isFunction(callback))
-                throw new TypeError("No callback given.");
+        run: function (value, attributes) {
             if (this.pending)
                 this.stop();
             this.pending = true;
             this.value = value;
             this.attributes = attributes;
-            this.callback = callback;
             this.trigger("run");
             this.evaluate(this.end.bind(this, this.id));
         },
@@ -272,10 +264,8 @@ define(function (require, exports, module) {
         },
         end: function (id, error, options) {
             if (this.id == id) {
-                var callback = this.callback;
                 this.reset();
-                this.trigger("end");
-                callback(error, options);
+                this.trigger("end", error, options);
             }
         },
         stop: function () {
@@ -288,7 +278,6 @@ define(function (require, exports, module) {
             this.pending = false;
             delete(this.value);
             delete(this.attributes);
-            delete(this.callback);
         },
         abort: function () {
         }

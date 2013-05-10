@@ -688,13 +688,14 @@ describe("tests", function () {
             schema: params.schema
         });
         runs(function () {
-            mockTest.run(function (err, options) {
+            mockTest.on("end", function (err, options) {
                 actual = {
                     err: err,
                     options: options
                 };
                 isDone = true;
-            }, params.value, params.relations);
+            });
+            mockTest.run(params.value, params.relations);
         });
         waitsFor(function () {
             return isDone == true;

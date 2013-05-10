@@ -404,20 +404,23 @@ describe("TestProvider", function () {
 describe("ParallelQueue", function () {
     describe("constructor", function () {
         it("aggregates tests relations", function () {
-            var mockQueue = jasmine.createStub(ParallelQueue, "*");
-            mockQueue.constructor.andCallThrough();
-            mockQueue.relatedTo.andCallThrough();
-            mockQueue.constructor({
+            var createTest = function (Test, relations) {
+                var test = jasmine.createStub(Test, ["relatedTo"]);
+                test.relatedTo.andCallFake(function () {
+                    return relations;
+                });
+                return test;
+            };
+            var queue = jasmine.createStub(ParallelQueue, "*");
+            queue.constructor.andCallThrough();
+            queue.relatedTo.andCallThrough();
+            queue.constructor({
                 schema: {
-                    a: {relatedTo: function () {
-                        return ["x", "y"]
-                    }},
-                    b: {relatedTo: function () {
-                        return ["x", "z"]
-                    }}
+                    a: createTest(NextTest, ["x", "y"]),
+                    b: createTest(NextTest, ["x", "z"])
                 }
             });
-            expect(mockQueue.relatedTo()).toEqual(["x", "y", "z"]);
+            expect(queue.relatedTo()).toEqual(["x", "y", "z"]);
         });
     });
 
@@ -425,9 +428,9 @@ describe("ParallelQueue", function () {
 
         it("calls tests parallel, and ends when every test is done", function () {
             var createTest = function (Test) {
-                var wait = jasmine.createStub(Test, ["run"]);
-                wait.run.andCallThrough();
-                return wait;
+                var test = jasmine.createStub(Test, ["run"]);
+                test.run.andCallThrough();
+                return test;
             };
             var tests = {
                 a: createTest(AsyncNextTest),
@@ -437,8 +440,7 @@ describe("ParallelQueue", function () {
                 schema: tests
             });
             runs(function () {
-                queue.run(function (e) {
-                }, null, {});
+                queue.run(null, {});
                 expect(tests.a.run).toHaveBeenCalled();
                 expect(tests.b.run).toHaveBeenCalled();
                 expect(queue.pending).toBeTruthy();
@@ -472,8 +474,7 @@ describe("ParallelQueue", function () {
             });
             var done = false;
             runs(function () {
-                queue.run(function (e) {
-                }, null, {});
+                queue.run(null, {});
             });
             waitsFor(function () {
                 return !queue.pending;
@@ -494,10 +495,11 @@ describe("ParallelQueue", function () {
                 }
             });
             var error = false;
+            queue.on("end", function () {
+                error = this.error;
+            });
             runs(function () {
-                queue.run(function (e) {
-                    error = e;
-                }, null, {});
+                queue.run(null, {});
             });
             waitsFor(function () {
                 return !queue.pending;
@@ -523,8 +525,7 @@ describe("ParallelQueue", function () {
                 schema: tests
             });
 
-            queue.run(function () {
-            }, null, {});
+            queue.run(null, {});
             queue.stop();
 
             expect(tests.a.stop).toHaveBeenCalled();
@@ -579,8 +580,7 @@ describe("SeriesQueue", function () {
             var queue = new SeriesQueue({
                 schema: tests
             });
-            queue.run(function (e) {
-            });
+            queue.run();
             expect(tests.a.run).toHaveBeenCalled();
             expect(tests.b.run).toHaveBeenCalled();
             expect(tests.c.run).toHaveBeenCalled();
@@ -602,9 +602,10 @@ describe("SeriesQueue", function () {
                 schema: tests
             });
             var error;
-            queue.run(function (e) {
-                error = e;
+            queue.on("end", function () {
+                error = this.error;
             });
+            queue.run();
             expect(tests.a.run).toHaveBeenCalled();
             expect(tests.b.run).toHaveBeenCalled();
             expect(tests.c.run).not.toHaveBeenCalled();
@@ -626,9 +627,10 @@ describe("SeriesQueue", function () {
                 schema: tests
             });
             var error;
-            queue.run(function (e) {
-                error = e;
+            queue.on("end", function () {
+                error = this.error;
             });
+            queue.run();
             expect(tests.a.run).toHaveBeenCalled();
             expect(tests.b.run).toHaveBeenCalled();
             expect(tests.c.run).not.toHaveBeenCalled();
@@ -636,25 +638,29 @@ describe("SeriesQueue", function () {
         });
 
         it("is pending until the end", function () {
-            var test = jasmine.createStub(NextTest, ["run"]);
-            test.run.andCallThrough();
+            var createTest = function (Test) {
+                var test = jasmine.createStub(Test, ["run"]);
+                test.run.andCallThrough();
+                return test;
+            };
+            var tests = {
+                a: createTest(NextTest),
+                b: createTest(NextTest),
+                c: createTest(NextTest)
+            };
             var queue = new SeriesQueue({
-                schema: {
-                    a: test,
-                    b: test,
-                    c: test
-                }
+                schema: tests
             });
             var pending = [];
             var isPending = function () {
                 pending.push(queue.pending);
             };
             queue.on("run", isPending);
-            test.on("run", isPending);
+            tests.a.on("run", isPending);
+            tests.b.on("run", isPending);
+            tests.c.on("run", isPending);
             queue.on("end", isPending);
-            queue.run(function () {
-            });
-            expect(test.run.callCount).toEqual(3);
+            queue.run();
             expect(pending).toEqual([true, true, true, true, false]);
         });
 
@@ -680,8 +686,7 @@ describe("SeriesQueue", function () {
                     calls[key] = [this.value, this.attributes];
                 });
             });
-            queue.run(function (e) {
-            }, 123, {
+            queue.run(123, {
                 w: 0,
                 x: 1,
                 y: 2,
@@ -711,8 +716,7 @@ describe("SeriesQueue", function () {
             });
             var done = false;
             runs(function () {
-                queue.run(function () {
-                });
+                queue.run();
                 queue.stop();
             });
             waitsFor(function () {
@@ -742,10 +746,8 @@ describe("SeriesQueue", function () {
                 done = true;
             });
             runs(function () {
-                queue.run(function () {
-                });
-                queue.run(function () {
-                });
+                queue.run();
+                queue.run();
             });
             waitsFor(function () {
                 return done;
@@ -800,15 +802,11 @@ describe("Test", function () {
     });
 
     describe("run", function () {
-        it("throws exception if no callback given", function () {
-            var test = jasmine.createStub(Test, ["constructor", "evaluate"])
-            expect(test.run).toThrow("No callback given.");
-        });
-
         it("calls test method but no callback", function () {
             var test = jasmine.createStub(Test, ["constructor", "evaluate"]);
             var callback = jasmine.createSpy();
-            test.run(callback);
+            test.on("end", callback);
+            test.run();
             expect(test.evaluate).toHaveBeenCalled();
             expect(callback).not.toHaveBeenCalled();
         });
@@ -824,8 +822,7 @@ describe("Test", function () {
             });
             var test = jasmine.createStub(SyncTest, ["constructor"]);
             states.push(test.pending);
-            test.run(function () {
-            });
+            test.run();
             states.push(test.pending);
             expect(states).toEqual([false, true, false, false]);
         });
@@ -845,9 +842,10 @@ describe("Test", function () {
             var ended = false;
             runs(function () {
                 states.push(test.pending);
-                test.run(function () {
+                test.on("end", function () {
                     ended = true;
                 });
+                test.run();
             });
             waitsFor(function () {
                 return ended == true;
@@ -879,7 +877,8 @@ describe("Test", function () {
             });
             var test = jasmine.createStub(StopTest, ["constructor"]);
             var callback = jasmine.createSpy();
-            test.run(callback);
+            test.on("end", callback);
+            test.run();
             expect(callback).not.toHaveBeenCalled();
         });
 
@@ -894,8 +893,7 @@ describe("Test", function () {
                 }
             });
             var test = jasmine.createStub(StopTest, ["constructor"]);
-            test.run(function () {
-            });
+            test.run();
             expect(states).toEqual([true, false]);
         });
 
@@ -911,13 +909,14 @@ describe("Test", function () {
             var test = jasmine.createStub(StopTest, ["constructor"]);
             var callback = jasmine.createSpy();
             stop = false;
-            test.run(callback);
+            test.on("end", callback);
+            test.run();
             expect(callback.callCount).toEqual(1);
             stop = true;
-            test.run(callback);
+            test.run();
             expect(callback.callCount).toEqual(1);
             stop = false;
-            test.run(callback);
+            test.run();
             expect(callback.callCount).toEqual(2);
         });
 
@@ -933,8 +932,9 @@ describe("Test", function () {
             });
             var test = jasmine.createStub(AsyncTest, ["constructor"]);
             var callback = jasmine.createSpy();
+            test.on("end", callback);
             runs(function () {
-                test.run(callback);
+                test.run();
                 test.stop();
             });
             waitsFor(function () {
@@ -957,21 +957,22 @@ describe("Test", function () {
                 }
             });
             var test = jasmine.createStub(AsyncTest, ["constructor"]);
-            var callback1 = jasmine.createSpy();
-            var callback2 = jasmine.createSpy();
+            var callback = jasmine.createSpy();
             runs(function () {
                 delay = 1;
-                test.run(callback1);
+                test.on("end", callback);
+                test.run();
                 test.stop();
                 delay = 2;
-                test.run(callback2);
+                test.run();
             });
             waitsFor(function () {
                 return next == 2;
             });
             runs(function () {
-                expect(callback1).not.toHaveBeenCalled();
-                expect(callback2).toHaveBeenCalled();
+                expect(callback).toHaveBeenCalled();
+                expect(callback.callCount).toEqual(1);
+
             });
         });
 
