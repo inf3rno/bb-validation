@@ -124,8 +124,6 @@ define(function (require, exports, module) {
         run: function (value, attributes) {
             if (this.pending)
                 this.stop();
-            else
-                this.reset();
             this.trigger("run");
             _.each(this.schema, function (test, attribute) {
                 var attr = {};
@@ -147,7 +145,9 @@ define(function (require, exports, module) {
                 this.end();
         },
         end: function () {
-            this.trigger("end", this.error);
+            var error = this.error;
+            this.reset();
+            this.trigger("end", error);
         },
         stop: function () {
             if (!this.pending)
@@ -185,8 +185,6 @@ define(function (require, exports, module) {
         run: function (value, attributes) {
             if (this.pending)
                 this.stop();
-            else
-                this.reset();
             this.pending = true;
             this.vector = 0;
             this.value = value;
@@ -216,8 +214,9 @@ define(function (require, exports, module) {
                 this.next();
         },
         end: function () {
-            this.pending = false;
-            this.trigger("end", this.error);
+            var error = this.error;
+            this.reset();
+            this.trigger("end", error);
         },
         stop: function () {
             this.current.stop();

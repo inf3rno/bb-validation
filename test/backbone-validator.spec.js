@@ -495,8 +495,8 @@ describe("ParallelQueue", function () {
                 }
             });
             var error = false;
-            queue.on("end", function () {
-                error = this.error;
+            queue.on("end", function (e) {
+                error = e;
             });
             runs(function () {
                 queue.run(null, {});
@@ -602,8 +602,8 @@ describe("SeriesQueue", function () {
                 schema: tests
             });
             var error;
-            queue.on("end", function () {
-                error = this.error;
+            queue.on("end", function (e) {
+                error = e;
             });
             queue.run();
             expect(tests.a.run).toHaveBeenCalled();
@@ -627,8 +627,8 @@ describe("SeriesQueue", function () {
                 schema: tests
             });
             var error;
-            queue.on("end", function () {
-                error = this.error;
+            queue.on("end", function (e) {
+                error = e;
             });
             queue.run();
             expect(tests.a.run).toHaveBeenCalled();
