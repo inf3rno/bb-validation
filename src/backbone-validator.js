@@ -153,8 +153,10 @@ define(function (require, exports, module) {
             if (!this.pending)
                 return;
             _.each(this.schema, function (test) {
-                if (test.pending)
+                if (test.pending) {
                     test.stop();
+                    --this.pending;
+                }
             });
             this.reset();
             this.trigger("stop");
