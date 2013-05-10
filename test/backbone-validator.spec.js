@@ -223,11 +223,12 @@ describe("Validator", function () {
             record.exports = Test;
         });
 
-        var validator = new Validator({
+        var CustomValidator = Validator.extend({
             provider: new TestProvider()
         });
-        validator.plugin(Validator.prototype.provider);
-        validator.plugin({use: use});
+        CustomValidator.plugin(Validator.prototype.provider);
+        CustomValidator.plugin({use: use});
+        var validator = jasmine.createStub(CustomValidator, ["constructor"]);
 
         expect(function () {
             validator.series(_.object(keys));
@@ -239,11 +240,12 @@ describe("Validator", function () {
             record.exports = Test;
         });
 
-        var validator = new Validator({
+        var CustomValidator = Validator.extend({
             provider: new TestProvider()
         });
-        validator.plugin(Validator.prototype.provider);
-        validator.plugin({use: use});
+        CustomValidator.plugin(Validator.prototype.provider);
+        CustomValidator.plugin({use: use});
+        var validator = jasmine.createStub(CustomValidator, ["constructor"]);
 
         var queue = validator.series(_.object(keys));
         var actualOrder = _.keys(queue.schema);
@@ -252,11 +254,12 @@ describe("Validator", function () {
     };
 
     var expectTestClasses = function (use, keys, expectedClasses) {
-        var validator = new Validator({
+        var CustomValidator = Validator.extend({
             provider: new TestProvider()
         });
-        validator.plugin(Validator.prototype.provider);
-        validator.plugin({use: use});
+        CustomValidator.plugin(Validator.prototype.provider);
+        CustomValidator.plugin({use: use});
+        var validator = jasmine.createStub(CustomValidator, ["constructor"]);
 
         var queue = validator.series(_.object(keys));
         var actualClasses = [];
@@ -278,18 +281,19 @@ describe("Validator", function () {
             record.exports = Tests[key];
         });
 
-        var mockProvider = new TestProvider();
-        var validator = new Validator({
-            provider: mockProvider
+        var provider = new TestProvider();
+        var CustomValidator = Validator.extend({
+            provider: provider
         });
-        validator.plugin(Validator.prototype.provider);
-        validator.plugin({use: use, common: {x: 1}});
+        CustomValidator.plugin(Validator.prototype.provider);
+        CustomValidator.plugin({use: use, common: {x: 1}});
 
+        var validator = jasmine.createStub(CustomValidator, ["constructor"]);
         validator.series(schema);
 
         _.each(expectedSchema, function (expectedParam, key) {
             expect(Tests[key].callCount).toEqual(1);
-            expect(Tests[key]).toHaveBeenCalledWith({schema: expectedParam, common: mockProvider.common});
+            expect(Tests[key]).toHaveBeenCalledWith({schema: expectedParam, common: provider.common});
         });
 
     };
@@ -303,24 +307,24 @@ describe("TestProvider", function () {
         expect(TestProvider.extend instanceof Function).toBeTruthy();
     });
 
-    describe("plugin", function () {
+    describe("merge", function () {
         it("should throw exception by invalid format", function () {
             var store = new TestProvider();
             expect(function () {
-                store.plugin();
+                store.merge();
             }).toThrow("Invalid plugin format.");
         });
 
         it("should accept empty object", function () {
             var store = new TestProvider();
             expect(function () {
-                store.plugin({})
+                store.merge({})
             }).not.toThrow();
         });
 
         it("should parse config", function () {
             var store = new TestProvider();
-            store.plugin({
+            store.merge({
                 use: {
                     test1: {
                         exports: Backbone.Validator.Test
@@ -339,21 +343,21 @@ describe("TestProvider", function () {
                     }
                 }
             };
-            store.plugin(plugin);
+            store.merge(plugin);
             expect(function () {
-                store.plugin(plugin);
+                store.merge(plugin);
             }).toThrow("Store use.test1 already set.");
         });
 
         it("should merge common maps", function () {
             var store = new TestProvider();
             var base = {a: 1};
-            store.plugin({
+            store.merge({
                 common: {
                     map: base
                 }
             });
-            store.plugin({
+            store.merge({
                 common: {
                     map: {
                         b: 2
@@ -376,9 +380,9 @@ describe("TestProvider", function () {
                     a: "a"
                 }
             };
-            store.plugin(plugin);
+            store.merge(plugin);
             expect(function () {
-                store.plugin(plugin);
+                store.merge(plugin);
             }).toThrow("Store common.a already set.");
         });
 
@@ -391,9 +395,9 @@ describe("TestProvider", function () {
                     }
                 }
             };
-            store.plugin(plugin);
+            store.merge(plugin);
             expect(function () {
-                store.plugin(plugin);
+                store.merge(plugin);
             }).toThrow("Store common.map.a already set.");
         });
 
@@ -402,27 +406,6 @@ describe("TestProvider", function () {
 });
 
 describe("ParallelQueue", function () {
-    describe("constructor", function () {
-        it("aggregates tests relations", function () {
-            var createTest = function (Test, relations) {
-                var test = jasmine.createStub(Test, ["relatedTo"]);
-                test.relatedTo.andCallFake(function () {
-                    return relations;
-                });
-                return test;
-            };
-            var queue = jasmine.createStub(ParallelQueue, "*");
-            queue.constructor.andCallThrough();
-            queue.relatedTo.andCallThrough();
-            queue.constructor({
-                schema: {
-                    a: createTest(NextTest, ["x", "y"]),
-                    b: createTest(NextTest, ["x", "z"])
-                }
-            });
-            expect(queue.relatedTo()).toEqual(["x", "y", "z"]);
-        });
-    });
 
     describe("run", function () {
 
@@ -539,28 +522,6 @@ describe("ParallelQueue", function () {
 
 describe("SeriesQueue", function () {
 
-    describe("constructor", function () {
-        it("aggregates tests relations", function () {
-            var createTest = function (Test, relations) {
-                var test = jasmine.createStub(Test, ["relatedTo"]);
-                test.relatedTo.andCallFake(function () {
-                    return relations;
-                });
-                return test;
-            };
-            var queue = jasmine.createStub(SeriesQueue, "*");
-            queue.constructor.andCallThrough();
-            queue.relatedTo.andCallThrough();
-            queue.constructor({
-                schema: {
-                    a: createTest(NextTest, ["x", "y"]),
-                    b: createTest(NextTest, ["x", "z"])
-                }
-            });
-            expect(queue.relatedTo()).toEqual(["x", "y", "z"]);
-        });
-    });
-
     describe("run", function () {
         it("calls tests run in proper order", function () {
             var endingOrder = [];
@@ -662,39 +623,6 @@ describe("SeriesQueue", function () {
             queue.on("end", isPending);
             queue.run();
             expect(pending).toEqual([true, true, true, true, false]);
-        });
-
-        it("calls tests run with callback, value, relatedAttributes", function () {
-            var createTest = function (Test, relations) {
-                var test = jasmine.createStub(Test, ["relatedTo"]);
-                test.relatedTo.andCallFake(function () {
-                    return relations;
-                });
-                return test;
-            };
-            var tests = {
-                a: createTest(NextTest, ["x", "y"]),
-                b: createTest(NextTest, []),
-                c: createTest(NextTest, ["y", "z"])
-            };
-            var queue = new SeriesQueue({
-                schema: tests
-            });
-            var calls = {};
-            _.each(tests, function (test, key) {
-                test.on("run", function () {
-                    calls[key] = [this.value, this.attributes];
-                });
-            });
-            queue.run(123, {
-                w: 0,
-                x: 1,
-                y: 2,
-                z: 3
-            });
-            expect(calls.a).toEqual([123, {x: 1, y: 2}]);
-            expect(calls.b).toEqual([123, {}]);
-            expect(calls.c).toEqual([123, {y: 2, z: 3}]);
         });
 
     });

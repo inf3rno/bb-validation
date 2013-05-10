@@ -20,15 +20,20 @@ define(function (require, exports, module) {
     var Validator = Backbone.Model.extend({
         provider: null,
         constructor: function (options) {
-            if (options.provider)
-                this.provider = options.provider;
             Backbone.Model.call(this);
+            this.test = this.parallel(options.schema);
         },
         run: function () {
-
-        },
-        plugin: function (plugin) {
-            this.provider.plugin(plugin);
+            //lefuttatja a tesztet minden elemre
+            //ez azt hiszem így jó is...
+            //elindítja a binding-et ezen kívül, ami figyeli a model változásokat
+            //a relatedTo rész az kikerülhet belőle, és egy az egyben tovább lehet adni az attribútumokat -> így gyorsabb a kód
+            //mégse -> mármint egy az egyben tovább lehet adni az attribútumokat, de a relatedTo mégis jó
+            //arra kell a relatedTo, hogy a realTime binder-nek jelezze, hogy kapcsolat van a tesztek között
+            //rossz helyen van a relatedTo, nem lehet általános teszteket írni a használatával
+            //a realTime binder-nek tudnia kell valahonnan, hogy 1-1 alsóbb rendű teszt kapcsolatban áll 1-1 attribútummal
+            //nagy itt a káosz...
+            this.test.run(value, attributes);
         },
         parallel: function (schema) {
             var parallelSchema = {};
@@ -52,6 +57,10 @@ define(function (require, exports, module) {
             _.each(_.keys(schema), add);
             return this.provider.test("series", seriesSchema);
         }
+    }, {
+        plugin: function (plugin) {
+            this.prototype.provider.merge(plugin);
+        }
     });
 
     var TestProvider = function () {
@@ -59,7 +68,7 @@ define(function (require, exports, module) {
         this.common = {};
     };
     _.extend(TestProvider.prototype, {
-        plugin: function (plugin) {
+        merge: function (plugin) {
             if (!_.isObject(plugin) || !_.isUndefined(plugin.use) && !_.isObject(plugin.use) || !_.isUndefined(plugin.common) && !_.isObject(plugin.common))
                 throw new TypeError("Invalid plugin format.");
             _.each(plugin.use, function (record, key) {
@@ -118,20 +127,13 @@ define(function (require, exports, module) {
     _.extend(ParallelQueue.prototype, Backbone.Events, {
         pending: 0,
         error: false,
-        relatedTo: function () {
-            return _.keys(this.relations);
-        },
         run: function (value, attributes) {
             if (this.pending)
                 this.stop();
             this.trigger("run");
             _.each(this.schema, function (test, attribute) {
-                var attr = {};
-                _.each(test.relatedTo(), function (relation) {
-                    attr[relation] = attributes[relation];
-                }, this);
                 ++this.pending;
-                test.run(attributes[attribute], attr);
+                test.run(attributes[attribute], attributes);
             }, this);
         },
         done: function (attribute, error, options) {
@@ -181,9 +183,6 @@ define(function (require, exports, module) {
     _.extend(SeriesQueue.prototype, Backbone.Events, {
         pending: false,
         error: false,
-        relatedTo: function () {
-            return _.keys(this.relations);
-        },
         run: function (value, attributes) {
             if (this.pending)
                 this.stop();
@@ -198,11 +197,7 @@ define(function (require, exports, module) {
             this.key = this.keys[this.vector];
             ++this.vector;
             this.current = this.schema[this.key];
-            var attr = {};
-            _.each(this.current.relatedTo(), function (relation) {
-                attr[relation] = this.attributes[relation];
-            }, this);
-            this.current.run(this.value, attr);
+            this.current.run(this.value, this.attributes);
         },
         done: function (error, options) {
             if (error || options && options.end || this.vector >= this.keys.length) {
@@ -286,8 +281,8 @@ define(function (require, exports, module) {
 
     TestProvider.extend = SeriesQueue.extend = Test.extend = Backbone.Model.extend;
 
-    var provider = new TestProvider();
-    provider.plugin({
+    Validator.prototype.provider = new TestProvider();
+    Validator.plugin({
         use: {
             parallel: {
                 exports: ParallelQueue
@@ -300,7 +295,6 @@ define(function (require, exports, module) {
             }
         }
     });
-    Validator.prototype.provider = provider;
 
 
     _.extend(Validator, {
