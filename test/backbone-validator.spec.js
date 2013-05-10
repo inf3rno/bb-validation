@@ -6,12 +6,43 @@ var _ = require("underscore"),
     Backbone = require("backbone");
 require("../src/backbone-validator");
 
+var Validator = Backbone.Validator;
+var TestProvider = Backbone.Validator.TestProvider;
+var ParallelQueue = Backbone.Validator.ParallelQueue;
+var SeriesQueue = Backbone.Validator.SeriesQueue;
+var Test = Backbone.Validator.Test;
+var NextTest = Test.extend({
+    constructor: function (param) {
+        this.param = param;
+        Test.call(this, {});
+    }
+});
+var ErrorTest = NextTest.extend({
+    evaluate: function (callback) {
+        callback(this.param || true);
+    }
+});
+var EndTest = NextTest.extend({
+    evaluate: function (callback) {
+        callback(false, {end: true});
+    }
+});
+var AsyncNextTest = NextTest.extend({
+    evaluate: function (callback) {
+        setTimeout(function () {
+            callback();
+        }.bind(this), 1);
+    }
+});
+var AsyncErrorTest = NextTest.extend({
+    evaluate: function (callback) {
+        setTimeout(function () {
+            callback(this.param || true);
+        }.bind(this), 1);
+    }
+});
 
 describe("Validator", function () {
-
-    var Validator = Backbone.Validator;
-    var TestProvider = Backbone.Validator.TestProvider;
-    var Test = Backbone.Validator.Test;
 
     it("extends the Backbone lib", function () {
         expect(Validator instanceof Function).toBeTruthy();
@@ -267,9 +298,6 @@ describe("Validator", function () {
 
 describe("TestProvider", function () {
 
-    var TestProvider = Backbone.Validator.TestProvider;
-    var Test = Backbone.Validator.Test;
-
     it("extends the Backbone lib", function () {
         expect(TestProvider instanceof Function).toBeTruthy();
         expect(TestProvider.extend instanceof Function).toBeTruthy();
@@ -374,24 +402,6 @@ describe("TestProvider", function () {
 });
 
 describe("ParallelQueue", function () {
-    var ParallelQueue = Backbone.Validator.ParallelQueue;
-    var Test = Backbone.Validator.Test;
-    var NextTest = Test.extend({
-        constructor: function () {
-            Test.call(this, {});
-        }
-    });
-    var WaitTest = Test.extend({
-        constructor: function () {
-            Test.call(this, {});
-        },
-        evaluate: function (callback) {
-            setTimeout(function () {
-                callback();
-            }.bind(this), 1);
-        }
-    });
-
     describe("constructor", function () {
         it("aggregates tests relations", function () {
             var mockQueue = jasmine.createStub(ParallelQueue, "*");
@@ -414,103 +424,86 @@ describe("ParallelQueue", function () {
     describe("run", function () {
 
         it("calls tests parallel, and ends when every test is done", function () {
-            var callCount = 0;
-            var wait = function (callback) {
-                setTimeout(function () {
-                    ++callCount;
-                    callback();
-                }, 1);
+            var createTest = function (Test) {
+                var wait = jasmine.createStub(Test, ["run"]);
+                wait.run.andCallThrough();
+                return wait;
+            };
+            var tests = {
+                a: createTest(AsyncNextTest),
+                b: createTest(AsyncNextTest)
             };
             var queue = new ParallelQueue({
-                schema: mockTests({
-                    a: wait,
-                    b: wait
-                })
+                schema: tests
             });
-            var done = false;
             runs(function () {
                 queue.run(function (e) {
-                    done = true;
                 }, null, {});
-            }, null, {});
+                expect(tests.a.run).toHaveBeenCalled();
+                expect(tests.b.run).toHaveBeenCalled();
+                expect(queue.pending).toBeTruthy();
+            });
             waitsFor(function () {
-                return done;
+                return !queue.pending;
             });
             runs(function () {
-                expect(callCount).toEqual(2);
+                expect(tests.a.pending).toBeFalsy();
+                expect(tests.b.pending).toBeFalsy();
             });
         });
 
         it("continues by error", function () {
-            var order = [];
-            var error = function (callback) {
-                setTimeout(function () {
-                    order.push("e");
-                    callback(true);
-                }, 1);
+            var endingOrder = [];
+            var createTest = function (Test) {
+                var test = jasmine.createStub(Test, ["run"]);
+                test.run.andCallThrough();
+                test.on("end", function () {
+                    endingOrder.push(Test);
+                });
+                return test;
             };
-            var wait = function (callback) {
-                setTimeout(function () {
-                    order.push("w");
-                    callback();
-                }, 1);
+            var tests = {
+                a: createTest(AsyncErrorTest),
+                b: createTest(AsyncNextTest)
             };
+
             var queue = new ParallelQueue({
-                schema: mockTests({
-                    a: error,
-                    b: wait
-                })
+                schema: tests
             });
             var done = false;
             runs(function () {
                 queue.run(function (e) {
-                    done = true;
                 }, null, {});
             });
             waitsFor(function () {
-                return done;
+                return !queue.pending;
             });
             runs(function () {
-                expect(order).toEqual(["e", "w"]);
+                expect(tests.a.run).toHaveBeenCalled();
+                expect(tests.b.run).toHaveBeenCalled();
+                expect(endingOrder).toEqual([AsyncErrorTest, AsyncNextTest]);
             });
         });
 
         it("aggregates errors", function () {
-            var error1 = function (callback) {
-                setTimeout(function () {
-                    callback("error 1");
-                }, 1);
-            };
-            var error2 = function (callback) {
-                setTimeout(function () {
-                    callback("error 2");
-                }, 1);
-            };
-            var wait = function (callback) {
-                setTimeout(function () {
-                    callback();
-                }, 1);
-            };
             var queue = new ParallelQueue({
-                schema: mockTests({
-                    a: error1,
-                    b: wait,
-                    c: error2
-                })
+                schema: {
+                    a: new AsyncErrorTest(1),
+                    b: new AsyncNextTest(),
+                    c: new AsyncErrorTest(2)
+                }
             });
-            var done = false;
             var error = false;
             runs(function () {
                 queue.run(function (e) {
                     error = e;
-                    done = true;
                 }, null, {});
             });
             waitsFor(function () {
-                return done;
+                return !queue.pending;
             });
             runs(function () {
-                expect(error).toEqual({a: "error 1", c: "error 2"});
+                expect(error).toEqual({a: 1, c: 2});
             });
         });
 
@@ -518,9 +511,9 @@ describe("ParallelQueue", function () {
     describe("stop", function () {
         it("stops every running test", function () {
             var tests = {
-                a: jasmine.createStub(WaitTest, ["stop"]),
+                a: jasmine.createStub(AsyncNextTest, ["stop"]),
                 b: jasmine.createStub(NextTest, ["stop"]),
-                c: jasmine.createStub(WaitTest, ["stop"])
+                c: jasmine.createStub(AsyncNextTest, ["stop"])
             };
             _.each(tests, function (test) {
                 test.stop.andCallThrough();
@@ -541,149 +534,151 @@ describe("ParallelQueue", function () {
         });
     });
 
-    var mockTests = function (spies) {
-        var schema = {};
-        _.each(spies, function (spy, key) {
-            schema[key] = jasmine.createStub(Test, "*");
-            schema[key].run.andCallFake(spy);
-        });
-        return schema;
-    };
 });
 
 describe("SeriesQueue", function () {
-    var SeriesQueue = Backbone.Validator.SeriesQueue;
-    var Test = Backbone.Validator.Test;
 
     describe("constructor", function () {
         it("aggregates tests relations", function () {
-            var mockQueue = jasmine.createStub(SeriesQueue, "*");
-            mockQueue.constructor.andCallThrough();
-            mockQueue.relatedTo.andCallThrough();
-            mockQueue.constructor({
+            var createTest = function (Test, relations) {
+                var test = jasmine.createStub(Test, ["relatedTo"]);
+                test.relatedTo.andCallFake(function () {
+                    return relations;
+                });
+                return test;
+            };
+            var queue = jasmine.createStub(SeriesQueue, "*");
+            queue.constructor.andCallThrough();
+            queue.relatedTo.andCallThrough();
+            queue.constructor({
                 schema: {
-                    a: {relatedTo: function () {
-                        return ["x", "y"]
-                    }},
-                    b: {relatedTo: function () {
-                        return ["x", "z"]
-                    }}
+                    a: createTest(NextTest, ["x", "y"]),
+                    b: createTest(NextTest, ["x", "z"])
                 }
             });
-            expect(mockQueue.relatedTo()).toEqual(["x", "y", "z"]);
+            expect(queue.relatedTo()).toEqual(["x", "y", "z"]);
         });
     });
 
     describe("run", function () {
         it("calls tests run in proper order", function () {
-            var order = [];
-            var next = function (callback) {
-                order.push(queue.key);
-                callback();
+            var endingOrder = [];
+            var createTest = function (Test, id) {
+                var test = jasmine.createStub(Test, ["run"]);
+                test.run.andCallThrough();
+                test.on("end", function () {
+                    endingOrder.push(id);
+                });
+                return test;
+            };
+            var tests = {
+                a: createTest(NextTest, 1),
+                b: createTest(NextTest, 2),
+                c: createTest(NextTest, 3)
             };
             var queue = new SeriesQueue({
-                schema: mockTests({
-                    a: next,
-                    b: next,
-                    c: next
-                })
+                schema: tests
             });
             queue.run(function (e) {
             });
-            expect(order).toEqual(["a", "b", "c"]);
+            expect(tests.a.run).toHaveBeenCalled();
+            expect(tests.b.run).toHaveBeenCalled();
+            expect(tests.c.run).toHaveBeenCalled();
+            expect(endingOrder).toEqual([1, 2, 3]);
         });
 
         it("ends by error", function () {
-            var order = [];
-            var next = function (callback) {
-                order.push(queue.key);
-                callback();
+            var createTest = function (Test) {
+                var test = jasmine.createStub(Test, ["run"]);
+                test.run.andCallThrough();
+                return test;
             };
-            var fail = function (callback) {
-                order.push(queue.key);
-                callback("fail");
+            var tests = {
+                a: createTest(NextTest),
+                b: createTest(ErrorTest),
+                c: createTest(NextTest)
             };
             var queue = new SeriesQueue({
-                schema: mockTests({
-                    a: next,
-                    b: fail,
-                    c: next
-                })
+                schema: tests
             });
             var error;
             queue.run(function (e) {
                 error = e;
             });
-            expect(order).toEqual(["a", "b"]);
-            expect(error).toEqual({b: "fail"});
+            expect(tests.a.run).toHaveBeenCalled();
+            expect(tests.b.run).toHaveBeenCalled();
+            expect(tests.c.run).not.toHaveBeenCalled();
+            expect(error).toEqual({b: true});
         });
 
         it("ends by options.end", function () {
-            var order = [];
-            var next = function (callback) {
-                order.push(queue.key);
-                callback();
+            var createTest = function (Test) {
+                var test = jasmine.createStub(Test, ["run"]);
+                test.run.andCallThrough();
+                return test;
             };
-            var end = function (callback) {
-                order.push(queue.key);
-                callback(false, {end: true});
+            var tests = {
+                a: createTest(NextTest),
+                b: createTest(EndTest),
+                c: createTest(NextTest)
             };
             var queue = new SeriesQueue({
-                schema: mockTests({
-                    a: next,
-                    b: end,
-                    c: next
-                })
+                schema: tests
             });
             var error;
             queue.run(function (e) {
                 error = e;
             });
-            expect(order).toEqual(["a", "b"]);
+            expect(tests.a.run).toHaveBeenCalled();
+            expect(tests.b.run).toHaveBeenCalled();
+            expect(tests.c.run).not.toHaveBeenCalled();
             expect(error).toEqual(false);
         });
 
         it("is pending until the end", function () {
-            var pending = [];
-            var next = function (callback) {
-                pending.push(queue.pending);
-                callback();
-            };
+            var test = jasmine.createStub(NextTest, ["run"]);
+            test.run.andCallThrough();
             var queue = new SeriesQueue({
-                schema: mockTests({
-                    a: next,
-                    b: next,
-                    c: next
-                })
+                schema: {
+                    a: test,
+                    b: test,
+                    c: test
+                }
             });
-            pending.push(queue.pending);
-            queue.run(function (e) {
+            var pending = [];
+            var isPending = function () {
                 pending.push(queue.pending);
+            };
+            queue.on("run", isPending);
+            test.on("run", isPending);
+            queue.on("end", isPending);
+            queue.run(function () {
             });
-            pending.push(queue.pending);
-
-            expect(pending).toEqual([false, true, true, true, false, false]);
+            expect(test.run.callCount).toEqual(3);
+            expect(pending).toEqual([true, true, true, true, false]);
         });
 
         it("calls tests run with callback, value, relatedAttributes", function () {
-            var calls = {};
-            var next = function (callback, value, attributes) {
-                calls[queue.key] = [value, attributes];
-                callback();
+            var createTest = function (Test, relations) {
+                var test = jasmine.createStub(Test, ["relatedTo"]);
+                test.relatedTo.andCallFake(function () {
+                    return relations;
+                });
+                return test;
             };
-            var schema = mockTests({
-                a: next,
-                b: next,
-                c: next
-            });
-            schema.a.relatedTo.andCallFake(function () {
-                return ["x", "y"];
-            });
-            schema.c.relatedTo.andCallFake(function () {
-                return ["y", "z"];
-            });
+            var tests = {
+                a: createTest(NextTest, ["x", "y"]),
+                b: createTest(NextTest, []),
+                c: createTest(NextTest, ["y", "z"])
+            };
             var queue = new SeriesQueue({
-                schema: schema
+                schema: tests
+            });
+            var calls = {};
+            _.each(tests, function (test, key) {
+                test.on("run", function () {
+                    calls[key] = [this.value, this.attributes];
+                });
             });
             queue.run(function (e) {
             }, 123, {
@@ -692,7 +687,6 @@ describe("SeriesQueue", function () {
                 y: 2,
                 z: 3
             });
-
             expect(calls.a).toEqual([123, {x: 1, y: 2}]);
             expect(calls.b).toEqual([123, {}]);
             expect(calls.c).toEqual([123, {y: 2, z: 3}]);
@@ -702,134 +696,72 @@ describe("SeriesQueue", function () {
 
     describe("stop", function () {
         it("calls stop on current test by stop", function () {
-            var next = function (callback) {
-                callback();
+            var createTest = function (Test) {
+                var test = jasmine.createStub(Test, ["stop"]);
+                test.stop.andCallThrough();
+                return test;
             };
-            var wait = function (callback) {
-                setTimeout(function () {
-                    callback();
-                }, 1);
+            var tests = {
+                a: createTest(NextTest),
+                b: createTest(AsyncNextTest),
+                c: createTest(NextTest)
             };
-            var schema = mockTests({
-                a: next,
-                b: wait,
-                c: next
-            });
             var queue = new SeriesQueue({
-                schema: schema
+                schema: tests
             });
             var done = false;
             runs(function () {
-                queue.run(function (e) {
-                    done = true;
+                queue.run(function () {
                 });
                 queue.stop();
             });
             waitsFor(function () {
-                return done;
+                return !queue.pending;
             });
             runs(function () {
-                expect(schema.a.stop).not.toHaveBeenCalled();
-                expect(schema.b.stop).toHaveBeenCalled();
-                expect(schema.c.stop).not.toHaveBeenCalled();
-            });
-        });
-
-        it("is not pending after stop", function () {
-            var pending = [];
-            var next = function (callback) {
-                pending.push(queue.pending);
-                callback();
-            };
-            var wait = function (callback) {
-                setTimeout(function () {
-                    pending.push(queue.pending);
-                    callback();
-                }, 1);
-            };
-            var queue = new SeriesQueue({
-                schema: mockTests({
-                    a: next,
-                    b: wait,
-                    c: next
-                })
-            });
-            var done = false;
-            runs(function () {
-                queue.run(function (e) {
-                    done = true;
-                });
-                queue.stop();
-            });
-            waitsFor(function () {
-                return done;
-            });
-            runs(function () {
-                expect(pending).toEqual([true, false, false]);
+                expect(tests.a.stop).not.toHaveBeenCalled();
+                expect(tests.b.stop).toHaveBeenCalled();
+                expect(tests.c.stop).not.toHaveBeenCalled();
             });
         });
 
         it("stops by rerun", function () {
-            var next = function (callback) {
-                callback();
-            };
-            var wait = function (callback) {
-                setTimeout(function () {
-                    callback();
-                }, 1);
-            };
-            var mockWaitTest = jasmine.createStub(Test, ["constructor", "evaluate", "stop"]);
-            mockWaitTest.constructor.andCallThrough();
-            mockWaitTest.evaluate.andCallFake(function (done) {
-                setTimeout(function () {
-                    done();
-                }, 1);
-            });
-            mockWaitTest.stop.andCallThrough();
-            mockWaitTest.constructor({
-                common: null,
-                schema: null
-            });
-            var mockQueue = jasmine.createStub(SeriesQueue, ["constructor", "stop"]);
-            mockQueue.constructor.andCallThrough();
-            mockQueue.stop.andCallThrough();
-            mockQueue.constructor({
+            var test = jasmine.createStub(AsyncNextTest, ["run", "stop"]);
+            test.run.andCallThrough();
+            test.stop.andCallThrough();
+            var queue = jasmine.createStub(SeriesQueue, ["constructor", "stop"]);
+            queue.constructor.andCallThrough();
+            queue.stop.andCallThrough();
+            queue.constructor({
                 schema: {
-                    a: mockWaitTest
+                    a: test
                 }
             });
-
             var done = false;
+            queue.on("end", function () {
+                done = true;
+            });
             runs(function () {
-                mockQueue.run(function (e) {
+                queue.run(function () {
                 });
-                mockQueue.run(function (e) {
-                    done = true;
+                queue.run(function () {
                 });
             });
             waitsFor(function () {
                 return done;
             });
             runs(function () {
-                expect(mockWaitTest.stop).toHaveBeenCalled();
-                expect(mockQueue.stop).toHaveBeenCalled();
+                expect(queue.stop).toHaveBeenCalled();
+                expect(test.stop).toHaveBeenCalled();
+                expect(test.run.callCount).toEqual(2);
+                expect(test.stop.callCount).toEqual(1);
             });
         });
     });
 
-    var mockTests = function (spies) {
-        var schema = {};
-        _.each(spies, function (spy, key) {
-            schema[key] = jasmine.createStub(Test, "*");
-            schema[key].run.andCallFake(spy);
-        });
-        return schema;
-    };
-
 });
 
 describe("Test", function () {
-    var Test = Backbone.Validator.Test;
 
     it("is similar to Backbone classes", function () {
         expect(Test instanceof Function).toBeTruthy();
@@ -838,10 +770,10 @@ describe("Test", function () {
 
     describe("constructor", function () {
         it("throws exception if no options given", function () {
-            var mockTest = jasmine.createStub(Test, ["constructor"]);
-            mockTest.constructor.andCallThrough();
+            var test = jasmine.createStub(Test, ["constructor"]);
+            test.constructor.andCallThrough();
             expect(function () {
-                mockTest.constructor();
+                test.constructor();
             }).toThrow("Options is not set.");
         });
 
@@ -852,32 +784,32 @@ describe("Test", function () {
                 common: common,
                 schema: schema
             };
-            var mockTest = jasmine.createStub(Test, ["initialize"], [options]);
-            expect(mockTest.common).toEqual(common);
-            expect(mockTest.initialize).toHaveBeenCalledWith(schema);
+            var test = jasmine.createStub(Test, ["initialize"], [options]);
+            expect(test.common).toEqual(common);
+            expect(test.initialize).toHaveBeenCalledWith(schema);
         });
     });
 
     describe("initialize", function () {
         it("adds schema to properties by default", function () {
-            var mockTest = jasmine.createStub(Test, ["constructor"]);
+            var test = jasmine.createStub(Test, ["constructor"]);
             var schema = 1;
-            mockTest.initialize(schema);
-            expect(mockTest.schema).toEqual(schema);
+            test.initialize(schema);
+            expect(test.schema).toEqual(schema);
         });
     });
 
     describe("run", function () {
         it("throws exception if no callback given", function () {
-            var mockTest = jasmine.createStub(Test, ["constructor", "evaluate"])
-            expect(mockTest.run).toThrow("No callback given.");
+            var test = jasmine.createStub(Test, ["constructor", "evaluate"])
+            expect(test.run).toThrow("No callback given.");
         });
 
         it("calls test method but no callback", function () {
-            var mockTest = jasmine.createStub(Test, ["constructor", "evaluate"]);
+            var test = jasmine.createStub(Test, ["constructor", "evaluate"]);
             var callback = jasmine.createSpy();
-            mockTest.run(callback);
-            expect(mockTest.evaluate).toHaveBeenCalled();
+            test.run(callback);
+            expect(test.evaluate).toHaveBeenCalled();
             expect(callback).not.toHaveBeenCalled();
         });
 
@@ -890,11 +822,11 @@ describe("Test", function () {
                     states.push(this.pending);
                 }
             });
-            var mockTest = jasmine.createStub(SyncTest, ["constructor"]);
-            states.push(mockTest.pending);
-            mockTest.run(function () {
+            var test = jasmine.createStub(SyncTest, ["constructor"]);
+            states.push(test.pending);
+            test.run(function () {
             });
-            states.push(mockTest.pending);
+            states.push(test.pending);
             expect(states).toEqual([false, true, false, false]);
         });
 
@@ -908,12 +840,12 @@ describe("Test", function () {
                     }.bind(this), 1);
                 }
             });
-            var mockTest = jasmine.createStub(AsyncTest, ["constructor"]);
+            var test = jasmine.createStub(AsyncTest, ["constructor"]);
             var states = [];
             var ended = false;
             runs(function () {
-                states.push(mockTest.pending);
-                mockTest.run(function () {
+                states.push(test.pending);
+                test.run(function () {
                     ended = true;
                 });
             });
@@ -929,9 +861,9 @@ describe("Test", function () {
 
     describe("evaluate", function () {
         it("calls the given callback by default", function () {
-            var mockTest = jasmine.createStub(Test, ["constructor"]);
+            var test = jasmine.createStub(Test, ["constructor"]);
             var callback = jasmine.createSpy();
-            mockTest.evaluate(callback);
+            test.evaluate(callback);
             expect(callback).toHaveBeenCalled();
         });
     });
@@ -945,9 +877,9 @@ describe("Test", function () {
                     done();
                 }
             });
-            var mockTest = jasmine.createStub(StopTest, ["constructor"]);
+            var test = jasmine.createStub(StopTest, ["constructor"]);
             var callback = jasmine.createSpy();
-            mockTest.run(callback);
+            test.run(callback);
             expect(callback).not.toHaveBeenCalled();
         });
 
@@ -961,8 +893,8 @@ describe("Test", function () {
                     done();
                 }
             });
-            var mockTest = jasmine.createStub(StopTest, ["constructor"]);
-            mockTest.run(function () {
+            var test = jasmine.createStub(StopTest, ["constructor"]);
+            test.run(function () {
             });
             expect(states).toEqual([true, false]);
         });
@@ -976,16 +908,16 @@ describe("Test", function () {
                     done();
                 }
             });
-            var mockTest = jasmine.createStub(StopTest, ["constructor"]);
+            var test = jasmine.createStub(StopTest, ["constructor"]);
             var callback = jasmine.createSpy();
             stop = false;
-            mockTest.run(callback);
+            test.run(callback);
             expect(callback.callCount).toEqual(1);
             stop = true;
-            mockTest.run(callback);
+            test.run(callback);
             expect(callback.callCount).toEqual(1);
             stop = false;
-            mockTest.run(callback);
+            test.run(callback);
             expect(callback.callCount).toEqual(2);
         });
 
@@ -999,11 +931,11 @@ describe("Test", function () {
                     }, 1);
                 }
             });
-            var mockTest = jasmine.createStub(AsyncTest, ["constructor"]);
+            var test = jasmine.createStub(AsyncTest, ["constructor"]);
             var callback = jasmine.createSpy();
             runs(function () {
-                mockTest.run(callback);
-                mockTest.stop();
+                test.run(callback);
+                test.stop();
             });
             waitsFor(function () {
                 return next;
@@ -1024,15 +956,15 @@ describe("Test", function () {
                     }, delay);
                 }
             });
-            var mockTest = jasmine.createStub(AsyncTest, ["constructor"]);
+            var test = jasmine.createStub(AsyncTest, ["constructor"]);
             var callback1 = jasmine.createSpy();
             var callback2 = jasmine.createSpy();
             runs(function () {
                 delay = 1;
-                mockTest.run(callback1);
-                mockTest.stop();
+                test.run(callback1);
+                test.stop();
                 delay = 2;
-                mockTest.run(callback2);
+                test.run(callback2);
             });
             waitsFor(function () {
                 return next == 2;

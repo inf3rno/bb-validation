@@ -121,7 +121,12 @@ define(function (require, exports, module) {
             return _.keys(this.relations);
         },
         run: function (callback, value, attributes) {
+            if (this.pending)
+                this.stop();
+            else
+                this.reset();
             this.callback = callback;
+            this.trigger("run");
             _.each(this.schema, function (test, attribute) {
                 var attr = {};
                 _.each(test.relatedTo(), function (relation) {
@@ -142,17 +147,22 @@ define(function (require, exports, module) {
                 this.end();
         },
         end: function () {
+            this.trigger("end");
             this.callback(this.error);
         },
         stop: function () {
             if (!this.pending)
                 return;
             _.each(this.schema, function (test) {
-                if (test.pending) {
+                if (test.pending)
                     test.stop();
-                    --this.pending;
-                }
-            }, this);
+            });
+            this.reset();
+            this.trigger("stop");
+        },
+        reset: function () {
+            this.error = false;
+            this.pending = 0;
         }
     });
 
@@ -175,12 +185,14 @@ define(function (require, exports, module) {
         run: function (callback, value, attributes) {
             if (this.pending)
                 this.stop();
-            this.error = false;
+            else
+                this.reset();
             this.pending = true;
             this.vector = 0;
             this.value = value;
             this.attributes = attributes;
             this.callback = callback;
+            this.trigger("run");
             this.next();
         },
         next: function () {
@@ -208,11 +220,13 @@ define(function (require, exports, module) {
             var callback = this.callback;
             var error = this.error;
             this.reset();
+            this.trigger("end");
             callback(error);
         },
         stop: function () {
             this.current.stop();
             this.pending = false;
+            this.trigger("stop");
         },
         reset: function () {
             this.pending = false;
@@ -231,7 +245,7 @@ define(function (require, exports, module) {
         _.extend(this, _.pick(options, "common"));
         this.initialize.call(this, options.schema);
     };
-    _.extend(Test.prototype, {
+    _.extend(Test.prototype, Backbone.Events, {
         pending: false,
         id: 0,
         initialize: function (schema) {
@@ -249,6 +263,7 @@ define(function (require, exports, module) {
             this.value = value;
             this.attributes = attributes;
             this.callback = callback;
+            this.trigger("run");
             this.evaluate(this.end.bind(this, this.id));
         },
         evaluate: function (done) {
@@ -259,12 +274,14 @@ define(function (require, exports, module) {
             if (this.id == id) {
                 var callback = this.callback;
                 this.reset();
+                this.trigger("end");
                 callback(error, options);
             }
         },
         stop: function () {
             this.reset();
             this.abort();
+            this.trigger("stop");
         },
         reset: function () {
             this.id++;
