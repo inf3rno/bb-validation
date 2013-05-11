@@ -7,61 +7,6 @@ define(function (require, exports, module) {
     var _ = require("underscore"),
         Backbone = require("backbone");
 
-    if (!Object.create)
-        Object.create = function (proto) {
-            var Surrogate = function () {
-                this.constructor = Surrogate;
-            };
-            Surrogate.prototype = proto;
-            var instance = new Surrogate();
-            return instance;
-        };
-
-    var Validator = Backbone.Model.extend({
-        provider: null,
-        constructor: function (options) {
-            Backbone.Model.call(this);
-            this.test = this.parallel(options.schema);
-        },
-        run: function () {
-            //lefuttatja a tesztet minden elemre
-            //ez azt hiszem így jó is...
-            //elindítja a binding-et ezen kívül, ami figyeli a model változásokat
-            //a relatedTo rész az kikerülhet belőle, és egy az egyben tovább lehet adni az attribútumokat -> így gyorsabb a kód
-            //mégse -> mármint egy az egyben tovább lehet adni az attribútumokat, de a relatedTo mégis jó
-            //arra kell a relatedTo, hogy a realTime binder-nek jelezze, hogy kapcsolat van a tesztek között
-            //rossz helyen van a relatedTo, nem lehet általános teszteket írni a használatával
-            //a realTime binder-nek tudnia kell valahonnan, hogy 1-1 alsóbb rendű teszt kapcsolatban áll 1-1 attribútummal
-            //nagy itt a káosz...
-            this.test.run(value, attributes);
-        },
-        parallel: function (schema) {
-            var parallelSchema = {};
-            _.each(_.keys(schema), function (attribute) {
-                parallelSchema[attribute] = this.series(schema[attribute]);
-            }, this);
-            return this.provider.test("parallel", parallelSchema);
-        },
-        series: function (schema) {
-            var visited = {};
-            var seriesSchema = {};
-            var add = function (key) {
-                if (_.has(seriesSchema, key))
-                    return;
-                if (_.has(visited, key))
-                    throw new SyntaxError("Circular dependency by test " + key + ".");
-                visited[key] = true;
-                _.each(this.provider.deps(key), add, this);
-                seriesSchema[key] = this.provider.test(key, schema[key]);
-            }.bind(this);
-            _.each(_.keys(schema), add);
-            return this.provider.test("series", seriesSchema);
-        }
-    }, {
-        plugin: function (plugin) {
-            this.prototype.provider.merge(plugin);
-        }
-    });
 
     var TestProvider = function () {
         this.use = {};
@@ -114,38 +59,52 @@ define(function (require, exports, module) {
         }
     });
 
-    var ParallelQueue = function (options) {
-        this.schema = options.schema;
-        _.each(this.schema, function (test, attribute) {
-            test.on("end", this.done.bind(this, attribute));
-        }, this);
+    var TestBase = function () {
     };
-    _.extend(ParallelQueue.prototype, Backbone.Events, {
+    TestBase.extend = Backbone.Model.extend;
+    _.extend(TestBase.prototype, Backbone.Events, {
+
+    });
+
+    var TestCollection = TestBase.extend({
+
+    });
+
+    var Parallel = TestCollection.extend({
         pending: 0,
         error: false,
-        run: function (value, attributes) {
+        constructor: function (options) {
+            this.schema = options.schema;
+            _.each(this.schema, function (test, key) {
+                test.on("end", this.done.bind(this, key));
+            }, this);
+        },
+        run: function (values, params) {
             if (this.pending)
                 this.stop();
             this.trigger("run");
-            _.each(this.schema, function (test, attribute) {
+            _.each(this.schema, function (test, key) {
                 ++this.pending;
-                test.run(attributes[attribute], attributes);
+                test.run(values[key], params);
             }, this);
         },
-        done: function (attribute, error, options) {
+        done: function (key, result) {
+            var error = result.error;
             --this.pending;
             if (error) {
                 if (!this.error)
                     this.error = {};
-                this.error[attribute] = error;
+                this.error[key] = error;
             }
             if (!this.pending)
                 this.end();
         },
         end: function () {
-            var error = this.error;
+            var result = {
+                error: this.error
+            };
             this.reset();
-            this.trigger("end", error);
+            this.trigger("end", result);
         },
         stop: function () {
             if (!this.pending)
@@ -155,7 +114,7 @@ define(function (require, exports, module) {
                     test.stop();
                     --this.pending;
                 }
-            });
+            }, this);
             this.reset();
             this.trigger("stop");
         },
@@ -165,23 +124,23 @@ define(function (require, exports, module) {
         }
     });
 
-    var SeriesQueue = function (options) {
-        this.schema = options.schema;
-        this.keys = _.keys(this.schema);
-        _.each(this.schema, function (test) {
-            test.on("end", this.done.bind(this));
-        }, this);
-    };
-    _.extend(SeriesQueue.prototype, Backbone.Events, {
+    var Series = TestCollection.extend({
         pending: false,
         error: false,
-        run: function (value, attributes) {
+        constructor: function (options) {
+            this.schema = options.schema;
+            this.keys = _.keys(this.schema);
+            _.each(this.schema, function (test) {
+                test.on("end", this.done.bind(this));
+            }, this);
+        },
+        run: function (value, params) {
             if (this.pending)
                 this.stop();
             this.pending = true;
             this.vector = 0;
             this.value = value;
-            this.attributes = attributes;
+            this.params = params;
             this.trigger("run");
             this.next();
         },
@@ -189,10 +148,12 @@ define(function (require, exports, module) {
             this.key = this.keys[this.vector];
             ++this.vector;
             this.current = this.schema[this.key];
-            this.current.run(this.value, this.attributes);
+            this.current.run(this.value, this.params);
         },
-        done: function (error, options) {
-            if (error || options && options.end || this.vector >= this.keys.length) {
+        done: function (result) {
+            var error = result.error;
+            var end = result.end;
+            if (error || end || this.vector >= this.keys.length) {
                 if (error) {
                     this.error = {};
                     this.error[this.key] = error;
@@ -203,9 +164,11 @@ define(function (require, exports, module) {
                 this.next();
         },
         end: function () {
-            var error = this.error;
+            var result = {
+                error: this.error
+            };
             this.reset();
-            this.trigger("end", error);
+            this.trigger("end", result);
         },
         stop: function () {
             this.current.stop();
@@ -217,32 +180,28 @@ define(function (require, exports, module) {
             this.error = false;
             this.vector = 0;
             delete(this.value);
-            delete(this.attributes);
+            delete(this.params);
         }
     });
 
-    var Test = function (options) {
-        if (!options)
-            throw new TypeError("Options is not set.");
-        this.relations = {};
-        _.extend(this, _.pick(options, "common"));
-        this.initialize.call(this, options.schema);
-    };
-    _.extend(Test.prototype, Backbone.Events, {
+    var Test = TestBase.extend({
         pending: false,
         id: 0,
+        constructor: function (options) {
+            if (!options)
+                throw new TypeError("Options is not set.");
+            _.extend(this, _.pick(options, "common"));
+            this.initialize.call(this, options.schema);
+        },
         initialize: function (schema) {
             this.schema = schema;
         },
-        relatedTo: function () {
-            return _.keys(this.relations);
-        },
-        run: function (value, attributes) {
+        run: function (value, params) {
             if (this.pending)
                 this.stop();
             this.pending = true;
             this.value = value;
-            this.attributes = attributes;
+            this.params = params;
             this.trigger("run");
             this.evaluate(this.end.bind(this, this.id));
         },
@@ -250,10 +209,10 @@ define(function (require, exports, module) {
             var error, options;
             done(error, options);
         },
-        end: function (id, error, options) {
+        end: function (id, result) {
             if (this.id == id) {
                 this.reset();
-                this.trigger("end", error, options);
+                this.trigger("end", result || {});
             }
         },
         stop: function () {
@@ -265,22 +224,57 @@ define(function (require, exports, module) {
             this.id++;
             this.pending = false;
             delete(this.value);
-            delete(this.attributes);
+            delete(this.params);
         },
         abort: function () {
         }
     });
 
-    TestProvider.extend = SeriesQueue.extend = Test.extend = Backbone.Model.extend;
 
-    Validator.prototype.provider = new TestProvider();
+    var Validator = Backbone.Model.extend({
+        provider: new TestProvider(),
+        constructor: function (options) {
+            Backbone.Model.call(this);
+            this.test = this.parallel(options.schema);
+        },
+        run: function () {
+            this.test.run(value, attributes);
+        },
+        parallel: function (schema) {
+            var parallelSchema = {};
+            _.each(_.keys(schema), function (attribute) {
+                parallelSchema[attribute] = this.series(schema[attribute]);
+            }, this);
+            return this.provider.test("parallel", parallelSchema);
+        },
+        series: function (schema) {
+            var visited = {};
+            var seriesSchema = {};
+            var add = function (key) {
+                if (_.has(seriesSchema, key))
+                    return;
+                if (_.has(visited, key))
+                    throw new SyntaxError("Circular dependency by test " + key + ".");
+                visited[key] = true;
+                _.each(this.provider.deps(key), add, this);
+                seriesSchema[key] = this.provider.test(key, schema[key]);
+            }.bind(this);
+            _.each(_.keys(schema), add);
+            return this.provider.test("series", seriesSchema);
+        }
+    }, {
+        plugin: function (plugin) {
+            this.prototype.provider.merge(plugin);
+        }
+    });
+
     Validator.plugin({
         use: {
             parallel: {
-                exports: ParallelQueue
+                exports: Parallel
             },
             series: {
-                exports: SeriesQueue
+                exports: Series
             },
             test: {
                 exports: Test
@@ -291,8 +285,8 @@ define(function (require, exports, module) {
 
     _.extend(Validator, {
         TestProvider: TestProvider,
-        SeriesQueue: SeriesQueue,
-        ParallelQueue: ParallelQueue,
+        Series: Series,
+        Parallel: Parallel,
         Test: Test
     });
 

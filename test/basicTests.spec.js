@@ -660,7 +660,7 @@ describe("tests", function () {
             common: common,
             schema: value
         });
-        expect(mockTest.relatedTo()).toEqual(relations);
+        expect(mockTest.relations).toEqual(relations);
     };
 
     var expectInitThrow = function (value, exception) {
@@ -679,7 +679,7 @@ describe("tests", function () {
         var actual;
         var expected = {
             err: params.err,
-            options: params.options
+            options: params.options || {}
         };
 
         var mockTest = jasmine.createStub(Test, ["constructor"]);
@@ -688,10 +688,10 @@ describe("tests", function () {
             schema: params.schema
         });
         runs(function () {
-            mockTest.on("end", function (err, options) {
+            mockTest.on("end", function (result) {
                 actual = {
-                    err: err,
-                    options: options
+                    err: result.error,
+                    options: _.omit(result, "error")
                 };
                 isDone = true;
             });

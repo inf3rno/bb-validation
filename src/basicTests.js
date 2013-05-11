@@ -18,11 +18,11 @@ define(function (require, exports, module) {
         evaluate: function (done) {
             var existence = this.value !== undefined;
             if (!existence && this.schema)
-                done(true);
+                done({error: true});
             else if (!existence)
-                done(false, {end: true});
+                done({error: false, end: true});
             else
-                done(false);
+                done({error: false});
         }
     });
 
@@ -57,7 +57,7 @@ define(function (require, exports, module) {
                 passed = (this.value instanceof this.schema);
             else
                 passed = (this.value === this.schema);
-            done(!passed);
+            done({error: !passed});
         }
     });
 
@@ -81,7 +81,7 @@ define(function (require, exports, module) {
             this.schema = min;
         },
         evaluate: function (done) {
-            done(this.toNumber(this.value) < this.schema);
+            done({error: this.toNumber(this.value) < this.schema});
         }
     });
 
@@ -92,7 +92,7 @@ define(function (require, exports, module) {
             this.schema = max;
         },
         evaluate: function (done) {
-            done(this.toNumber(this.value) > this.schema);
+            done({error: this.toNumber(this.value) > this.schema});
         }
     });
 
@@ -109,20 +109,20 @@ define(function (require, exports, module) {
         },
         evaluate: function (done) {
             var num = this.toNumber(this.value);
-            var err;
+            var error;
             if (num < this.schema.min)
-                err = "min";
+                error = "min";
             else if (num > this.schema.max)
-                err = "max";
+                error = "max";
             else
-                err = false;
-            done(err);
+                error = false;
+            done({error: error});
         }
     });
 
     var IdenticalTest = Test.extend({
         evaluate: function (done) {
-            done(this.value !== this.schema);
+            done({error: this.value !== this.schema});
         }
     });
 
@@ -133,7 +133,7 @@ define(function (require, exports, module) {
                 valid = _.isEqual(this.value, this.schema);
             else
                 valid = this.value === this.schema;
-            done(!valid);
+            done({error: !valid});
         }
     });
 
@@ -144,7 +144,7 @@ define(function (require, exports, module) {
             this.schema = list;
         },
         evaluate: function (done) {
-            done(!_.contains(this.schema, this.value));
+            done({error: !_.contains(this.schema, this.value)});
         }
     });
 
@@ -186,7 +186,7 @@ define(function (require, exports, module) {
                 valid = false;
             if (this.schema.any && !_.any(this.schema.any, match, this))
                 valid = false;
-            done(!valid);
+            done({error: !valid});
         }
     });
 
@@ -195,10 +195,10 @@ define(function (require, exports, module) {
             if (!_.isString(duplicationOf))
                 throw new TypeError("Invalid attribute name given.");
             this.schema = duplicationOf;
-            this.relations[this.schema] = true;
+            this.relations = [this.schema];
         },
         evaluate: function (done) {
-            done(this.attributes[this.schema] != this.value);
+            done({error: this.params[this.schema] != this.value});
         }
     });
 
