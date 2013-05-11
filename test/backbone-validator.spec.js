@@ -298,13 +298,6 @@ describe("Validator", function () {
 describe("TestProvider", function () {
 
     describe("merge", function () {
-        it("should throw exception by invalid format", function () {
-            var store = new TestProvider();
-            expect(function () {
-                store.merge();
-            }).toThrow("Invalid plugin format.");
-        });
-
         it("should accept empty object", function () {
             var store = new TestProvider();
             expect(function () {
