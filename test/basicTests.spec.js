@@ -695,7 +695,7 @@ describe("tests", function () {
                 };
                 isDone = true;
             });
-            mockTest.run(params.value, params.relations);
+            mockTest.run({value: params.value, attributes: params.relations});
         });
         waitsFor(function () {
             return isDone == true;

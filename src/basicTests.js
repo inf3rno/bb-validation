@@ -16,7 +16,7 @@ define(function (require, exports, module) {
             this.schema = (_.isUndefined(required) || !!required);
         },
         evaluate: function (done) {
-            var existence = this.value !== undefined;
+            var existence = this.params.value !== undefined;
             if (!existence && this.schema)
                 done({error: true});
             else if (!existence)
@@ -48,15 +48,16 @@ define(function (require, exports, module) {
             this.schema = type;
         },
         evaluate: function (done) {
+            var value = this.params.value;
             var passed;
-            if (_.isNaN(this.value))
+            if (_.isNaN(value))
                 passed = _.isNaN(this.schema);
             else if (_.isString(this.schema))
-                passed = (typeof(this.value) == this.schema);
+                passed = (typeof(value) == this.schema);
             else if (_.isFunction(this.schema))
-                passed = (this.value instanceof this.schema);
+                passed = (value instanceof this.schema);
             else
-                passed = (this.value === this.schema);
+                passed = (value === this.schema);
             done({error: !passed});
         }
     });
@@ -81,7 +82,7 @@ define(function (require, exports, module) {
             this.schema = min;
         },
         evaluate: function (done) {
-            done({error: this.toNumber(this.value) < this.schema});
+            done({error: this.toNumber(this.params.value) < this.schema});
         }
     });
 
@@ -92,7 +93,7 @@ define(function (require, exports, module) {
             this.schema = max;
         },
         evaluate: function (done) {
-            done({error: this.toNumber(this.value) > this.schema});
+            done({error: this.toNumber(this.params.value) > this.schema});
         }
     });
 
@@ -108,7 +109,7 @@ define(function (require, exports, module) {
             this.schema = range;
         },
         evaluate: function (done) {
-            var num = this.toNumber(this.value);
+            var num = this.toNumber(this.params.value);
             var error;
             if (num < this.schema.min)
                 error = "min";
@@ -122,7 +123,7 @@ define(function (require, exports, module) {
 
     var IdenticalTest = Test.extend({
         evaluate: function (done) {
-            done({error: this.value !== this.schema});
+            done({error: this.params.value !== this.schema});
         }
     });
 
@@ -130,9 +131,9 @@ define(function (require, exports, module) {
         evaluate: function (done) {
             var valid;
             if (_.isObject(this.schema))
-                valid = _.isEqual(this.value, this.schema);
+                valid = _.isEqual(this.params.value, this.schema);
             else
-                valid = this.value === this.schema;
+                valid = this.params.value === this.schema;
             done({error: !valid});
         }
     });
@@ -144,7 +145,7 @@ define(function (require, exports, module) {
             this.schema = list;
         },
         evaluate: function (done) {
-            done({error: !_.contains(this.schema, this.value)});
+            done({error: !_.contains(this.schema, this.params.value)});
         }
     });
 
@@ -179,7 +180,7 @@ define(function (require, exports, module) {
         },
         evaluate: function (done) {
             var match = function (expression) {
-                return expression.test(this.value);
+                return expression.test(this.params.value);
             };
             var valid = true;
             if (this.schema.all && !_.all(this.schema.all, match, this))
@@ -195,10 +196,10 @@ define(function (require, exports, module) {
             if (!_.isString(duplicationOf))
                 throw new TypeError("Invalid attribute name given.");
             this.schema = duplicationOf;
-            this.relations = [this.schema];
+            this.relations = [duplicationOf];
         },
         evaluate: function (done) {
-            done({error: this.params[this.schema] != this.value});
+            done({error: this.params.attributes[this.schema] != this.params.value});
         }
     });
 

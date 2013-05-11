@@ -12,14 +12,14 @@ var Parallel = Backbone.Validator.Parallel;
 var Series = Backbone.Validator.Series;
 var Test = Backbone.Validator.Test;
 var NextTest = Test.extend({
-    constructor: function (param) {
-        this.param = param;
+    constructor: function (config) {
+        this.config = config;
         Test.call(this, {});
     }
 });
 var ErrorTest = NextTest.extend({
     evaluate: function (callback) {
-        callback({error: this.param || true});
+        callback({error: this.config || true});
     }
 });
 var EndTest = NextTest.extend({
@@ -37,7 +37,7 @@ var AsyncNextTest = NextTest.extend({
 var AsyncErrorTest = NextTest.extend({
     evaluate: function (callback) {
         setTimeout(function () {
-            callback({error: this.param || true});
+            callback({error: this.config || true});
         }.bind(this), 1);
     }
 });
@@ -409,17 +409,17 @@ describe("Parallel", function () {
                 a: createTest(AsyncNextTest),
                 b: createTest(AsyncNextTest)
             };
-            var queue = new Parallel({
+            var parallel = new Parallel({
                 schema: tests
             });
             runs(function () {
-                queue.run({});
+                parallel.run({value: {}});
                 expect(tests.a.run).toHaveBeenCalled();
                 expect(tests.b.run).toHaveBeenCalled();
-                expect(queue.pending).toBeTruthy();
+                expect(parallel.pending).toBeTruthy();
             });
             waitsFor(function () {
-                return !queue.pending;
+                return !parallel.pending;
             });
             runs(function () {
                 expect(tests.a.pending).toBeFalsy();
@@ -442,15 +442,15 @@ describe("Parallel", function () {
                 b: createTest(AsyncNextTest)
             };
 
-            var queue = new Parallel({
+            var parallel = new Parallel({
                 schema: tests
             });
             var done = false;
             runs(function () {
-                queue.run({});
+                parallel.run({value: {}});
             });
             waitsFor(function () {
-                return !queue.pending;
+                return !parallel.pending;
             });
             runs(function () {
                 expect(tests.a.run).toHaveBeenCalled();
@@ -460,7 +460,7 @@ describe("Parallel", function () {
         });
 
         it("aggregates errors", function () {
-            var queue = new Parallel({
+            var parallel = new Parallel({
                 schema: {
                     a: new AsyncErrorTest(1),
                     b: new AsyncNextTest(),
@@ -468,14 +468,14 @@ describe("Parallel", function () {
                 }
             });
             var error = false;
-            queue.on("end", function (result) {
+            parallel.on("end", function (result) {
                 error = result.error;
             });
             runs(function () {
-                queue.run({});
+                parallel.run({value: {}});
             });
             waitsFor(function () {
-                return !queue.pending;
+                return !parallel.pending;
             });
             runs(function () {
                 expect(error).toEqual({a: 1, c: 2});
@@ -494,12 +494,12 @@ describe("Parallel", function () {
                 test.stop.andCallThrough();
             });
 
-            var queue = new Parallel({
+            var parallel = new Parallel({
                 schema: tests
             });
 
-            queue.run({});
-            queue.stop();
+            parallel.run({value: {}});
+            parallel.stop();
 
             expect(tests.a.stop).toHaveBeenCalled();
             expect(tests.b.stop).not.toHaveBeenCalled();
@@ -528,10 +528,10 @@ describe("Series", function () {
                 b: createTest(NextTest, 2),
                 c: createTest(NextTest, 3)
             };
-            var queue = new Series({
+            var series = new Series({
                 schema: tests
             });
-            queue.run();
+            series.run({});
             expect(tests.a.run).toHaveBeenCalled();
             expect(tests.b.run).toHaveBeenCalled();
             expect(tests.c.run).toHaveBeenCalled();
@@ -549,14 +549,14 @@ describe("Series", function () {
                 b: createTest(ErrorTest),
                 c: createTest(NextTest)
             };
-            var queue = new Series({
+            var series = new Series({
                 schema: tests
             });
             var error;
-            queue.on("end", function (result) {
+            series.on("end", function (result) {
                 error = result.error;
             });
-            queue.run();
+            series.run({});
             expect(tests.a.run).toHaveBeenCalled();
             expect(tests.b.run).toHaveBeenCalled();
             expect(tests.c.run).not.toHaveBeenCalled();
@@ -574,14 +574,14 @@ describe("Series", function () {
                 b: createTest(EndTest),
                 c: createTest(NextTest)
             };
-            var queue = new Series({
+            var series = new Series({
                 schema: tests
             });
             var error;
-            queue.on("end", function (result) {
+            series.on("end", function (result) {
                 error = result.error;
             });
-            queue.run();
+            series.run({});
             expect(tests.a.run).toHaveBeenCalled();
             expect(tests.b.run).toHaveBeenCalled();
             expect(tests.c.run).not.toHaveBeenCalled();
@@ -599,19 +599,19 @@ describe("Series", function () {
                 b: createTest(NextTest),
                 c: createTest(NextTest)
             };
-            var queue = new Series({
+            var series = new Series({
                 schema: tests
             });
             var pending = [];
             var isPending = function () {
-                pending.push(queue.pending);
+                pending.push(series.pending);
             };
-            queue.on("run", isPending);
+            series.on("run", isPending);
             tests.a.on("run", isPending);
             tests.b.on("run", isPending);
             tests.c.on("run", isPending);
-            queue.on("end", isPending);
-            queue.run();
+            series.on("end", isPending);
+            series.run({});
             expect(pending).toEqual([true, true, true, true, false]);
         });
 
@@ -629,16 +629,16 @@ describe("Series", function () {
                 b: createTest(AsyncNextTest),
                 c: createTest(NextTest)
             };
-            var queue = new Series({
+            var series = new Series({
                 schema: tests
             });
             var done = false;
             runs(function () {
-                queue.run();
-                queue.stop();
+                series.run({});
+                series.stop();
             });
             waitsFor(function () {
-                return !queue.pending;
+                return !series.pending;
             });
             runs(function () {
                 expect(tests.a.stop).not.toHaveBeenCalled();
@@ -651,27 +651,27 @@ describe("Series", function () {
             var test = jasmine.createStub(AsyncNextTest, ["run", "stop"]);
             test.run.andCallThrough();
             test.stop.andCallThrough();
-            var queue = jasmine.createStub(Series, ["constructor", "stop"]);
-            queue.constructor.andCallThrough();
-            queue.stop.andCallThrough();
-            queue.constructor({
+            var series = jasmine.createStub(Series, ["constructor", "stop"]);
+            series.constructor.andCallThrough();
+            series.stop.andCallThrough();
+            series.constructor({
                 schema: {
                     a: test
                 }
             });
             var done = false;
-            queue.on("end", function () {
+            series.on("end", function () {
                 done = true;
             });
             runs(function () {
-                queue.run();
-                queue.run();
+                series.run({});
+                series.run({});
             });
             waitsFor(function () {
                 return done;
             });
             runs(function () {
-                expect(queue.stop).toHaveBeenCalled();
+                expect(series.stop).toHaveBeenCalled();
                 expect(test.stop).toHaveBeenCalled();
                 expect(test.run.callCount).toEqual(2);
                 expect(test.stop.callCount).toEqual(1);
@@ -694,7 +694,7 @@ describe("Test", function () {
             test.constructor.andCallThrough();
             expect(function () {
                 test.constructor();
-            }).toThrow("Options is not set.");
+            }).toThrow("Config is not set.");
         });
 
         it("adds common to properties and calls initialize with schema", function () {

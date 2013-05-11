@@ -73,19 +73,21 @@ define(function (require, exports, module) {
     var Parallel = TestCollection.extend({
         pending: 0,
         error: false,
-        constructor: function (options) {
-            this.schema = options.schema;
+        constructor: function (config) {
+            this.schema = config.schema;
             _.each(this.schema, function (test, key) {
                 test.on("end", this.done.bind(this, key));
             }, this);
         },
-        run: function (values, params) {
+        run: function (params) {
             if (this.pending)
                 this.stop();
             this.trigger("run");
             _.each(this.schema, function (test, key) {
                 ++this.pending;
-                test.run(values[key], params);
+                var subParams = _.omit(params, "value");
+                subParams.value = params.value[key];
+                test.run(subParams);
             }, this);
         },
         done: function (key, result) {
@@ -127,28 +129,27 @@ define(function (require, exports, module) {
     var Series = TestCollection.extend({
         pending: false,
         error: false,
-        constructor: function (options) {
-            this.schema = options.schema;
+        constructor: function (config) {
+            this.schema = config.schema;
             this.keys = _.keys(this.schema);
             _.each(this.schema, function (test) {
                 test.on("end", this.done.bind(this));
             }, this);
         },
-        run: function (value, params) {
+        run: function (params) {
             if (this.pending)
                 this.stop();
             this.pending = true;
             this.vector = 0;
-            this.value = value;
             this.params = params;
-            this.trigger("run");
+            this.trigger("run", params);
             this.next();
         },
         next: function () {
             this.key = this.keys[this.vector];
             ++this.vector;
             this.current = this.schema[this.key];
-            this.current.run(this.value, this.params);
+            this.current.run(this.params);
         },
         done: function (result) {
             var error = result.error;
@@ -179,7 +180,6 @@ define(function (require, exports, module) {
             this.pending = false;
             this.error = false;
             this.vector = 0;
-            delete(this.value);
             delete(this.params);
         }
     });
@@ -187,20 +187,19 @@ define(function (require, exports, module) {
     var Test = TestBase.extend({
         pending: false,
         id: 0,
-        constructor: function (options) {
-            if (!options)
-                throw new TypeError("Options is not set.");
-            _.extend(this, _.pick(options, "common"));
-            this.initialize.call(this, options.schema);
+        constructor: function (config) {
+            if (!config)
+                throw new TypeError("Config is not set.");
+            _.extend(this, _.pick(config, "common"));
+            this.initialize.call(this, config.schema);
         },
         initialize: function (schema) {
             this.schema = schema;
         },
-        run: function (value, params) {
+        run: function (params) {
             if (this.pending)
                 this.stop();
             this.pending = true;
-            this.value = value;
             this.params = params;
             this.trigger("run");
             this.evaluate(this.end.bind(this, this.id));
@@ -223,7 +222,6 @@ define(function (require, exports, module) {
         reset: function () {
             this.id++;
             this.pending = false;
-            delete(this.value);
             delete(this.params);
         },
         abort: function () {
@@ -238,7 +236,7 @@ define(function (require, exports, module) {
             this.test = this.parallel(options.schema);
         },
         run: function () {
-            this.test.run(value, attributes);
+            this.test.run({value: value, attributes: attributes});
         },
         parallel: function (schema) {
             var parallelSchema = {};
