@@ -7,7 +7,8 @@ var _ = require("underscore"),
 require("../src/backbone-validator");
 
 var Validator = Backbone.Validator;
-var TestProvider = Backbone.Validator.TestProvider;
+var TestStore = Backbone.Validator.TestStore;
+var CommonStore = Backbone.Validator.CommonStore;
 var Parallel = Backbone.Validator.Parallel;
 var Series = Backbone.Validator.Series;
 var Test = Backbone.Validator.Test;
@@ -219,9 +220,10 @@ describe("Validator", function () {
         });
 
         var CustomValidator = Validator.extend({
-            provider: new TestProvider()
+            testStore: new TestStore(),
+            commonStore: new CommonStore()
         });
-        CustomValidator.plugin(Validator.prototype.provider);
+        CustomValidator.plugin({use: Validator.prototype.testStore.toObject(), common: Validator.prototype.commonStore.toObject()});
         CustomValidator.plugin({use: use});
         var validator = jasmine.createStub(CustomValidator, ["constructor"]);
 
@@ -236,9 +238,10 @@ describe("Validator", function () {
         });
 
         var CustomValidator = Validator.extend({
-            provider: new TestProvider()
+            testStore: new TestStore(),
+            commonStore: new CommonStore()
         });
-        CustomValidator.plugin(Validator.prototype.provider);
+        CustomValidator.plugin({use: Validator.prototype.testStore.toObject(), common: Validator.prototype.commonStore.toObject()});
         CustomValidator.plugin({use: use});
         var validator = jasmine.createStub(CustomValidator, ["constructor"]);
 
@@ -250,9 +253,10 @@ describe("Validator", function () {
 
     var expectTestClasses = function (use, keys, expectedClasses) {
         var CustomValidator = Validator.extend({
-            provider: new TestProvider()
+            testStore: new TestStore(),
+            commonStore: new CommonStore()
         });
-        CustomValidator.plugin(Validator.prototype.provider);
+        CustomValidator.plugin({use: Validator.prototype.testStore.toObject(), common: Validator.prototype.commonStore.toObject()});
         CustomValidator.plugin({use: use});
         var validator = jasmine.createStub(CustomValidator, ["constructor"]);
 
@@ -276,11 +280,12 @@ describe("Validator", function () {
             record.exports = Tests[key];
         });
 
-        var provider = new TestProvider();
+        var commonStore = new CommonStore();
         var CustomValidator = Validator.extend({
-            provider: provider
+            testStore: new TestStore(),
+            commonStore: commonStore
         });
-        CustomValidator.plugin(Validator.prototype.provider);
+        CustomValidator.plugin({use: Validator.prototype.testStore.toObject(), common: Validator.prototype.commonStore.toObject()});
         CustomValidator.plugin({use: use, common: {x: 1}});
 
         var validator = jasmine.createStub(CustomValidator, ["constructor"]);
@@ -288,66 +293,73 @@ describe("Validator", function () {
 
         _.each(expectedSchema, function (expectedParam, key) {
             expect(Tests[key].callCount).toEqual(1);
-            expect(Tests[key]).toHaveBeenCalledWith({schema: expectedParam, common: provider.common});
+            expect(Tests[key]).toHaveBeenCalledWith({schema: expectedParam, common: commonStore.toObject()});
         });
 
     };
 });
 
 
-describe("TestProvider", function () {
+describe("TestStore", function () {
 
-    describe("merge", function () {
+    describe("save", function () {
         it("should accept empty object", function () {
-            var store = new TestProvider();
+            var store = new TestStore();
             expect(function () {
-                store.merge({})
+                store.save({})
             }).not.toThrow();
         });
 
         it("should parse config", function () {
-            var store = new TestProvider();
-            store.merge({
-                use: {
-                    test1: {
-                        exports: Backbone.Validator.Test
-                    }
+            var store = new TestStore();
+            store.save({
+                test1: {
+                    exports: Backbone.Validator.Test
                 }
             });
-            expect(store.use.test1.exports).toEqual(Backbone.Validator.Test);
+            expect(store.toObject().test1.exports).toEqual(Backbone.Validator.Test);
         });
 
         it("should prevent test conflicts", function () {
-            var store = new TestProvider();
+            var store = new TestStore();
             var plugin = {
-                use: {
-                    test1: {
-                        exports: Backbone.Validator.Test
-                    }
+                test1: {
+                    exports: Backbone.Validator.Test
                 }
             };
-            store.merge(plugin);
+            store.save(plugin);
             expect(function () {
-                store.merge(plugin);
+                store.save(plugin);
             }).toThrow("Store use.test1 already set.");
         });
 
+    });
+
+});
+
+describe("CommonStore", function () {
+
+    describe("save", function () {
+
+        it("should accept empty object", function () {
+            var store = new CommonStore();
+            expect(function () {
+                store.save({})
+            }).not.toThrow();
+        });
+
         it("should merge common maps", function () {
-            var store = new TestProvider();
+            var store = new CommonStore();
             var base = {a: 1};
-            store.merge({
-                common: {
-                    map: base
+            store.save({
+                map: base
+            });
+            store.save({
+                map: {
+                    b: 2
                 }
             });
-            store.merge({
-                common: {
-                    map: {
-                        b: 2
-                    }
-                }
-            });
-            expect(store.common).toEqual({
+            expect(store.toObject()).toEqual({
                 map: {
                     a: 1,
                     b: 2
@@ -357,36 +369,31 @@ describe("TestProvider", function () {
         });
 
         it("should prevent common conflicts", function () {
-            var store = new TestProvider();
+            var store = new CommonStore();
             var plugin = {
-                common: {
-                    a: "a"
-                }
+                a: "a"
             };
-            store.merge(plugin);
+            store.save(plugin);
             expect(function () {
-                store.merge(plugin);
+                store.save(plugin);
             }).toThrow("Store common.a already set.");
         });
 
         it("should prevent common map conflicts", function () {
-            var store = new TestProvider();
+            var store = new CommonStore();
             var plugin = {
-                common: {
-                    map: {
-                        a: "a"
-                    }
+                map: {
+                    a: "a"
                 }
             };
-            store.merge(plugin);
+            store.save(plugin);
             expect(function () {
-                store.merge(plugin);
+                store.save(plugin);
             }).toThrow("Store common.map.a already set.");
         });
-
     });
-
 });
+
 
 describe("Parallel", function () {
 

@@ -7,65 +7,6 @@ define(function (require, exports, module) {
     var _ = require("underscore"),
         Backbone = require("backbone");
 
-
-    var TestProvider = function () {
-        this.use = {};
-        this.common = {};
-    };
-    _.extend(TestProvider.prototype, {
-        merge: function (plugin) {
-            if (plugin.use)
-                this.createAll(plugin.use);
-            if (plugin.common)
-                this.updateCommon(plugin.common);
-        },
-        test: function (key, schema) {
-            var Test = this.read(key).exports;
-            return new Test({
-                schema: schema,
-                common: this.common
-            });
-        },
-        read: function (key) {
-            if (!_.has(this.use, key))
-                throw new SyntaxError("Test " + key + " is not registered.");
-            return this.use[key];
-        },
-        createAll: function (records) {
-            _.each(records, function (record, key) {
-                this.create(key, record);
-            }, this);
-        },
-        create: function (key, record) {
-            if (!_.isObject(record) || !_.isFunction(record.exports) || !_.isUndefined(record.deps) && !_.isArray(record.deps))
-                throw new TypeError("Invalid config param use." + key + " given.");
-            if (_.has(this.use, key))
-                throw new Error("Store use." + key + " already set.");
-            this.use[key] = record;
-        },
-        updateCommon: function (common) {
-            var isMap = function (o) {
-                return _.isObject(o) && o.constructor === Object;
-            };
-            _.each(common, function (value, key) {
-                if (!_.has(this.common, key) && isMap(value))
-                    this.common[key] = {};
-                if (!_.has(this.common, key))
-                    this.common[key] = value;
-                else if (isMap(value) && isMap(this.common[key])) {
-                    var map = this.common[key];
-                    _.each(value, function (subValue, subKey) {
-                        if (_.has(map, subKey))
-                            throw new Error("Store common." + key + "." + subKey + " already set.");
-                        map[subKey] = subValue;
-                    }, this);
-                }
-                else
-                    throw new Error("Store common." + key + " already set.");
-            }, this);
-        }
-    });
-
     var TestBase = function (config) {
         if (!config)
             throw new TypeError("Config is not set.");
@@ -96,6 +37,31 @@ define(function (require, exports, module) {
         reset: function () {
             this.pending = false;
             delete(this.params);
+        }
+    });
+
+    var Test = TestBase.extend({
+        id: 0,
+        run: function (params) {
+            TestBase.prototype.run.apply(this, arguments);
+            this.evaluate(this.end.bind(this, this.id));
+        },
+        evaluate: function (done) {
+            done({error: false});
+        },
+        end: function (id, result) {
+            if (this.id == id)
+                TestBase.prototype.end.call(this, result || {});
+        },
+        stop: function () {
+            this.abort();
+            TestBase.prototype.stop.call(this);
+        },
+        reset: function () {
+            TestBase.prototype.reset.call(this);
+            this.id++;
+        },
+        abort: function () {
         }
     });
 
@@ -173,9 +139,9 @@ define(function (require, exports, module) {
                 this.end();
         },
         next: function () {
-            this.key = this.keys[this.vector];
+            var key = this.keys[this.vector];
             ++this.vector;
-            this.test = this.schema[this.key];
+            this.test = this.schema[key];
             this.test.run(this.params);
         },
         stop: function () {
@@ -188,48 +154,103 @@ define(function (require, exports, module) {
         }
     });
 
-    var Test = TestBase.extend({
-        id: 0,
-        run: function (params) {
-            TestBase.prototype.run.apply(this, arguments);
-            this.evaluate(this.end.bind(this, this.id));
+    var TestStore = function (records) {
+        this.data = {};
+        if (records)
+            this.save(records);
+    };
+    _.extend(TestStore.prototype, {
+        toObject: function () {
+            return this.data;
         },
-        evaluate: function (done) {
-            var error, options;
-            done(error, options);
+        get: function (key) {
+            if (!_.has(this.data, key))
+                throw new SyntaxError("Test " + key + " is not registered.");
+            return this.data[key];
         },
-        end: function (id, result) {
-            if (this.id == id)
-                TestBase.prototype.end.call(this, result || {});
+        save: function (records) {
+            _.each(records, function (record, key) {
+                this.create(key, record);
+            }, this);
         },
-        stop: function () {
-            this.abort();
-            TestBase.prototype.stop.call(this);
-        },
-        reset: function () {
-            TestBase.prototype.reset.call(this);
-            this.id++;
-        },
-        abort: function () {
+        create: function (key, record) {
+            if (!_.isObject(record) || !_.isFunction(record.exports) || !_.isUndefined(record.deps) && !_.isArray(record.deps))
+                throw new TypeError("Invalid config param use." + key + " given.");
+            if (_.has(this.data, key))
+                throw new Error("Store use." + key + " already set.");
+            this.data[key] = record;
         }
     });
 
+    var CommonStore = function (map) {
+        this.data = {};
+        if (map)
+            this.save(map);
+    };
+    _.extend(CommonStore.prototype, {
+        toObject: function () {
+            return this.data;
+        },
+        save: function (map) {
+            _.each(map, function (value, key) {
+                this.update(key, value);
+            }, this);
+        },
+        update: function (key, value) {
+            if (!_.has(this.data, key) && this.isMap(value))
+                this.data[key] = {};
+            if (!_.has(this.data, key))
+                this.data[key] = value;
+            else if (this.isMap(value) && this.isMap(this.data[key])) {
+                this.appendMap(key, value);
+            }
+            else
+                throw new Error("Store common." + key + " already set.");
+        },
+        isMap: function (o) {
+            return _.isObject(o) && o.constructor === Object;
+        },
+        appendMap: function (key, value) {
+            var map = this.data[key];
+            _.each(value, function (subValue, subKey) {
+                if (_.has(map, subKey))
+                    throw new Error("Store common." + key + "." + subKey + " already set.");
+                map[subKey] = subValue;
+            }, this);
+        }
+    });
 
     var Validator = Backbone.Model.extend({
-        provider: new TestProvider(),
-        constructor: function (options) {
+        testStore: new TestStore({
+            parallel: {
+                exports: Parallel
+            },
+            series: {
+                exports: Series
+            },
+            test: {
+                exports: Test
+            }
+        }),
+        commonStore: new CommonStore(),
+        constructor: function (config) {
             Backbone.Model.call(this);
-            this.test = this.parallel(options.schema);
+            this.model = config.model;
+            this.test = this.parallel(config.schema);
         },
         run: function () {
-            this.test.run({value: value, attributes: attributes});
+            this.test.run({value: attributes, attributes: attributes});
         },
         parallel: function (schema) {
+            //this.relations = {};
             var parallelSchema = {};
             _.each(_.keys(schema), function (attribute) {
                 parallelSchema[attribute] = this.series(schema[attribute]);
+                //this.model.on("change:" + attribute, function (model, value, options) {
+                //    this.change(attribute, value);
+                //});
             }, this);
-            return this.provider.test("parallel", parallelSchema);
+            return this.test("parallel", parallelSchema);
         },
         series: function (schema) {
             var visited = {};
@@ -240,35 +261,51 @@ define(function (require, exports, module) {
                 if (_.has(visited, key))
                     throw new SyntaxError("Circular dependency by test " + key + ".");
                 visited[key] = true;
-                _.each(this.provider.read(key).deps, add, this);
-                seriesSchema[key] = this.provider.test(key, schema[key]);
+                _.each(this.testStore.get(key).deps, add, this);
+                seriesSchema[key] = this.test(key, schema[key]);
             }.bind(this);
             _.each(_.keys(schema), add);
-            return this.provider.test("series", seriesSchema);
+            return this.test("series", seriesSchema);
+        },
+        test: function (key, schema) {
+            var Test = this.testStore.get(key).exports;
+            var test = new Test({
+                schema: schema,
+                common: this.commonStore.toObject()
+            });
+            //this.relations[attribute].push(test.relations);
+            return test;
+        },
+        change: function (attribute, value) {
+            var calling = {};
+            var add = function (attribute) {
+                if (calling[attribute])
+                    return;
+                calling[attribute] = true;
+                if (this.relations[attribute])
+                    _.each(_.keys(this.relations[attribute]), function (attribute) {
+                        add.call(this, attribute);
+                    }, this);
+            };
+            add.call(this, attribute);
+            var running = {};
+            _.each(_.keys(calling), function (attribute) {
+                running[attribute] = this.model.get(attribute)
+            });
+            this.test.run({value: running, attributes: this.model.attributes});
         }
     }, {
         plugin: function (plugin) {
-            this.prototype.provider.merge(plugin);
+            if (plugin.use)
+                this.prototype.testStore.save(plugin.use);
+            if (plugin.common)
+                this.prototype.commonStore.save(plugin.common);
         }
     });
-
-    Validator.plugin({
-        use: {
-            parallel: {
-                exports: Parallel
-            },
-            series: {
-                exports: Series
-            },
-            test: {
-                exports: Test
-            }
-        }
-    });
-
 
     _.extend(Validator, {
-        TestProvider: TestProvider,
+        TestStore: TestStore,
+        CommonStore: CommonStore,
         Series: Series,
         Parallel: Parallel,
         Test: Test
