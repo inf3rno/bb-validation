@@ -1021,7 +1021,9 @@ describe("Test", function () {
                 common: common,
                 schema: schema
             };
-            var test = jasmine.createStub(Test, ["initialize"], [options]);
+            var test = jasmine.createStub(Test, ["constructor", "initialize"]);
+            test.constructor.andCallThrough();
+            test.constructor(options);
             expect(test.common).toEqual(common);
             expect(test.initialize).toHaveBeenCalledWith(schema);
         });

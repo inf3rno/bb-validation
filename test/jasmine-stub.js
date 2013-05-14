@@ -1,9 +1,9 @@
-jasmine.createStub = function (cls, methods, args) {
+jasmine.createStub = function (cls, methods) {
     if (!(cls instanceof Function))
         throw new TypeError("Invalid class param.");
 
     var mockClass = function () {
-        this.constructor.apply(this, args || []);
+        this.constructor.apply(this, []);
     };
 
     mockClass.prototype = Object.create(cls.prototype);

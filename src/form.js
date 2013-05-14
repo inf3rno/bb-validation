@@ -7,18 +7,6 @@ define(function (require, exports, module) {
     var _ = require("underscore"),
         Backbone = require("backbone");
 
-    if (!Object.create)
-        Object.create = function (proto, properties) { //properties object supported in node.js, but not in every browser
-            var Surrogate = function () {
-                this.constructor = Surrogate;
-            };
-            Surrogate.prototype = proto;
-            var instance = new Surrogate();
-            if (properties)
-                _.extend(instance, properties);
-            return instance;
-        };
-
     var View = Backbone.View.extend({
         initialize: function () {
             this.model.on("change", function () {
