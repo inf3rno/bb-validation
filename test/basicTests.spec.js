@@ -644,32 +644,38 @@ describe("tests", function () {
     });
 
     var expectInit = function (value, expected) {
-        var mockTest = jasmine.createStub(Test, ["constructor"]);
-        mockTest.constructor.andCallThrough();
-        mockTest.constructor({
-            common: common,
-            schema: value
+        var mockTest = jasmine.createStub(Test, {
+            constructor: [
+                {
+                    common: common,
+                    schema: value
+                }
+            ]
         });
         expect(mockTest.schema).toEqual(expected);
     };
 
     var expectInitRelations = function (value, relations) {
-        var mockTest = jasmine.createStub(Test, ["constructor"]);
-        mockTest.constructor.andCallThrough();
-        mockTest.constructor({
-            common: common,
-            schema: value
+        var mockTest = jasmine.createStub(Test, {
+            constructor: [
+                {
+                    common: common,
+                    schema: value
+                }
+            ]
         });
         expect(mockTest.relations).toEqual(relations);
     };
 
     var expectInitThrow = function (value, exception) {
-        var mockTest = jasmine.createStub(Test, ["constructor"]);
-        mockTest.constructor.andCallThrough();
         expect(function () {
-            mockTest.constructor({
-                common: common,
-                schema: value
+            jasmine.createStub(Test, {
+                constructor: [
+                    {
+                        common: common,
+                        schema: value
+                    }
+                ]
             });
         }).toThrow(exception);
     };
@@ -682,10 +688,11 @@ describe("tests", function () {
             options: params.options || {}
         };
 
-        var mockTest = jasmine.createStub(Test, ["constructor"]);
-        _.extend(mockTest, {
-            common: common,
-            schema: params.schema
+        var mockTest = jasmine.createStub(Test, {
+            constructor: function () {
+                this.common = common;
+                this.schema = params.schema;
+            }
         });
         runs(function () {
             mockTest.on("end", function (result) {

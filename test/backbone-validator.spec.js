@@ -309,7 +309,9 @@ describe("Validator", function () {
         });
         CustomValidator.plugin(Validator.toPlugin());
         CustomValidator.plugin({use: use});
-        var validator = jasmine.createStub(CustomValidator, ["constructor"]);
+        var validator = jasmine.createStub(CustomValidator, {
+            constructor: false
+        });
 
         expect(function () {
             validator.series(_.object(keys));
@@ -327,7 +329,9 @@ describe("Validator", function () {
         });
         CustomValidator.plugin(Validator.toPlugin());
         CustomValidator.plugin({use: use});
-        var validator = jasmine.createStub(CustomValidator, ["constructor"]);
+        var validator = jasmine.createStub(CustomValidator, {
+            constructor: false
+        });
 
         var queue = validator.series(_.object(keys));
         var actualOrder = _.keys(queue.schema);
@@ -342,7 +346,9 @@ describe("Validator", function () {
         });
         CustomValidator.plugin(Validator.toPlugin());
         CustomValidator.plugin({use: use});
-        var validator = jasmine.createStub(CustomValidator, ["constructor"]);
+        var validator = jasmine.createStub(CustomValidator, {
+            constructor: false
+        });
 
         var queue = validator.series(_.object(keys));
         var actualClasses = [];
@@ -372,7 +378,9 @@ describe("Validator", function () {
         CustomValidator.plugin(Validator.toPlugin());
         CustomValidator.plugin({use: use, common: {x: 1}});
 
-        var validator = jasmine.createStub(CustomValidator, ["constructor"]);
+        var validator = jasmine.createStub(CustomValidator, {
+            constructor: false
+        });
         validator.series(schema);
 
         _.each(expectedSchema, function (expectedParam, key) {
@@ -484,14 +492,13 @@ describe("Parallel", function () {
     describe("run", function () {
 
         it("calls tests parallel, and ends when every test is done", function () {
-            var createTest = function (Test) {
-                var test = jasmine.createStub(Test, ["run"]);
-                test.run.andCallThrough();
-                return test;
-            };
             var tests = {
-                a: createTest(AsyncNextTest),
-                b: createTest(AsyncNextTest)
+                a: jasmine.createStub(AsyncNextTest, {
+                    run: true
+                }),
+                b: jasmine.createStub(AsyncNextTest, {
+                    run: true
+                })
             };
             var parallel = new Parallel({
                 schema: tests
@@ -514,8 +521,9 @@ describe("Parallel", function () {
         it("continues by error", function () {
             var endingOrder = [];
             var createTest = function (Test) {
-                var test = jasmine.createStub(Test, ["run"]);
-                test.run.andCallThrough();
+                var test = jasmine.createStub(Test, {
+                    run: true
+                });
                 test.on("end", function () {
                     endingOrder.push(Test);
                 });
@@ -568,13 +576,16 @@ describe("Parallel", function () {
 
         it("stops running tests by rerun", function () {
             var tests = {
-                a: jasmine.createStub(AsyncNextTest, ["stop"]),
-                b: jasmine.createStub(AsyncNextTest, ["stop"]),
-                c: jasmine.createStub(AsyncNextTest, ["stop"])
+                a: jasmine.createStub(AsyncNextTest, {
+                    stop: true
+                }),
+                b: jasmine.createStub(AsyncNextTest, {
+                    stop: true
+                }),
+                c: jasmine.createStub(AsyncNextTest, {
+                    stop: true
+                })
             };
-            _.each(tests, function (test) {
-                test.stop.andCallThrough();
-            });
 
             var parallel = new Parallel({
                 schema: tests
@@ -591,13 +602,16 @@ describe("Parallel", function () {
     describe("stop", function () {
         it("stops every running test", function () {
             var tests = {
-                a: jasmine.createStub(AsyncNextTest, ["stop"]),
-                b: jasmine.createStub(NextTest, ["stop"]),
-                c: jasmine.createStub(AsyncNextTest, ["stop"])
+                a: jasmine.createStub(AsyncNextTest, {
+                    stop: true
+                }),
+                b: jasmine.createStub(NextTest, {
+                    stop: true
+                }),
+                c: jasmine.createStub(AsyncNextTest, {
+                    stop: true
+                })
             };
-            _.each(tests, function (test) {
-                test.stop.andCallThrough();
-            });
 
             var parallel = new Parallel({
                 schema: tests
@@ -621,14 +635,13 @@ describe("ContinuousParallel", function () {
     describe("run", function () {
 
         it("runs only tests have key in value map", function () {
-            var createTest = function (Test) {
-                var test = jasmine.createStub(Test, ["run"]);
-                test.run.andCallThrough();
-                return test;
-            };
             var tests = {
-                a: createTest(NextTest),
-                b: createTest(NextTest)
+                a: jasmine.createStub(NextTest, {
+                    run: true
+                }),
+                b: jasmine.createStub(NextTest, {
+                    run: true
+                })
             };
             var parallel = new ContinuousParallel({
                 schema: tests
@@ -643,8 +656,9 @@ describe("ContinuousParallel", function () {
 
         it("calls tests parallel, and ends when every test is done", function () {
             var createTest = function (Test) {
-                var test = jasmine.createStub(Test, ["run"]);
-                test.run.andCallThrough();
+                var test = jasmine.createStub(Test, {
+                    run: true
+                });
                 return test;
             };
             var tests = {
@@ -675,8 +689,9 @@ describe("ContinuousParallel", function () {
         it("continues by error", function () {
             var endingOrder = [];
             var createTest = function (Test) {
-                var test = jasmine.createStub(Test, ["run"]);
-                test.run.andCallThrough();
+                var test = jasmine.createStub(Test, {
+                    run: true
+                });
                 test.on("end", function () {
                     endingOrder.push(Test);
                 });
@@ -736,13 +751,16 @@ describe("ContinuousParallel", function () {
 
         it("stops only running tests given in new value by rerun", function () {
             var tests = {
-                a: jasmine.createStub(AsyncNextTest, ["stop"]),
-                b: jasmine.createStub(AsyncNextTest, ["stop"]),
-                c: jasmine.createStub(AsyncNextTest, ["stop"])
+                a: jasmine.createStub(AsyncNextTest, {
+                    stop: true
+                }),
+                b: jasmine.createStub(AsyncNextTest, {
+                    stop: true
+                }),
+                c: jasmine.createStub(AsyncNextTest, {
+                    stop: true
+                })
             };
-            _.each(tests, function (test) {
-                test.stop.andCallThrough();
-            });
 
             var parallel = new ContinuousParallel({
                 schema: tests
@@ -798,13 +816,16 @@ describe("ContinuousParallel", function () {
     describe("stop", function () {
         it("stops every running test", function () {
             var tests = {
-                a: jasmine.createStub(AsyncNextTest, ["stop"]),
-                b: jasmine.createStub(NextTest, ["stop"]),
-                c: jasmine.createStub(AsyncNextTest, ["stop"])
+                a: jasmine.createStub(AsyncNextTest, {
+                    stop: true
+                }),
+                b: jasmine.createStub(NextTest, {
+                    stop: true
+                }),
+                c: jasmine.createStub(AsyncNextTest, {
+                    stop: true
+                })
             };
-            _.each(tests, function (test) {
-                test.stop.andCallThrough();
-            });
 
             var parallel = new ContinuousParallel({
                 schema: tests
@@ -833,8 +854,9 @@ describe("Series", function () {
         it("calls tests run in proper order", function () {
             var endingOrder = [];
             var createTest = function (Test, id) {
-                var test = jasmine.createStub(Test, ["run"]);
-                test.run.andCallThrough();
+                var test = jasmine.createStub(Test, {
+                    run: true
+                });
                 test.on("end", function () {
                     endingOrder.push(id);
                 });
@@ -856,15 +878,16 @@ describe("Series", function () {
         });
 
         it("ends by error", function () {
-            var createTest = function (Test) {
-                var test = jasmine.createStub(Test, ["run"]);
-                test.run.andCallThrough();
-                return test;
-            };
             var tests = {
-                a: createTest(NextTest),
-                b: createTest(ErrorTest),
-                c: createTest(NextTest)
+                a: jasmine.createStub(NextTest, {
+                    run: true
+                }),
+                b: jasmine.createStub(ErrorTest, {
+                    run: true
+                }),
+                c: jasmine.createStub(NextTest, {
+                    run: true
+                })
             };
             var series = new Series({
                 schema: tests
@@ -881,15 +904,16 @@ describe("Series", function () {
         });
 
         it("ends by options.end", function () {
-            var createTest = function (Test) {
-                var test = jasmine.createStub(Test, ["run"]);
-                test.run.andCallThrough();
-                return test;
-            };
             var tests = {
-                a: createTest(NextTest),
-                b: createTest(EndTest),
-                c: createTest(NextTest)
+                a: jasmine.createStub(NextTest, {
+                    run: true
+                }),
+                b: jasmine.createStub(EndTest, {
+                    run: true
+                }),
+                c: jasmine.createStub(NextTest, {
+                    run: true
+                })
             };
             var series = new Series({
                 schema: tests
@@ -906,15 +930,16 @@ describe("Series", function () {
         });
 
         it("is pending until the end", function () {
-            var createTest = function (Test) {
-                var test = jasmine.createStub(Test, ["run"]);
-                test.run.andCallThrough();
-                return test;
-            };
             var tests = {
-                a: createTest(NextTest),
-                b: createTest(NextTest),
-                c: createTest(NextTest)
+                a: jasmine.createStub(NextTest, {
+                    run: true
+                }),
+                b: jasmine.createStub(NextTest, {
+                    run: true
+                }),
+                c: jasmine.createStub(NextTest, {
+                    run: true
+                })
             };
             var series = new Series({
                 schema: tests
@@ -936,15 +961,16 @@ describe("Series", function () {
 
     describe("stop", function () {
         it("calls stop on current test by stop", function () {
-            var createTest = function (Test) {
-                var test = jasmine.createStub(Test, ["stop"]);
-                test.stop.andCallThrough();
-                return test;
-            };
             var tests = {
-                a: createTest(NextTest),
-                b: createTest(AsyncNextTest),
-                c: createTest(NextTest)
+                a: jasmine.createStub(NextTest, {
+                    stop: true
+                }),
+                b: jasmine.createStub(AsyncNextTest, {
+                    stop: true
+                }),
+                c: jasmine.createStub(NextTest, {
+                    stop: true
+                })
             };
             var series = new Series({
                 schema: tests
@@ -965,16 +991,19 @@ describe("Series", function () {
         });
 
         it("stops by rerun", function () {
-            var test = jasmine.createStub(AsyncNextTest, ["run", "stop"]);
-            test.run.andCallThrough();
-            test.stop.andCallThrough();
-            var series = jasmine.createStub(Series, ["constructor", "stop"]);
-            series.constructor.andCallThrough();
-            series.stop.andCallThrough();
-            series.constructor({
-                schema: {
-                    a: test
-                }
+            var test = jasmine.createStub(AsyncNextTest, {
+                run: true,
+                stop: true
+            });
+            var series = jasmine.createStub(Series, {
+                constructor: [
+                    {
+                        schema: {
+                            a: test
+                        }
+                    }
+                ],
+                stop: true
             });
             var done = false;
             series.on("end", function () {
@@ -1007,10 +1036,10 @@ describe("Test", function () {
 
     describe("constructor", function () {
         it("throws exception if no options given", function () {
-            var test = jasmine.createStub(Test, ["constructor"]);
-            test.constructor.andCallThrough();
             expect(function () {
-                test.constructor();
+                jasmine.createStub(Test, {
+                    constructor: []
+                });
             }).toThrow("Config is not set.");
         });
 
@@ -1021,9 +1050,10 @@ describe("Test", function () {
                 common: common,
                 schema: schema
             };
-            var test = jasmine.createStub(Test, ["constructor", "initialize"]);
-            test.constructor.andCallThrough();
-            test.constructor(options);
+            var test = jasmine.createStub(Test, {
+                constructor: [options],
+                initialize: false
+            });
             expect(test.common).toEqual(common);
             expect(test.initialize).toHaveBeenCalledWith(schema);
         });
@@ -1031,7 +1061,9 @@ describe("Test", function () {
 
     describe("initialize", function () {
         it("adds schema to properties by default", function () {
-            var test = jasmine.createStub(Test, ["constructor"]);
+            var test = jasmine.createStub(Test, {
+                constructor: false
+            });
             var schema = 1;
             test.initialize(schema);
             expect(test.schema).toEqual(schema);
@@ -1040,7 +1072,10 @@ describe("Test", function () {
 
     describe("run", function () {
         it("calls test method but no callback", function () {
-            var test = jasmine.createStub(Test, ["constructor", "evaluate"]);
+            var test = jasmine.createStub(Test, {
+                constructor: false,
+                evaluate: false
+            });
             var callback = jasmine.createSpy();
             test.on("end", callback);
             test.run();
@@ -1057,7 +1092,9 @@ describe("Test", function () {
                     states.push(this.pending);
                 }
             });
-            var test = jasmine.createStub(SyncTest, ["constructor"]);
+            var test = jasmine.createStub(SyncTest, {
+                constructor: false
+            });
             states.push(test.pending);
             test.run();
             states.push(test.pending);
@@ -1074,7 +1111,9 @@ describe("Test", function () {
                     }.bind(this), 1);
                 }
             });
-            var test = jasmine.createStub(AsyncTest, ["constructor"]);
+            var test = jasmine.createStub(AsyncTest, {
+                constructor: false
+            });
             var states = [];
             var ended = false;
             runs(function () {
@@ -1096,7 +1135,9 @@ describe("Test", function () {
 
     describe("evaluate", function () {
         it("calls the given callback by default", function () {
-            var test = jasmine.createStub(Test, ["constructor"]);
+            var test = jasmine.createStub(Test, {
+                constructor: false
+            });
             var callback = jasmine.createSpy();
             test.evaluate(callback);
             expect(callback).toHaveBeenCalled();
@@ -1112,7 +1153,9 @@ describe("Test", function () {
                     done();
                 }
             });
-            var test = jasmine.createStub(StopTest, ["constructor"]);
+            var test = jasmine.createStub(StopTest, {
+                constructor: false
+            });
             var callback = jasmine.createSpy();
             test.on("end", callback);
             test.run();
@@ -1129,7 +1172,9 @@ describe("Test", function () {
                     done();
                 }
             });
-            var test = jasmine.createStub(StopTest, ["constructor"]);
+            var test = jasmine.createStub(StopTest, {
+                constructor: false
+            });
             test.run();
             expect(states).toEqual([true, false]);
         });
@@ -1143,7 +1188,9 @@ describe("Test", function () {
                     done();
                 }
             });
-            var test = jasmine.createStub(StopTest, ["constructor"]);
+            var test = jasmine.createStub(StopTest, {
+                constructor: false
+            });
             var callback = jasmine.createSpy();
             stop = false;
             test.on("end", callback);
@@ -1167,7 +1214,9 @@ describe("Test", function () {
                     }, 1);
                 }
             });
-            var test = jasmine.createStub(AsyncTest, ["constructor"]);
+            var test = jasmine.createStub(AsyncTest, {
+                constructor: false
+            });
             var callback = jasmine.createSpy();
             test.on("end", callback);
             runs(function () {
@@ -1193,7 +1242,9 @@ describe("Test", function () {
                     }, delay);
                 }
             });
-            var test = jasmine.createStub(AsyncTest, ["constructor"]);
+            var test = jasmine.createStub(AsyncTest, {
+                constructor: false
+            });
             var callback = jasmine.createSpy();
             runs(function () {
                 delay = 1;

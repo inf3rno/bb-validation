@@ -1,34 +1,77 @@
-jasmine.createStub = function (cls, methods) {
-    if (!(cls instanceof Function))
-        throw new TypeError("Invalid class param.");
+(function () {
 
-    var mockClass = function () {
-        this.constructor.apply(this, []);
-    };
+    if (!jasmine)
+        throw new Error("Jasmine not loaded yet.");
 
-    mockClass.prototype = Object.create(cls.prototype);
-    mockClass.prototype.constructor = cls;
-
-    var wrap = function (method) {
-        if (!mockClass.prototype[method] instanceof Function)
+    var wrap = function (proto, method, options) {
+        if (!proto[method] instanceof Function)
             throw new TypeError("Cannot mock " + method + " it's not a function.");
-        jasmine.getEnv().currentSpec.spyOn(mockClass.prototype, method);
+        jasmine.getEnv().currentSpec.spyOn(proto, method);
+        var spy = proto[method];
+        if (options) {
+            if (options.callThrough)
+                spy.andCallThrough();
+            else if (options.callFake)
+                spy.andCallFake(options.callFake);
+        }
+        return spy;
     };
 
-    if (methods) {
-        if (!(methods instanceof Array))
-            methods = [methods];
-        if (methods.length == 1 && methods[0] == "*")
+    jasmine.createStub = function (cls, methods) {
+        if (!(cls instanceof Function))
+            throw new TypeError("Invalid class param.");
+        if (!methods)
+            throw new TypeError("Invalid stub config.");
+
+        var args = [];
+        if (methods && (methods.constructor instanceof Array))
+            args = methods.constructor;
+        var mockClass = function () {
+            this.constructor.apply(this, args);
+        };
+        mockClass.prototype = Object.create(cls.prototype);
+        mockClass.prototype.constructor = cls;
+
+        if (methods == "*")
             for (var property in mockClass.prototype) {
                 if (mockClass.prototype[property] instanceof Function)
-                    wrap(property);
+                    wrap(mockClass.prototype, property, {
+                        callThrough: false,
+                        callFake: false
+                    });
             }
-        else
+        else if (methods instanceof Array)
             for (var i = 0; i < methods.length; ++i) {
                 var method = methods[i];
-                wrap(method);
+                wrap(mockClass.prototype, method, {
+                    callThrough: false,
+                    callFake: false
+                });
             }
-    }
+        else if (methods instanceof Object) {
+            for (var property in methods) {
+                if (!methods.hasOwnProperty(property))
+                    continue;
+                var options = methods[property];
+                if (options instanceof Function)
+                    options = {
+                        callThrough: false,
+                        callFake: options
+                    };
+                else if (options === false || options === undefined || options === null)
+                    options = {
+                        callThrough: false,
+                        callFake: false
+                    };
+                else
+                    options = {
+                        callThrough: true,
+                        callFake: false
+                    };
+                wrap(mockClass.prototype, property, options);
+            }
+        }
 
-    return new mockClass();
-};
+        return new mockClass();
+    };
+})();
