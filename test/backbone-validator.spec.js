@@ -71,7 +71,8 @@ describe("Validator", function () {
                         evaluate: function (done) {
                             done({error: !_.isString(this.params.value)});
                         }
-                    })
+                    }),
+                    auto: true
                 }
             }});
             var model = new Backbone.Model({
@@ -143,7 +144,9 @@ describe("Validator", function () {
 
         it("returns tests in dependency and schema key order by one level depth dependencies", function () {
             var use = {
-                a: {},
+                a: {
+                    auto: true
+                },
                 b: {
                     deps: ["a"]
                 }
@@ -154,9 +157,12 @@ describe("Validator", function () {
         });
         it("returns tests in dependency and schema key order by multi level depth dependencies", function () {
             var use = {
-                a: {},
+                a: {
+                    auto: true
+                },
                 b: {
-                    deps: ["a"]
+                    deps: ["a"],
+                    auto: true
                 },
                 c: {
                     deps: ["b"]
@@ -176,12 +182,16 @@ describe("Validator", function () {
                     deps: ["b", "c"]
                 },
                 b: {
-                    deps: ["d"]
+                    deps: ["d"],
+                    auto: true
                 },
                 c: {
-                    deps: ["d"]
+                    deps: ["d"],
+                    auto: true
                 },
-                d: {}
+                d: {
+                    auto: true
+                }
             };
 
             expectDependency(use, ["a"], ["d", "b", "c", "a"]);
@@ -224,14 +234,17 @@ describe("Validator", function () {
                 },
                 b: {
                     deps: ["d"],
-                    exports: Tests.b
+                    exports: Tests.b,
+                    auto: true
                 },
                 c: {
                     deps: ["d"],
-                    exports: Tests.c
+                    exports: Tests.c,
+                    auto: true
                 },
                 d: {
-                    exports: Tests.d
+                    exports: Tests.d,
+                    auto: true
                 }
             };
 
@@ -244,12 +257,15 @@ describe("Validator", function () {
                     deps: ["b", "c"]
                 },
                 b: {
-                    deps: ["d"]
+                    deps: ["d"],
+                    auto: true
                 },
                 c: {
-                    deps: ["d"]
+                    deps: ["d"],
+                    auto: true
                 },
                 d: {
+                    auto: true
                 }
             };
             expectTestParams(use, {

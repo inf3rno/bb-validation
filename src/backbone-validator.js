@@ -366,6 +366,8 @@ define(function (require, exports, module) {
                     throw new Error("Circular dependency by test " + key + ".");
                 visited[key] = true;
                 _.each(this.testStore.get(key).deps, add, this);
+                if (!_.has(schema, key) && !this.testStore.get(key).auto)
+                    throw new Error("Test " + key + " is not auto configurable.");
                 seriesSchema[key] = this.test(key, schema[key]);
             }.bind(this);
             _.each(_.keys(schema), add);
