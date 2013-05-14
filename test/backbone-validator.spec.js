@@ -51,6 +51,84 @@ var AsyncErrorTest = NextTest.extend({
 
 describe("Validator", function () {
 
+    describe("run", function () {
+
+        it("has to bind test calls to model changes", function () {
+            var CustomValidator = Validator.extend({
+                testStore: new TestStore(),
+                commonStore: new CommonStore()
+            });
+            CustomValidator.plugin(Validator.toPlugin());
+            CustomValidator.plugin({use: {
+                same: {
+                    exports: Test.extend({
+                        evaluate: function (done) {
+                            done({error: this.params.value != this.schema});
+                        }
+                    }),
+                    deps: ["str"]
+                },
+                str: {
+                    exports: Test.extend({
+                        evaluate: function (done) {
+                            done({error: !_.isString(this.params.value)});
+                        }
+                    })
+                }
+            }});
+            var model = new Backbone.Model({
+                input1: null
+            });
+            var validator = new CustomValidator({
+                model: model,
+                schema: {
+                    input1: {
+                        same: "a"
+                    }
+                }
+            });
+            validator.run();
+            expect(validator.attributes).toEqual({input1: {str: true}});
+            model.set({input2: "x"});
+            expect(validator.attributes).toEqual({input1: {str: true}});
+            model.set({input1: "y"});
+            expect(validator.attributes).toEqual({input1: {same: true}});
+            model.set({input1: "a"});
+            expect(validator.attributes).toEqual({input1: false});
+        });
+
+        it("runs on attributes not defined in model but defined in schema", function () {
+            var CustomValidator = Validator.extend({
+                testStore: new TestStore(),
+                commonStore: new CommonStore()
+            });
+            CustomValidator.plugin(Validator.toPlugin());
+            CustomValidator.plugin({use: {
+                str: {
+                    exports: Test.extend({
+                        evaluate: function (done) {
+                            done({error: !_.isString(this.params.value)});
+                        }
+                    })
+                }
+            }});
+            var model = new Backbone.Model({
+
+            });
+            var validator = new CustomValidator({
+                model: model,
+                schema: {
+                    input1: {
+                        str: true
+                    }
+                }
+            });
+            validator.run();
+            expect(validator.attributes).toEqual({input1: {str: true}});
+        });
+
+    });
+
     describe("series", function () {
         it("returns empty tests by empty schema", function () {
             expectDependency({}, [], {});
@@ -229,7 +307,7 @@ describe("Validator", function () {
             testStore: new TestStore(),
             commonStore: new CommonStore()
         });
-        CustomValidator.plugin({use: Validator.prototype.testStore.toObject(), common: Validator.prototype.commonStore.toObject()});
+        CustomValidator.plugin(Validator.toPlugin());
         CustomValidator.plugin({use: use});
         var validator = jasmine.createStub(CustomValidator, ["constructor"]);
 
@@ -247,7 +325,7 @@ describe("Validator", function () {
             testStore: new TestStore(),
             commonStore: new CommonStore()
         });
-        CustomValidator.plugin({use: Validator.prototype.testStore.toObject(), common: Validator.prototype.commonStore.toObject()});
+        CustomValidator.plugin(Validator.toPlugin());
         CustomValidator.plugin({use: use});
         var validator = jasmine.createStub(CustomValidator, ["constructor"]);
 
@@ -262,7 +340,7 @@ describe("Validator", function () {
             testStore: new TestStore(),
             commonStore: new CommonStore()
         });
-        CustomValidator.plugin({use: Validator.prototype.testStore.toObject(), common: Validator.prototype.commonStore.toObject()});
+        CustomValidator.plugin(Validator.toPlugin());
         CustomValidator.plugin({use: use});
         var validator = jasmine.createStub(CustomValidator, ["constructor"]);
 
@@ -291,7 +369,7 @@ describe("Validator", function () {
             testStore: new TestStore(),
             commonStore: commonStore
         });
-        CustomValidator.plugin({use: Validator.prototype.testStore.toObject(), common: Validator.prototype.commonStore.toObject()});
+        CustomValidator.plugin(Validator.toPlugin());
         CustomValidator.plugin({use: use, common: {x: 1}});
 
         var validator = jasmine.createStub(CustomValidator, ["constructor"]);

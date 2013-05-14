@@ -268,10 +268,15 @@ define(function (require, exports, module) {
         }),
         constructor: function (config) {
             Backbone.Model.call(this);
+            if (!config || !config.model || !config.schema)
+                throw new Error("Validator config has to contain model and schema.");
             this.model = config.model;
             this.relations = {};
             this.test = this.parallel(config.schema);
             _.each(this.test.schema, function (series, attribute) {
+                series.on("end", function (result) {
+                    this.set(attribute, result.error);
+                }, this);
                 _.each(series.schema, function (test, key) {
                     _.each(test.relations, function (relatedAttribute) {
                         if (!this.relations[relatedAttribute])
@@ -279,19 +284,40 @@ define(function (require, exports, module) {
                         this.relations[relatedAttribute][attribute] = true;
                     });
                 });
-            });
-            var binding = new RealTimeBinding();
-            binding.bind(this.model, this.test, this.relations);
+                this.model.on("change:" + attribute, function (model, value, options) {
+                    var calling = {};
+                    var add = function (attribute) {
+                        if (calling[attribute])
+                            return;
+                        calling[attribute] = true;
+                        if (this.relations[attribute])
+                            _.each(_.keys(this.relations[attribute]), function (attribute) {
+                                add.call(this, attribute);
+                            }, this);
+                    };
+                    add.call(this, attribute);
+                    var running = {};
+                    _.each(_.keys(calling), function (attribute) {
+                        running[attribute] = model.get(attribute)
+                    });
+                    this.test.run({value: running, attributes: model.attributes});
+                }, this);
+            }, this);
         },
         run: function () {
-            this.test.run({value: attributes, attributes: attributes});
+            var schemaAttributes = _.keys(this.test.schema);
+            var value = _.pick(this.model.attributes, schemaAttributes);
+            _.each(_.without(schemaAttributes, _.keys(value)), function (undefinedAttribute) {
+                value[undefinedAttribute] = undefined;
+            });
+            this.test.run({value: value, attributes: this.model.attributes});
         },
         parallel: function (schema) {
             var parallelSchema = {};
             _.each(_.keys(schema), function (attribute) {
                 parallelSchema[attribute] = this.series(schema[attribute]);
             }, this);
-            return this.test("parallel", parallelSchema);
+            return this.test("continuousParallel", parallelSchema);
         },
         series: function (schema) {
             var visited = {};
@@ -322,34 +348,12 @@ define(function (require, exports, module) {
                 this.prototype.testStore.save(plugin.use);
             if (plugin.common)
                 this.prototype.commonStore.save(plugin.common);
-        }
-    });
-
-    var RealTimeBinding = function () {
-
-    };
-    _.extend(RealTimeBinding.prototype, {
-        bind: function (model, test, relations) {
-            _.each(test.schema, function (series, attribute) {
-                model.on("change:" + attribute, function (model, value, options) {
-                    var calling = {};
-                    var add = function (attribute) {
-                        if (calling[attribute])
-                            return;
-                        calling[attribute] = true;
-                        if (relations[attribute])
-                            _.each(_.keys(relations[attribute]), function (attribute) {
-                                add.call(this, attribute);
-                            }, this);
-                    };
-                    add.call(this, attribute);
-                    var running = {};
-                    _.each(_.keys(calling), function (attribute) {
-                        running[attribute] = model.get(attribute)
-                    });
-                    test.run({value: running, attributes: model.attributes});
-                }, this);
-            });
+        },
+        toPlugin: function () {
+            return {
+                use: this.prototype.testStore.toObject(),
+                common: this.prototype.commonStore.toObject()
+            };
         }
     });
 
