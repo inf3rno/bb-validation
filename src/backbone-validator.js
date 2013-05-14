@@ -266,13 +266,19 @@ define(function (require, exports, module) {
                 exports: Test
             }
         }),
+        running: false,
+        bound: false,
         constructor: function (config) {
             Backbone.Model.call(this);
-            if (!config || !config.model || !config.schema)
-                throw new Error("Validator config has to contain model and schema.");
-            this.model = config.model;
+            this.build(config.schema);
+            if (config.model)
+                this.bind(config.model);
+        },
+        build: function (schema) {
+            if (!schema)
+                throw new Error("Validator config has to contain schema.");
             this.relations = {};
-            this.test = this.parallel(config.schema);
+            this.test = this.parallel(schema);
             _.each(this.test.schema, function (series, attribute) {
                 series.on("end", function (result) {
                     this.set(attribute, result.error);
@@ -282,9 +288,19 @@ define(function (require, exports, module) {
                         if (!this.relations[relatedAttribute])
                             this.relations[relatedAttribute] = {};
                         this.relations[relatedAttribute][attribute] = true;
-                    });
-                });
-                this.model.on("change:" + attribute, function (model, value, options) {
+                    }, this);
+                }, this);
+            }, this);
+        },
+        bind: function (model) {
+            if (this.bound)
+                this.unbind();
+            this.model = model;
+            this.bound = {};
+            _.each(this.test.schema, function (series, attribute) {
+                var listener = function (model, value, options) {
+                    if (!this.running)
+                        return;
                     var calling = {};
                     var add = function (attribute) {
                         if (calling[attribute])
@@ -301,16 +317,37 @@ define(function (require, exports, module) {
                         running[attribute] = model.get(attribute)
                     });
                     this.test.run({value: running, attributes: model.attributes});
-                }, this);
+                }.bind(this);
+                this.model.on("change:" + attribute, listener);
+                this.bound[attribute] = listener;
             }, this);
         },
+        unbind: function () {
+            if (this.running)
+                this.stop();
+            _.each(this.bound, function (listener, attribute) {
+                this.model.off("change:" + attribute, listener);
+            }, this);
+            this.bound = false;
+            delete(this.model);
+        },
         run: function () {
+            if (!this.model)
+                throw new Error("Cannot run validator without model.");
+            if (this.running)
+                this.stop();
+            this.running = true;
             var schemaAttributes = _.keys(this.test.schema);
             var value = _.pick(this.model.attributes, schemaAttributes);
             _.each(_.without(schemaAttributes, _.keys(value)), function (undefinedAttribute) {
                 value[undefinedAttribute] = undefined;
             });
             this.test.run({value: value, attributes: this.model.attributes});
+        },
+        stop: function () {
+            this.running = false;
+            this.test.stop();
+            this.clear();
         },
         parallel: function (schema) {
             var parallelSchema = {};
@@ -326,7 +363,7 @@ define(function (require, exports, module) {
                 if (_.has(seriesSchema, key))
                     return;
                 if (_.has(visited, key))
-                    throw new SyntaxError("Circular dependency by test " + key + ".");
+                    throw new Error("Circular dependency by test " + key + ".");
                 visited[key] = true;
                 _.each(this.testStore.get(key).deps, add, this);
                 seriesSchema[key] = this.test(key, schema[key]);
@@ -336,11 +373,10 @@ define(function (require, exports, module) {
         },
         test: function (key, schema) {
             var Test = this.testStore.get(key).exports;
-            var test = new Test({
+            return new Test({
                 schema: schema,
                 common: this.commonStore.toObject()
             });
-            return test;
         }
     }, {
         plugin: function (plugin) {
