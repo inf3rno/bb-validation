@@ -10,6 +10,7 @@ var Validator = Backbone.Validator;
 var TestStore = Backbone.Validator.TestStore;
 var CommonStore = Backbone.Validator.CommonStore;
 var Parallel = Backbone.Validator.Parallel;
+var ContinuousParallel = Backbone.Validator.ContinuousParallel;
 var Series = Backbone.Validator.Series;
 var Test = Backbone.Validator.Test;
 var NextTest = Test.extend({
@@ -21,6 +22,11 @@ var NextTest = Test.extend({
 var ErrorTest = NextTest.extend({
     evaluate: function (callback) {
         callback({error: this.config || true});
+    }
+});
+var ErrorByValueTest = NextTest.extend({
+    evaluate: function (callback) {
+        callback({error: this.params.value});
     }
 });
 var EndTest = NextTest.extend({
@@ -482,6 +488,27 @@ describe("Parallel", function () {
             });
         });
 
+        it("stops running tests by rerun", function () {
+            var tests = {
+                a: jasmine.createStub(AsyncNextTest, ["stop"]),
+                b: jasmine.createStub(AsyncNextTest, ["stop"]),
+                c: jasmine.createStub(AsyncNextTest, ["stop"])
+            };
+            _.each(tests, function (test) {
+                test.stop.andCallThrough();
+            });
+
+            var parallel = new Parallel({
+                schema: tests
+            });
+
+            parallel.run({value: {}});
+            parallel.run({value: {}});
+
+            expect(tests.a.stop).toHaveBeenCalled();
+            expect(tests.b.stop).toHaveBeenCalled();
+            expect(tests.c.stop).toHaveBeenCalled();
+        });
     });
     describe("stop", function () {
         it("stops every running test", function () {
@@ -509,6 +536,218 @@ describe("Parallel", function () {
     });
 
 });
+
+
+describe("ContinuousParallel", function () {
+
+    describe("run", function () {
+
+        it("runs only tests have key in value map", function () {
+            var createTest = function (Test) {
+                var test = jasmine.createStub(Test, ["run"]);
+                test.run.andCallThrough();
+                return test;
+            };
+            var tests = {
+                a: createTest(NextTest),
+                b: createTest(NextTest)
+            };
+            var parallel = new ContinuousParallel({
+                schema: tests
+            });
+            parallel.run({value: {
+                b: 2
+            }});
+            expect(tests.a.run).not.toHaveBeenCalled();
+            expect(tests.b.run).toHaveBeenCalled();
+        });
+
+
+        it("calls tests parallel, and ends when every test is done", function () {
+            var createTest = function (Test) {
+                var test = jasmine.createStub(Test, ["run"]);
+                test.run.andCallThrough();
+                return test;
+            };
+            var tests = {
+                a: createTest(AsyncNextTest),
+                b: createTest(AsyncNextTest)
+            };
+            var parallel = new ContinuousParallel({
+                schema: tests
+            });
+            runs(function () {
+                parallel.run({value: {
+                    a: 1,
+                    b: 2
+                }});
+                expect(tests.a.run).toHaveBeenCalled();
+                expect(tests.b.run).toHaveBeenCalled();
+                expect(parallel.pending).toBeTruthy();
+            });
+            waitsFor(function () {
+                return !parallel.pending;
+            });
+            runs(function () {
+                expect(tests.a.pending).toBeFalsy();
+                expect(tests.b.pending).toBeFalsy();
+            });
+        });
+
+        it("continues by error", function () {
+            var endingOrder = [];
+            var createTest = function (Test) {
+                var test = jasmine.createStub(Test, ["run"]);
+                test.run.andCallThrough();
+                test.on("end", function () {
+                    endingOrder.push(Test);
+                });
+                return test;
+            };
+            var tests = {
+                a: createTest(AsyncErrorTest),
+                b: createTest(AsyncNextTest)
+            };
+
+            var parallel = new ContinuousParallel({
+                schema: tests
+            });
+            var done = false;
+            runs(function () {
+                parallel.run({value: {
+                    a: 1,
+                    b: 2
+                }});
+            });
+            waitsFor(function () {
+                return !parallel.pending;
+            });
+            runs(function () {
+                expect(tests.a.run).toHaveBeenCalled();
+                expect(tests.b.run).toHaveBeenCalled();
+                expect(endingOrder).toEqual([AsyncErrorTest, AsyncNextTest]);
+            });
+        });
+
+        it("aggregates errors", function () {
+            var parallel = new ContinuousParallel({
+                schema: {
+                    a: new AsyncErrorTest(1),
+                    b: new AsyncNextTest(),
+                    c: new AsyncErrorTest(2)
+                }
+            });
+            var error = false;
+            parallel.on("end", function (result) {
+                error = result.error;
+            });
+            runs(function () {
+                parallel.run({value: {
+                    a: 1,
+                    b: 2,
+                    c: 3
+                }});
+            });
+            waitsFor(function () {
+                return !parallel.pending;
+            });
+            runs(function () {
+                expect(error).toEqual({a: 1, c: 2});
+            });
+        });
+
+        it("stops only running tests given in new value by rerun", function () {
+            var tests = {
+                a: jasmine.createStub(AsyncNextTest, ["stop"]),
+                b: jasmine.createStub(AsyncNextTest, ["stop"]),
+                c: jasmine.createStub(AsyncNextTest, ["stop"])
+            };
+            _.each(tests, function (test) {
+                test.stop.andCallThrough();
+            });
+
+            var parallel = new ContinuousParallel({
+                schema: tests
+            });
+
+            parallel.run({value: {
+                a: 1,
+                b: 2,
+                c: 3
+            }});
+            parallel.run({value: {
+                b: 2,
+                d: 4
+            }});
+
+            expect(tests.a.stop).not.toHaveBeenCalled();
+            expect(tests.b.stop).toHaveBeenCalled();
+            expect(tests.c.stop).not.toHaveBeenCalled();
+        });
+
+        it("clears old errors by tests given in new value by rerun", function () {
+            var parallel = new ContinuousParallel({
+                schema: {
+                    a: new ErrorByValueTest(),
+                    b: new AsyncErrorTest()
+                }
+            });
+            var error = false;
+            parallel.on("end", function (result) {
+                error = result.error;
+            });
+
+            runs(function () {
+                parallel.run({value: {
+                    a: true,
+                    b: true,
+                    c: null
+                }});
+                parallel.run({value: {
+                    a: false
+                }});
+            });
+            waitsFor(function () {
+                return !parallel.pending;
+            });
+            runs(function () {
+                expect(error).toEqual({b: true});
+            });
+        });
+
+    });
+
+    describe("stop", function () {
+        it("stops every running test", function () {
+            var tests = {
+                a: jasmine.createStub(AsyncNextTest, ["stop"]),
+                b: jasmine.createStub(NextTest, ["stop"]),
+                c: jasmine.createStub(AsyncNextTest, ["stop"])
+            };
+            _.each(tests, function (test) {
+                test.stop.andCallThrough();
+            });
+
+            var parallel = new ContinuousParallel({
+                schema: tests
+            });
+
+            parallel.run({value: {
+                a: 1,
+                b: 2,
+                c: 3
+            }});
+            parallel.stop();
+
+            expect(tests.a.stop).toHaveBeenCalled();
+            expect(tests.b.stop).not.toHaveBeenCalled();
+            expect(tests.c.stop).toHaveBeenCalled();
+
+        });
+    });
+
+});
+
 
 describe("Series", function () {
 

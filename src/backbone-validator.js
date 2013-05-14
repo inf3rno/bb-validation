@@ -20,9 +20,9 @@ define(function (require, exports, module) {
             this.schema = schema;
         },
         run: function (params) {
-            this.params = params;
             if (this.pending)
                 this.stop();
+            this.params = params;
             this.pending = true;
             this.trigger("run", params);
         },
@@ -95,8 +95,8 @@ define(function (require, exports, module) {
         active: 0,
         run: function (params) {
             TestCollection.prototype.run.apply(this, arguments);
+            this.active += _.size(this.schema);
             _.each(this.schema, function (test, key) {
-                ++this.active;
                 var params = _.omit(this.params, "value");
                 params.value = this.params.value[key];
                 test.run(params);
@@ -118,6 +118,36 @@ define(function (require, exports, module) {
         reset: function () {
             TestCollection.prototype.reset.call(this);
             this.active = 0;
+        }
+    });
+
+    var ContinuousParallel = Parallel.extend({
+        run: function (params) {
+            this.params = params;
+            if (!this.pending) {
+                this.pending = true;
+                this.trigger("run", params);
+            }
+            _.each(_.keys(this.params.value), function (key) {
+                var test = this.schema[key];
+                if (!test)
+                    return;
+                if (test.pending)
+                    test.stop();
+                if (this.error && this.error[key])
+                    delete(this.error[key]);
+                ++this.active;
+            }, this);
+            if (this.error && !_.size(this.error))
+                this.error = false;
+            _.each(_.keys(this.params.value), function (key) {
+                var test = this.schema[key];
+                if (!test)
+                    return;
+                var params = _.omit(this.params, "value");
+                params.value = this.params.value[key];
+                test.run(params);
+            }, this);
         }
     });
 
@@ -221,9 +251,13 @@ define(function (require, exports, module) {
     });
 
     var Validator = Backbone.Model.extend({
+        commonStore: new CommonStore(),
         testStore: new TestStore({
             parallel: {
                 exports: Parallel
+            },
+            continuousParallel: {
+                exports: ContinuousParallel
             },
             series: {
                 exports: Series
@@ -232,23 +266,30 @@ define(function (require, exports, module) {
                 exports: Test
             }
         }),
-        commonStore: new CommonStore(),
         constructor: function (config) {
             Backbone.Model.call(this);
             this.model = config.model;
+            this.relations = {};
             this.test = this.parallel(config.schema);
+            _.each(this.test.schema, function (series, attribute) {
+                _.each(series.schema, function (test, key) {
+                    _.each(test.relations, function (relatedAttribute) {
+                        if (!this.relations[relatedAttribute])
+                            this.relations[relatedAttribute] = {};
+                        this.relations[relatedAttribute][attribute] = true;
+                    });
+                });
+            });
+            var binding = new RealTimeBinding();
+            binding.bind(this.model, this.test, this.relations);
         },
         run: function () {
             this.test.run({value: attributes, attributes: attributes});
         },
         parallel: function (schema) {
-            //this.relations = {};
             var parallelSchema = {};
             _.each(_.keys(schema), function (attribute) {
                 parallelSchema[attribute] = this.series(schema[attribute]);
-                //this.model.on("change:" + attribute, function (model, value, options) {
-                //    this.change(attribute, value);
-                //});
             }, this);
             return this.test("parallel", parallelSchema);
         },
@@ -273,26 +314,7 @@ define(function (require, exports, module) {
                 schema: schema,
                 common: this.commonStore.toObject()
             });
-            //this.relations[attribute].push(test.relations);
             return test;
-        },
-        change: function (attribute, value) {
-            var calling = {};
-            var add = function (attribute) {
-                if (calling[attribute])
-                    return;
-                calling[attribute] = true;
-                if (this.relations[attribute])
-                    _.each(_.keys(this.relations[attribute]), function (attribute) {
-                        add.call(this, attribute);
-                    }, this);
-            };
-            add.call(this, attribute);
-            var running = {};
-            _.each(_.keys(calling), function (attribute) {
-                running[attribute] = this.model.get(attribute)
-            });
-            this.test.run({value: running, attributes: this.model.attributes});
         }
     }, {
         plugin: function (plugin) {
@@ -303,12 +325,41 @@ define(function (require, exports, module) {
         }
     });
 
+    var RealTimeBinding = function () {
+
+    };
+    _.extend(RealTimeBinding.prototype, {
+        bind: function (model, test, relations) {
+            _.each(test.schema, function (series, attribute) {
+                model.on("change:" + attribute, function (model, value, options) {
+                    var calling = {};
+                    var add = function (attribute) {
+                        if (calling[attribute])
+                            return;
+                        calling[attribute] = true;
+                        if (relations[attribute])
+                            _.each(_.keys(relations[attribute]), function (attribute) {
+                                add.call(this, attribute);
+                            }, this);
+                    };
+                    add.call(this, attribute);
+                    var running = {};
+                    _.each(_.keys(calling), function (attribute) {
+                        running[attribute] = model.get(attribute)
+                    });
+                    test.run({value: running, attributes: model.attributes});
+                }, this);
+            });
+        }
+    });
+
     _.extend(Validator, {
         TestStore: TestStore,
         CommonStore: CommonStore,
+        Test: Test,
         Series: Series,
         Parallel: Parallel,
-        Test: Test
+        ContinuousParallel: ContinuousParallel
     });
 
     module.exports = Validator;
