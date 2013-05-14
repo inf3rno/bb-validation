@@ -256,4 +256,6 @@ define(function (require, exports, module) {
         }
     };
 
+    Backbone.Validator.plugin(module.exports);
+
 });
