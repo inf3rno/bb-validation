@@ -1,5 +1,7 @@
-(function () {
+if (typeof define !== 'function')
+    var define = require('amdefine')(module, require);
 
+define(function (require, exports, module) {
     if (!jasmine)
         throw new Error("Jasmine not loaded yet.");
 
@@ -74,4 +76,4 @@
 
         return new mockClass();
     };
-})();
+});
