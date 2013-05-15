@@ -16,11 +16,9 @@ define(function (require, exports, module) {
                     initialize: function (schema) {
                         this.delay = schema || 1;
                     },
-                    evaluate: function (done) {
-                        var id = this.id;
+                    evaluate: function (done, asyncParams) {
                         setTimeout(function () {
-                            if (this.id == id)
-                                done({error: this.registered[this.params.value]});
+                            done({error: this.registered[asyncParams.value]});
                         }.bind(this), this.delay);
                     }
                 }),

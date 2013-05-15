@@ -44,9 +44,9 @@ define(function (require, exports, module) {
         id: 0,
         run: function (params) {
             TestBase.prototype.run.apply(this, arguments);
-            this.evaluate(this.end.bind(this, this.id));
+            this.evaluate(this.end.bind(this, this.id), params);
         },
-        evaluate: function (done) {
+        evaluate: function (done, asyncParams) {
             done({error: false});
         },
         end: function (id, result) {
