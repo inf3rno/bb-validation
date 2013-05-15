@@ -17,8 +17,10 @@ define(function (require, exports, module) {
                         this.delay = schema || 1;
                     },
                     evaluate: function (done) {
+                        var id = this.id;
                         setTimeout(function () {
-                            done({error: this.registered[this.params.value]});
+                            if (this.id == id)
+                                done({error: this.registered[this.params.value]});
                         }.bind(this), this.delay);
                     }
                 }),
