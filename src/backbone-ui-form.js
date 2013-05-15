@@ -105,7 +105,7 @@ define(function (require, exports, module) {
             Aggregator.prototype.initialize.apply(this, arguments);
         },
         display: function (errors, pending) {
-            if (errors + pending)
+            if (errors || pending)
                 this.$button.attr("disabled", "disabled");
             else
                 this.$button.removeAttr("disabled");

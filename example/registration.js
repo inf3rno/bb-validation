@@ -68,7 +68,7 @@ define(function (require, exports, module) {
                             type: String,
                             match: "email",
                             max: 127,
-                            registered: 1000
+                            registered: 3000
                         },
                         password: {
                             required: true,

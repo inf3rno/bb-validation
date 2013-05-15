@@ -658,12 +658,18 @@ describe("Parallel", function () {
                 schema: tests
             });
 
-            parallel.run({value: {}});
-            parallel.run({value: {}});
-
-            expect(tests.a.stop).toHaveBeenCalled();
-            expect(tests.b.stop).toHaveBeenCalled();
-            expect(tests.c.stop).toHaveBeenCalled();
+            runs(function () {
+                parallel.run({value: {}});
+                parallel.run({value: {}});
+            });
+            waitsFor(function () {
+                return !parallel.pending;
+            });
+            runs(function () {
+                expect(tests.a.stop).toHaveBeenCalled();
+                expect(tests.b.stop).toHaveBeenCalled();
+                expect(tests.c.stop).toHaveBeenCalled();
+            });
         });
     });
     describe("stop", function () {
@@ -832,20 +838,25 @@ describe("ContinuousParallel", function () {
             var parallel = new ContinuousParallel({
                 schema: tests
             });
-
-            parallel.run({value: {
-                a: 1,
-                b: 2,
-                c: 3
-            }});
-            parallel.run({value: {
-                b: 2,
-                d: 4
-            }});
-
-            expect(tests.a.stop).not.toHaveBeenCalled();
-            expect(tests.b.stop).toHaveBeenCalled();
-            expect(tests.c.stop).not.toHaveBeenCalled();
+            runs(function () {
+                parallel.run({value: {
+                    a: 1,
+                    b: 2,
+                    c: 3
+                }});
+                parallel.run({value: {
+                    b: 2,
+                    d: 4
+                }});
+            });
+            waitsFor(function () {
+                return !parallel.pending;
+            });
+            runs(function () {
+                expect(tests.a.stop).not.toHaveBeenCalled();
+                expect(tests.b.stop).toHaveBeenCalled();
+                expect(tests.c.stop).not.toHaveBeenCalled();
+            });
         });
 
         it("clears old errors by tests given in new value by rerun", function () {

@@ -134,9 +134,10 @@ define(function (require, exports, module) {
                     return;
                 if (test.pending)
                     test.stop();
+                else
+                    ++this.active;
                 if (this.error && this.error[key])
                     delete(this.error[key]);
-                ++this.active;
             }, this);
             if (this.error && !_.size(this.error))
                 this.error = false;
