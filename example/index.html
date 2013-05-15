@@ -6,18 +6,18 @@
 </head>
 <body>
 <script src="lib/require.js"></script>
-<script src="config.js"></script>
+<script src="require.config.js"></script>
 <script>
-    require(["jquery", "domReady!", "registration"], function ($, domReady, registration) {
+    require(["jquery", "registration"], function ($, registration) {
         $("body").append(registration.createForm({
-            email:"test@test.hu",
-            password:"abc",
-            password2:"abcd"
+            email: "test@test.hu",
+            password: "abc",
+            password2: "abcd"
         }).$el);
         $("body").append(registration.createForm({
-            email:"test@test.it",
-            password:"password",
-            password2:"password"
+            email: "test@test.it",
+            password: "password",
+            password2: "password"
         }).$el);
     });
 </script>

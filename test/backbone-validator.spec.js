@@ -126,6 +126,59 @@ describe("Validator", function () {
             expect(validator.attributes).toEqual({input1: {str: true}});
         });
 
+        it("counts errors", function () {
+            var CustomValidator = Validator.extend({
+                testStore: new TestStore(),
+                commonStore: new CommonStore()
+            });
+            CustomValidator.plugin(Validator.toPlugin());
+            CustomValidator.plugin({use: {
+                str: {
+                    exports: Test.extend({
+                        evaluate: function (done) {
+                            done({error: !_.isString(this.params.value)});
+                        }
+                    })
+                }
+            }});
+            var model = new Backbone.Model({
+                a: "",
+                b: "",
+                c: ""
+            });
+            var validator = new CustomValidator({
+                model: model,
+                schema: {
+                    a: {
+                        str: true
+                    },
+                    b: {
+                        str: true
+                    },
+                    c: {
+                        str: true
+                    }
+                }
+            });
+            validator.run();
+            expect(validator.attributes).toEqual({a: false, b: false, c: false});
+            expect(validator.errors).toEqual(0);
+            model.set({
+                b: null,
+                c: null
+            });
+            expect(validator.errors).toEqual(2);
+            model.set({
+                b: "",
+                c: ""
+            });
+            expect(validator.errors).toEqual(0);
+            model.set({
+                a: null
+            });
+            expect(validator.errors).toEqual(1);
+        });
+
     });
 
     describe("series", function () {

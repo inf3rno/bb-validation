@@ -268,6 +268,8 @@ define(function (require, exports, module) {
         }),
         running: false,
         bound: false,
+        pending: false,
+        errors: 0,
         constructor: function (config) {
             Backbone.Model.call(this);
             this.build(config.schema);
@@ -277,12 +279,10 @@ define(function (require, exports, module) {
         build: function (schema) {
             if (!schema)
                 throw new Error("Validator config has to contain schema.");
-            this.relations = {};
             this.test = this.parallel(schema);
+
+            this.relations = {};
             _.each(this.test.schema, function (series, attribute) {
-                series.on("end", function (result) {
-                    this.set(attribute, result.error);
-                }, this);
                 _.each(series.schema, function (test, key) {
                     _.each(test.relations, function (relatedAttribute) {
                         if (!this.relations[relatedAttribute])
@@ -290,6 +290,25 @@ define(function (require, exports, module) {
                         this.relations[relatedAttribute][attribute] = true;
                     }, this);
                 }, this);
+            }, this);
+
+            this.test.on("run", function () {
+                this.pending = true;
+            }, this);
+            _.each(this.test.schema, function (series, attribute) {
+                series.on("run", function () {
+                    if (this.attributes[attribute])
+                        --this.errors;
+                    this.set(attribute, undefined);
+                }, this);
+                series.on("end", function (result) {
+                    if (result.error)
+                        ++this.errors;
+                    this.set(attribute, result.error);
+                }, this);
+            }, this);
+            this.test.on("end", function () {
+                this.pending = false;
             }, this);
         },
         bind: function (model) {
@@ -337,11 +356,10 @@ define(function (require, exports, module) {
             if (this.running)
                 this.stop();
             this.running = true;
-            var schemaAttributes = _.keys(this.test.schema);
-            var value = _.pick(this.model.attributes, schemaAttributes);
-            _.each(_.without(schemaAttributes, _.keys(value)), function (undefinedAttribute) {
-                value[undefinedAttribute] = undefined;
-            });
+            var value = {};
+            _.each(this.test.schema, function (series, attribute) {
+                value[attribute] = this.model.get(attribute);
+            }, this);
             this.test.run({value: value, attributes: this.model.attributes});
         },
         stop: function () {
