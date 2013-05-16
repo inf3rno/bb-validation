@@ -1,6 +1,6 @@
 {
     "name":"bb-validation",
-    "version":"2.0.0",
+    "version":"2.0.1",
     "author":"inf3rno <laszlo.janszky@gmail.com>",
     "description":"An extendable validation plugin for Backbone with asynchronous tests, custom messages support, form generation, etc...",
     "main":"./src/backbone-validator.js",
