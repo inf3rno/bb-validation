@@ -1,4 +1,5 @@
 require.config({
+    baseUrl: "/example",
     paths: {
         backbone: "lib/backbone",
         underscore: "lib/underscore",
@@ -11,7 +12,7 @@ require.config({
         backboneValidator: "../src/backbone-validator",
         backboneValidatorBasicTests: "../src/backbone-validator-basic-tests",
         backboneUIForm: "../src/backbone-ui-form",
-        registration: "registration"
+        registration: "registration-form/registration"
     },
     shim: {
         registration: {

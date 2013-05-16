@@ -1,0 +1,11 @@
+form {
+    margin: 50px;
+}
+
+form input {
+    margin: 5px;
+}
+
+.error {
+    color: red;
+}
