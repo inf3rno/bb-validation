@@ -12,7 +12,7 @@ define(function (require, exports, module) {
         throw new Error("Backbone.UI not loaded yet!");
 
     Backbone.UI.Messenger = Backbone.View.extend({
-        noMessage: "OK",
+        noMessage: "",
         pendingMessage: "Pending ...",
         unknownMessage: "Not valid.",
         chunkSeparator: "<br/>",
@@ -55,6 +55,8 @@ define(function (require, exports, module) {
                 message = this.pendingMessage;
             else if (chunks)
                 message = chunks.join(this.chunkSeparator);
+            else
+                message = this.noMessage;
 
             this.box.innerHTML = message;
         }
@@ -63,78 +65,66 @@ define(function (require, exports, module) {
     Backbone.UI.Form = Backbone.View.extend({
         tagName: "form",
         initialize: function () {
-            this.validator = this.options.validator;
+            this.schema = {};
+            this.messages = {};
+            this.fields = {};
+            this.buttons = {};
+            _.each(this.options.fields, function (config, attribute) {
+                this.schema[attribute] = config.schema;
+                this.messages[attribute] = config.messages;
+                this.fields[attribute] = _.omit(config, ["schema", "messages"]);
+            }, this);
+            _.each(this.options.buttons, function (config, attribute) {
+                this.buttons[attribute] = config;
+            }, this);
+            this.validator = new Backbone.Validator({
+                schema: this.schema
+            });
             this.render();
         },
         render: function () {
-            var emalField = $.el.p(
-                $.el.span("Email"),
-                new Backbone.UI.TextField({
+            this.$el.html("");
+            _.each(this.fields, function (config, attribute) {
+                var field = this.field(attribute, config.label, config.type, config.options);
+                this.$el.append(field);
+            }, this);
+            _.each(this.buttons, function (config, attribute) {
+                var button = this.button(config.label, config.type, config.options);
+                this.$el.append(button);
+            }, this);
+            this.validator.bindModel(this.model);
+            this.validator.run();
+            return this;
+        },
+        field: function (attribute, label, Field, options) {
+            return $.el.p(
+                $.el.label({for: attribute}, label),
+                new Field(_.extend({
                     model: this.model,
-                    content: "email"
+                    content: attribute
+                }, options)).render().el,
+                new Backbone.UI.Messenger({
+                    model: this.validator,
+                    content: attribute,
+                    messages: this.messages[attribute]
                 }).render().el
             );
-            var emErr = new Backbone.UI.Messenger({
-                model: this.validator,
-                content: "email",
-                messages: this.options.messages.email
-            }).render().$el;
-            var pwField = $.el.p(
-                $.el.span("Password"),
-                new Backbone.UI.TextField({
-                    type: "password",
-                    model: this.model,
-                    content: "password"
-                }).render().el
-            );
-            var pwErr = new Backbone.UI.Messenger({
-                model: this.validator,
-                content: "password",
-                messages: this.options.messages.password
-            }).render().$el;
-            var pw2Field = $.el.p(
-                $.el.span("Confirm Password"),
-                new Backbone.UI.TextField({
-                    type: "password",
-                    model: this.model,
-                    content: "password2"
-                }).render().el
-            );
-            var pw2Err = new Backbone.UI.Messenger({
-                model: this.validator,
-                content: "password2",
-                messages: this.options.messages.password2
-            }).render().$el;
-            var submit = new Backbone.UI.Button({
+        },
+        button: function (label, Button, options) {
+            var submit = new Button(_.extend({
                 disabled: true,
-                content: 'Register',
+                content: label,
                 onclick: function () {
                     this.trigger("submit", this.model);
                     return false;
                 }.bind(this)
-            });
+            }, options));
             this.validator.on("change", function () {
                 submit.setEnabled(!this.validator.errors && !this.validator.pending);
             }, this);
-
-            var button = $.el.p({style: "padding-top: 15px"},
-                $.el.span("\u00a0"),
+            return $.el.p(
                 submit.render().el
             );
-
-
-            this.$el.html("");
-            this.$el.append(emalField);
-            this.$el.append(emErr);
-            this.$el.append(pwField);
-            this.$el.append(pwErr);
-            this.$el.append(pw2Field);
-            this.$el.append(pw2Err);
-            this.$el.append(button);
-
-            this.validator.bindModel(this.model);
-            this.validator.run();
-            return this;
         }
     });
 

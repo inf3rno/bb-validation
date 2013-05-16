@@ -31,16 +31,32 @@ define(function (require, exports, module) {
         createForm: function (attributes) {
             return new Backbone.UI.Form({
                 model: new Backbone.Model(attributes),
-                validator: new Backbone.Validator({
-                    schema: {
-                        email: {
+                fields: {
+                    email: {
+                        type: Backbone.UI.TextField,
+                        label: "Email",
+                        schema: {
                             required: true,
                             type: String,
                             match: "email",
                             max: 127,
                             registered: 1000
                         },
-                        password: {
+                        messages: {
+                            required: "The email address is not given.",
+                            type: "Email address must be string.",
+                            match: "Not an email address.",
+                            max: "The given email address is too long.",
+                            registered: "The email address is already registered."
+                        }
+                    },
+                    password: {
+                        type: Backbone.UI.TextField,
+                        options: {
+                            type: "password"
+                        },
+                        label: "Password",
+                        schema: {
                             required: true,
                             type: String,
                             range: {
@@ -48,29 +64,33 @@ define(function (require, exports, module) {
                                 max: 14
                             }
                         },
-                        password2: {
-                            duplicate: "password"
-                        }
-                    }
-                }),
-                messages: {
-                    email: {
-                        required: "The email address is not given.",
-                        type: "Email address must be string.",
-                        match: "Not an email address.",
-                        max: "The given email address is too long.",
-                        registered: "The email address is already registered."
-                    },
-                    password: {
-                        required: "The password is not given.",
-                        type: "The password must be string.",
-                        range: {
-                            min: "The password is too short.",
-                            max: "The password is too long."
+                        messages: {
+                            required: "The password is not given.",
+                            type: "The password must be string.",
+                            range: {
+                                min: "The password is too short.",
+                                max: "The password is too long."
+                            }
                         }
                     },
                     password2: {
-                        duplicate: "The verifier password does not equal to the password."
+                        type: Backbone.UI.TextField,
+                        options: {
+                            type: "password"
+                        },
+                        label: "Confirm Password",
+                        schema: {
+                            duplicate: "password"
+                        },
+                        messages: {
+                            duplicate: "The verifier password does not equal to the password."
+                        }
+                    }
+                },
+                buttons: {
+                    submit: {
+                        type: Backbone.UI.Button,
+                        label: "Register"
                     }
                 }
             })
