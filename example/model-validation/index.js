@@ -62,7 +62,7 @@ define(function (require, exports, module) {
         console.log("pending", validator.pending, "errors", validator.errors, validator.attributes);
     });
     validator.test.on("end", function () {
-        console.log("tests ended");
+        console.log("all running test ended");
     });
     console.log("initial run, should result error by password and password2, and pending by the async test of email");
     validator.run();
@@ -81,13 +81,11 @@ define(function (require, exports, module) {
 
     console.log("waiting for the end of the async test");
 
-    var deferredChange = function () {
+    setTimeout(function () {
         console.log("changing email to valid, now async test runs again, btw it stops previous test automatically if it is pending and you run it again...");
         model.set({
             email: "test@test.it"
         });
-        validator.test.off("end", deferredChange);
-    };
-    validator.test.on("end", deferredChange);
+    }, 2);
 
 });
