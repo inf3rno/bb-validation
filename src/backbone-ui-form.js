@@ -130,7 +130,7 @@ define(function (require, exports, module) {
             var submit = new Button(_.extend({
                 disabled: true,
                 content: label,
-                onclick: function () {
+                onClick: function () {
                     this.trigger("submit", this.model);
                     return false;
                 }.bind(this)
