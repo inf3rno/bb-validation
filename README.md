@@ -19,7 +19,40 @@ This plugin is for helping the validation of Backbone models in Backbone applica
  * [jasmine.stub](https://github.com/inf3rno/bb-validation/blob/master/test/jasmine-stub.js) - **beta** version yet - it is for easier testing - no self tests yet, it works only with jasmine-node, never tried out with jasmine in browser
  * [Backbone.UI.Form](https://github.com/inf3rno/bb-validation/blob/master/src/backbone-ui-form.js) - **alpha** version yet, it's a bit dummy, I created it for the example - it generates a form with error messages and auto disabling submit button - I develop it right now
 
-Example code:
+Model validation example code (runs in nodejs):
+
+    var validator = new Backbone.Validator({
+        model: model,
+        schema: {
+            email: {
+                required: true,
+                type: String,
+                match: "email",
+                max: 127,
+                registered: 1
+            },
+            password: {
+                required: true,
+                type: String,
+                range: {
+                    min: 5,
+                    max: 14
+                }
+            },
+            password2: {
+                duplicate: "password"
+            }
+        }
+    });
+    validator.on("change", function () {
+        console.log("pending", validator.pending, "errors", validator.errors, validator.attributes);
+    });
+    validator.test.on("end", function () {
+        console.log("all running test ended");
+    });
+    validator.run();
+
+Form generation example code (runs in browser):
 
 	new Backbone.UI.Form({
 		model: new Backbone.Model(attributes),
