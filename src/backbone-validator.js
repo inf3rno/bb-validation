@@ -275,7 +275,7 @@ define(function (require, exports, module) {
             Backbone.Model.call(this);
             this.build(config.schema);
             if (config.model)
-                this.bind(config.model);
+                this.bindModel(config.model);
         },
         build: function (schema) {
             if (!schema)
@@ -312,9 +312,9 @@ define(function (require, exports, module) {
                 this.pending = false;
             }, this);
         },
-        bind: function (model) {
+        bindModel: function (model) {
             if (this.bound)
-                this.unbind();
+                this.unbindModel();
             this.model = model;
             this.bound = {};
             _.each(this.test.schema, function (series, attribute) {
@@ -342,7 +342,7 @@ define(function (require, exports, module) {
                 this.bound[attribute] = listener;
             }, this);
         },
-        unbind: function () {
+        unbindModel: function () {
             if (this.running)
                 this.stop();
             _.each(this.bound, function (listener, attribute) {

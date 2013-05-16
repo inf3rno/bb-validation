@@ -5,168 +5,137 @@ if (typeof define !== 'function')
 
 define(function (require, exports, module) {
     var _ = require("underscore"),
-        Backbone = require("backbone");
+        Backbone = require("backbone"),
+        $ = require("jquery");
 
-    var View = Backbone.View.extend({
-        initialize: function () {
-            this.model.on("change", function () {
-                this.unRender();
-                this.render();
-            }, this);
-            this.render();
-        },
-        render: function () {
-        },
-        unRender: function () {
-        }
-    });
+    if (!Backbone.UI)
+        throw new Error("Backbone.UI not loaded yet!");
 
-    var Aggregator = View.extend({
-        render: function () {
-            this.display(this.model.errors, this.model.pending);
-            return this;
-        },
-        display: function (errors, pending) {
-        }
-    });
-
-    var Messenger = View.extend({
-        unknownMessage: "Not valid.",
-        initialize: function () {
-            if (this.options.unknownMessage)
-                this.unknownMessage = this.options.unknownMessage;
-            if (!this.messages && !this.options.messages)
-                throw new Error("No messages given.");
-            if (this.options.messages)
-                this.messages = this.options.messages;
-            View.prototype.initialize.apply(this, arguments);
-        },
-        render: function () {
-            _.each(this.model.attributes, function (errors, attribute) {
-                var chunks;
-                var pending = false;
-                if (errors) {
-                    chunks = [];
-                    _.each(errors, function (error, name) {
-                        var section = this.messages[attribute][name];
-                        if (typeof(section) == "string")
-                            chunks.push(section);
-                        else if (section && section[error])
-                            chunks.push(section[error]);
-                    }, this);
-                    if (!chunks.length)
-                        chunks.push(this.unknownMessage);
-                }
-                else if (errors === undefined)
-                    pending = true;
-                this.display(attribute, chunks, pending);
-            }, this);
-            return this;
-        },
-        unRender: function () {
-            _.each(this.model.attributes, function (errors, attribute) {
-                this.display(attribute);
-            }, this);
-        },
-        display: function (attribute, chunks, pending) {
-        }
-    });
-
-    var InputErrors = Messenger.extend({
+    Backbone.UI.Messenger = Backbone.View.extend({
+        noMessage: "OK",
         pendingMessage: "Pending ...",
+        unknownMessage: "Not valid.",
         chunkSeparator: "<br/>",
         initialize: function () {
-            this.form = this.options.form;
-            this.model = this.form.validator;
-            this.$displays = {};
-            _.each(this.form.$inputs, function ($input, attribute) {
-                this.$displays[attribute] = $input.next();
-            }, this);
-            Messenger.prototype.initialize.apply(this, arguments);
+            this.messages = this.options.messages;
+            this.mixin([Backbone.UI.HasModel]);
+            _(this).bindAll('_refreshValue');
+            this._observeModel(this._refreshValue);
         },
-        display: function (attribute, chunks, pending) {
-            var $display = this.$displays[attribute];
-            if (!$display)
+        render: function () {
+            this.box = $.el.span({className: "messenger"});
+            this._refreshValue();
+            $(this.el).empty();
+            this.el.appendChild($.el.div({className: 'messenger_wrapper'}, this.box));
+            return this;
+        },
+        _refreshValue: function () {
+            if (!this.box)
                 return;
+            var errors = this.resolveContent();
+            var chunks;
+            var pending = false;
+            if (errors) {
+                chunks = [];
+                _.each(errors, function (error, name) {
+                    var section = this.messages[name];
+                    if (_.isString(section))
+                        chunks.push(section);
+                    else if (section && section[error])
+                        chunks.push(section[error]);
+                }, this);
+                if (!chunks.length)
+                    chunks.push(this.unknownMessage);
+            }
+            else if (errors === undefined)
+                pending = true;
+
             var message = "";
             if (pending)
                 message = this.pendingMessage;
             else if (chunks)
                 message = chunks.join(this.chunkSeparator);
-            $display.html(message);
+
+            this.box.innerHTML = message;
         }
     });
 
-    var ButtonDisabler = Aggregator.extend({
-        initialize: function () {
-            this.form = this.options.form;
-            this.model = this.form.validator;
-            this.$button = this.form.$button;
-            Aggregator.prototype.initialize.apply(this, arguments);
-        },
-        display: function (errors, pending) {
-            if (errors || pending)
-                this.$button.attr("disabled", "disabled");
-            else
-                this.$button.removeAttr("disabled");
-        }
-    });
-
-    var AbstractForm = Backbone.View.extend({
+    Backbone.UI.Form = Backbone.View.extend({
         tagName: "form",
-        Decorators: [],
         initialize: function () {
             this.validator = this.options.validator;
             this.render();
         },
         render: function () {
-            this.displayContent();
-            this.findInputs();
-            this.bindInputs();
-            this.findButton();
-            this.decorate();
-            this.validator.bind(this.model);
+            var emalField = $.el.p(
+                $.el.span("Email"),
+                new Backbone.UI.TextField({
+                    model: this.model,
+                    content: "email"
+                }).render().el
+            );
+            var emErr = new Backbone.UI.Messenger({
+                model: this.validator,
+                content: "email",
+                messages: this.options.messages.email
+            }).render().$el;
+            var pwField = $.el.p(
+                $.el.span("Password"),
+                new Backbone.UI.TextField({
+                    type: "password",
+                    model: this.model,
+                    content: "password"
+                }).render().el
+            );
+            var pwErr = new Backbone.UI.Messenger({
+                model: this.validator,
+                content: "password",
+                messages: this.options.messages.password
+            }).render().$el;
+            var pw2Field = $.el.p(
+                $.el.span("Confirm Password"),
+                new Backbone.UI.TextField({
+                    type: "password",
+                    model: this.model,
+                    content: "password2"
+                }).render().el
+            );
+            var pw2Err = new Backbone.UI.Messenger({
+                model: this.validator,
+                content: "password2",
+                messages: this.options.messages.password2
+            }).render().$el;
+            var submit = new Backbone.UI.Button({
+                disabled: true,
+                content: 'Register',
+                onclick: function () {
+                    this.trigger("submit", this.model);
+                    return false;
+                }.bind(this)
+            });
+            this.validator.on("change", function () {
+                submit.setEnabled(!this.validator.errors && !this.validator.pending);
+            }, this);
+
+            var button = $.el.p({style: "padding-top: 15px"},
+                $.el.span("\u00a0"),
+                submit.render().el
+            );
+
+
+            this.$el.html("");
+            this.$el.append(emalField);
+            this.$el.append(emErr);
+            this.$el.append(pwField);
+            this.$el.append(pwErr);
+            this.$el.append(pw2Field);
+            this.$el.append(pw2Err);
+            this.$el.append(button);
+
+            this.validator.bindModel(this.model);
             this.validator.run();
             return this;
-        },
-        displayContent: function () {
-            this.$el.html(this.template(this.model.toJSON()));
-        },
-        findInputs: function () {
-            this.$inputs = {};
-            $("input", this.$el).each(function (index, input) {
-                var $input = $(input);
-                var attribute = $input.attr("name");
-                if (!attribute)
-                    return;
-                this.$inputs[attribute] = $input;
-            }.bind(this));
-        },
-        bindInputs: function () {
-            _.each(this.$inputs, function ($input, attribute) {
-                $input.change(function () {
-                    this.model.set(attribute, $input.val());
-                }.bind(this));
-            }, this);
-        },
-        findButton: function () {
-            this.$button = $("button", this.$el);
-        },
-        decorate: function () {
-            _.each(this.Decorators, function (Decorator) {
-                new Decorator({
-                    form: this
-                });
-            }, this);
         }
     });
-
-    _.extend(AbstractForm, {
-        InputErrors: InputErrors,
-        ButtonDisabler: ButtonDisabler
-    });
-
-    Backbone.UI.Form = AbstractForm;
-    module.exports = AbstractForm;
 
 });

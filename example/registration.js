@@ -27,11 +27,32 @@ define(function (require, exports, module) {
         }
     });
 
-    var RegistrationForm = Backbone.UI.Form.extend({
-        template: _.template('<label for="email">    Email:    <input class="email" type="text" name="email" value="<%= email %>"/>    <span class="error"></span></label><br/><label for="password">Password:<input class="password" type="password" name="password" value="<%= password %>"/><span class="error"></span></label><br/><label for="password2">Verifier password:<input class="password2" type="password" name="password2" value="<%= password2 %>"/><span class="error"></span></label><br/><button class="submit">register</button>'),
-        className: "registration",
-        Decorators: [
-            Backbone.UI.Form.InputErrors.extend({
+    module.exports = {
+        createForm: function (attributes) {
+            return new Backbone.UI.Form({
+                model: new Backbone.Model(attributes),
+                validator: new Backbone.Validator({
+                    schema: {
+                        email: {
+                            required: true,
+                            type: String,
+                            match: "email",
+                            max: 127,
+                            registered: 1000
+                        },
+                        password: {
+                            required: true,
+                            type: String,
+                            range: {
+                                min: 5,
+                                max: 14
+                            }
+                        },
+                        password2: {
+                            duplicate: "password"
+                        }
+                    }
+                }),
                 messages: {
                     email: {
                         required: "The email address is not given.",
@@ -52,37 +73,6 @@ define(function (require, exports, module) {
                         duplicate: "The verifier password does not equal to the password."
                     }
                 }
-            }),
-            Backbone.UI.Form.ButtonDisabler
-        ]
-    });
-
-    module.exports = {
-        createForm: function (attributes) {
-            return new RegistrationForm({
-                model: new Backbone.Model(attributes),
-                validator: new Backbone.Validator({
-                    schema: {
-                        email: {
-                            required: true,
-                            type: String,
-                            match: "email",
-                            max: 127,
-                            registered: 3000
-                        },
-                        password: {
-                            required: true,
-                            type: String,
-                            range: {
-                                min: 5,
-                                max: 14
-                            }
-                        },
-                        password2: {
-                            duplicate: "password"
-                        }
-                    }
-                })
             })
         }
     };
