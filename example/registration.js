@@ -93,7 +93,7 @@ define(function (require, exports, module) {
                         label: "Register"
                     }
                 }
-            })
+            });
         }
     };
 });

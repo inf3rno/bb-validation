@@ -1,9 +1,9 @@
 {
-    "name":"bb-validation",
-    "version":"1.0.4",
+    "name":"Backbone.Validator",
+    "version":"2.0.0",
     "author":"inf3rno <laszlo.janszky@gmail.com>",
-    "description":"An extendable validation plugin for Backbone with asynchronous tests and custom messages support.",
-    "main":"./src/validation.js",
+    "description":"An extendable validation plugin for Backbone with asynchronous tests, custom messages support, form generation, etc...",
+    "main":"./src/backbone-validator.js",
     "repository":{
         "type":"git",
         "url":"https://github.com/inf3rno/bb-validation.git"
@@ -13,16 +13,16 @@
     },
     "keywords":[
         "backbone",
-        "plugin",
-        "validation",
-        "asynchronous",
-        "client",
-        "browser"
+        "validator",
+        "form",
+        "field",
+        "input",
+        "backbone.UI"
     ],
     "dependencies":{
         "amdefine":">=0.0.4",
-        "underscore":">=1.4.2",
-        "backbone":">=0.9.2"
+        "underscore":">=1.4.4",
+        "backbone":">=1.0.0"
     },
     "devDependencies":{
         "jasmine-node":">=1.0.26"
