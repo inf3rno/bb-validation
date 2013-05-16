@@ -2,8 +2,15 @@
 <html>
 <head>
     <title>Model validation example</title>
+    <script src="../lib/require.js"></script>
+    <script src="require.config.js"></script>
 </head>
 <body>
-You have to run the <a href="index.js">index.js</a> file in this directory with nodejs.
+You have to run the <a href="index.js">index.js</a> file in this directory with nodejs.<br/>
+<script>
+    require(["jquery", "example"], function ($, example) {
+        $("body").append("Or you can check the console with firebug, or your favourite dev tool.");
+    });
+</script>
 </body>
 </html>
