@@ -1,0 +1,26 @@
+.form_wrapper {
+
+}
+
+.form_wrapper .form {
+
+}
+
+.field_wrapper {
+
+}
+
+.field_wrapper .label {
+    display: block;
+    float: left;
+}
+
+.field_wrapper .field {
+    display: block;
+    float: right;
+}
+
+.field_wrapper .messenger_wrapper {
+    clear: both;
+    color: red;
+}

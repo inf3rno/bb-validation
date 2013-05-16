@@ -12,12 +12,16 @@ define(function (require, exports, module) {
         throw new Error("Backbone.UI not loaded yet!");
 
     Backbone.UI.Messenger = Backbone.View.extend({
-        noMessage: "",
-        pendingMessage: "Pending ...",
-        unknownMessage: "Not valid.",
-        chunkSeparator: "<br/>",
+        tagName: "div",
+        className: "messenger_wrapper",
+        options: {
+            noMessage: "",
+            pendingMessage: "Pending ...",
+            unknownMessage: "Not valid.",
+            chunkSeparator: "<br/>",
+            messages: {}
+        },
         initialize: function () {
-            this.messages = this.options.messages;
             this.mixin([Backbone.UI.HasModel]);
             _(this).bindAll('_refreshValue');
             this._observeModel(this._refreshValue);
@@ -26,7 +30,7 @@ define(function (require, exports, module) {
             this.box = $.el.span({className: "messenger"});
             this._refreshValue();
             $(this.el).empty();
-            this.el.appendChild($.el.div({className: 'messenger_wrapper'}, this.box));
+            this.el.appendChild(this.box);
             return this;
         },
         _refreshValue: function () {
@@ -38,68 +42,80 @@ define(function (require, exports, module) {
             if (errors) {
                 chunks = [];
                 _.each(errors, function (error, name) {
-                    var section = this.messages[name];
+                    var section = this.options.messages[name];
                     if (_.isString(section))
                         chunks.push(section);
                     else if (section && section[error])
                         chunks.push(section[error]);
                 }, this);
                 if (!chunks.length)
-                    chunks.push(this.unknownMessage);
+                    chunks.push(this.options.unknownMessage);
             }
             else if (errors === undefined)
                 pending = true;
 
             var message = "";
             if (pending)
-                message = this.pendingMessage;
+                message = this.options.pendingMessage;
             else if (chunks)
-                message = chunks.join(this.chunkSeparator);
+                message = chunks.join(this.options.chunkSeparator);
             else
-                message = this.noMessage;
+                message = this.options.noMessage;
 
             this.box.innerHTML = message;
         }
     });
 
     Backbone.UI.Form = Backbone.View.extend({
-        tagName: "form",
+        tagName: "div",
+        className: "form_wrapper",
+        options: {
+            width: null,
+            fields: null,
+            buttons: null
+        },
         initialize: function () {
+            this.options.width = this.options.width || this.width;
+            this.options.fields = _.extend({}, this.fields, this.options.fields);
+            this.options.buttons = _.extend({}, this.buttons, this.options.buttons);
             this.schema = {};
             this.messages = {};
-            this.fields = {};
-            this.buttons = {};
+            this.fieldConfigs = {};
+            this.buttonConfigs = {};
             _.each(this.options.fields, function (config, attribute) {
                 this.schema[attribute] = config.schema;
                 this.messages[attribute] = config.messages;
-                this.fields[attribute] = _.omit(config, ["schema", "messages"]);
+                this.fieldConfigs[attribute] = _.omit(config, ["schema", "messages"]);
             }, this);
             _.each(this.options.buttons, function (config, attribute) {
-                this.buttons[attribute] = config;
+                this.buttonConfigs[attribute] = config;
             }, this);
             this.validator = new Backbone.Validator({
                 schema: this.schema
             });
-            this.render();
         },
         render: function () {
-            this.$el.html("");
-            _.each(this.fields, function (config, attribute) {
+            this.form = $.el("form", {className: "form"});
+            _.each(this.fieldConfigs, function (config, attribute) {
                 var field = this.field(attribute, config.label, config.type, config.options);
-                this.$el.append(field);
+                $(this.form).append(field);
             }, this);
-            _.each(this.buttons, function (config, attribute) {
+            _.each(this.buttonConfigs, function (config, attribute) {
                 var button = this.button(config.label, config.type, config.options);
-                this.$el.append(button);
+                $(this.form).append(button);
             }, this);
+            if (this.options.width)
+                this.$el.css({width: this.options.width + "px"});
+            this.$el.html(this.form);
             this.validator.bindModel(this.model);
             this.validator.run();
             return this;
         },
         field: function (attribute, label, Field, options) {
-            return $.el.p(
-                $.el.label({for: attribute}, label),
+            return $.el.p({className: "field_wrapper"},
+                $.el.label({for: attribute, className: "label"}, label),
                 new Field(_.extend({
+                    className: "field",
                     model: this.model,
                     content: attribute
                 }, options)).render().el,
@@ -126,6 +142,16 @@ define(function (require, exports, module) {
                 submit.render().el
             );
         }
+    });
+
+    var setOptions = function (options) {
+        _.each(options, function (value, option) {
+            this.prototype.options[option] = value;
+        }, this)
+    };
+    _.each(Backbone.UI, function (item, key) {
+        if (_.isFunction(item))
+            item.setOptions = setOptions;
     });
 
 });

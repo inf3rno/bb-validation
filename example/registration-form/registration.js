@@ -30,6 +30,7 @@ define(function (require, exports, module) {
     module.exports = {
         createForm: function (attributes) {
             return new Backbone.UI.Form({
+                width: 500,
                 model: new Backbone.Model(attributes),
                 fields: {
                     email: {

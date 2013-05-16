@@ -28,7 +28,7 @@ require.config({
             deps: ["backboneValidator"]
         },
         backboneUIForm: {
-            deps: ["backboneUI", "backboneValidator", "backboneValidatorBasicTests"]
+            deps: ["backboneUI", "backboneValidator", "backboneValidatorBasicTests", "css!../src/backbone-ui-form.css"]
         },
         backboneUI: {
             deps: ["backbone", "laconic", "moment", "css!lib/backbone-ui.css"],
