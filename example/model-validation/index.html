@@ -2,14 +2,16 @@
 <html>
 <head>
     <title>Model validation example</title>
+    <meta charset="utf-8">
     <script src="../lib/require.js"></script>
     <script src="require.config.js"></script>
 </head>
 <body>
-You have to run the <a href="index.js">index.js</a> file in this directory with nodejs.<br/>
+The running code is contained by <a href='example.js'>example.js</a>.<br />
+To check the result, you have to run the <a href="index.js">index.js</a> file in this directory with nodejs.<br/>
 <script>
     require(["jquery", "example"], function ($, example) {
-        $("body").append("Or you can check the console with firebug, or your favourite dev tool.");
+        $("body").append("The example.js is currently running in this window, so you can check the console with firebug, or your favourite dev tool.");
     });
 </script>
 </body>

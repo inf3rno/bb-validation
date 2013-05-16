@@ -7,7 +7,7 @@ require.config({
         domReady: "lib/domReady",
         backboneValidator: "../src/backbone-validator",
         backboneValidatorBasicTests: "../src/backbone-validator-basic-tests",
-        example: "model-validation/index"
+        example: "model-validation/example"
     },
     shim: {
         example: {
