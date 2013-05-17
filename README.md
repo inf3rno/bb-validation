@@ -141,12 +141,17 @@ Form generation example code (runs in browser):
 				}
 			}
 		},
-		buttons: {
-			submit: {
-				type: Backbone.UI.Button,
-				label: "Register"
-			}
-		}
+        buttons: {
+            submit: {
+                type: Backbone.UI.Button,
+                label: "Register",
+                messages: {
+                    500: "User already saved.",
+                    400: "Cannot register user with gmail account.",
+                    201: "User registered"
+                }
+            }
+        }
 	});
 
  * The **Backbone.Validator** is a **Backbone.Model** extension. It uses the schema part of the **Backbone.UI.Form** config to validate the model, and stores the results in its attributes: false means no error, undefined means pending, true means error, {subType: true} means error with subtype.
