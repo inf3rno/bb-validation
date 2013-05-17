@@ -27,11 +27,38 @@ define(function (require, exports, module) {
         }
     });
 
+    var User = Backbone.Model.extend({
+        notAllowedEmailHost: "gmail.com",
+        sync: function (method, model, options) {
+            if (method == "read" || method == "delete")
+                throw new Error("Example is not prepared for these methods.");
+            var email = model.get("email");
+            var status = 201;
+            if (email.indexOf(this.notAllowedEmailHost) != -1)
+                status = 400;
+            else if (method == "update")
+                status = 500;
+            options.xhr = {
+                status: status
+            };
+            if (status >= 400)
+                options.error(options.xhr);
+            else
+                options.success({
+                    id: 1
+                });
+        }
+    });
+
     module.exports = {
         createForm: function (attributes) {
+            var user = new User(attributes);
+            user.on("change:id", function () {
+                window.alert("Event after new user saved.");
+            });
             return new Backbone.UI.Form({
                 width: 500,
-                model: new Backbone.Model(attributes),
+                model: user,
                 fields: {
                     email: {
                         type: Backbone.UI.TextField,
@@ -91,7 +118,12 @@ define(function (require, exports, module) {
                 buttons: {
                     submit: {
                         type: Backbone.UI.Button,
-                        label: "Register"
+                        label: "Register",
+                        messages: {
+                            500: "User already saved.",
+                            400: "Cannot register user with gmail account.",
+                            201: "User registered"
+                        }
                     }
                 }
             });

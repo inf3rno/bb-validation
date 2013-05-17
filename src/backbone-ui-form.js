@@ -88,6 +88,7 @@ define(function (require, exports, module) {
                 this.fieldConfigs[attribute] = _.omit(config, ["schema", "messages"]);
             }, this);
             _.each(this.options.buttons, function (config, attribute) {
+                this.messages[attribute] = config.messages;
                 this.buttonConfigs[attribute] = config;
             }, this);
             this.validator = new Backbone.Validator({
@@ -101,7 +102,7 @@ define(function (require, exports, module) {
                 $(this.form).append(field);
             }, this);
             _.each(this.buttonConfigs, function (config, attribute) {
-                var button = this.button(config.label, config.type, config.options);
+                var button = this.button(attribute, config.label, config.type, config.options);
                 $(this.form).append(button);
             }, this);
             if (this.options.width)
@@ -126,20 +127,44 @@ define(function (require, exports, module) {
                 }).render().el
             );
         },
-        button: function (label, Button, options) {
+        button: function (attribute, label, Button, options) {
+            var result = new Backbone.Model({
+                status: 0
+            });
+            var messenger = new Backbone.UI.Messenger({
+                model: result,
+                content: "status",
+                messages: this.messages[attribute],
+                unknownMessage: "We did not manage to process the form."
+            }).render();
             var submit = new Button(_.extend({
                 disabled: true,
                 content: label,
                 onClick: function () {
-                    this.trigger("submit", this.model);
+                    messenger.model.set({status: undefined});
+                    this.model.save(null, {
+                        success: function (model, response, options) {
+                            var code = {};
+                            code[options.xhr.status] = true;
+                            messenger.model.set({status: code});
+                            this.model.set(response);
+                        }.bind(this),
+                        error: function (model, response, options) {
+                            console.log(response)
+                            var code = {};
+                            code[response.status] = true;
+                            messenger.model.set({status: code});
+                        }.bind(this)
+                    });
                     return false;
                 }.bind(this)
             }, options));
             this.validator.on("change", function () {
                 submit.setEnabled(!this.validator.errors && !this.validator.pending);
             }, this);
-            return $.el.p(
-                submit.render().el
+            return $.el.p({className: "button_wrapper"},
+                submit.render().el,
+                messenger.render().el
             );
         }
     });
