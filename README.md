@@ -1,5 +1,7 @@
 # Backbone.Validator
 
+## This project is no longer maintained since May 17 2013. Please use another Backbone validator or fork this if you find it useful. I would use a more standard schema structure, like JSON Schema, OWL or even Mongoose Schema if I were you. Probably Backbone supports async validation much better now, so you won't need it. Good luck!
+
 This plugin is for helping the validation of Backbone models in Backbone applications.
 
 ## Features
@@ -11,8 +13,6 @@ This plugin is for helping the validation of Backbone models in Backbone applica
  * Custom error messages which can be multi language if you use an i18n plugin.
 
 ## Documentation
-
-***I promise, I will create separated repo for each of these packages and detailed documentation when days will be 48h long... :S***
 
  * [Backbone.Validator](https://github.com/inf3rno/bb-validation/blob/master/src/backbone-validator.js) - **stable**, code coverage about 90% - validator, parallel and series runners, abstract test - I will create multiple validator classes probably later, this one is for real time input validation, not the best choice for bash validation
  * [Backbone.Validator Test classes](https://github.com/inf3rno/bb-validation/blob/master/src/backbone-validator-basic-tests.js) - **stable**, 100% code coverage - basic tests: required, type, min, max, range, identical, equal, member, match, duplicate
